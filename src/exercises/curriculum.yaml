@@ -1,10 +1,59 @@
 chapters:
-  "Basics":
-      - hello_world
-      - fizz_buzz
-      # - lists
-      # - arrays
-      # - strings
+  "Getting Started":
+    - hello_world
 
-  # "More Concepts"
-  #     - reference_vs_value
+  "Pattern Matching Basics":
+    - match_literal_character
+    - match_digits
+    - match_word_characters
+    - positive_character_groups
+    - negative_character_groups
+    - combining_character_classes
+
+  "Anchors & Basic Patterns":
+    - start_of_string_anchor
+    - end_of_string_anchor
+    - match_one_or_more_times
+    - match_zero_or_one_times
+    - wildcard
+    - alternation
+
+  "Extended Quantifiers":
+    - match_zero_or_more_times
+    - match_exact_n_times
+    - match_at_least_n_times
+    - match_between_n_and_m_times
+
+  "Backreferences":
+    - single_backreference
+    - multiple_backreferences
+    - nested_backreferences
+
+  "Line Processing & Output":
+    - print_single_matching_line
+    - print_multiple_matching_lines
+    - print_single_match
+    - print_multiple_matches
+    - process_multiple_input_lines
+
+  "Highlighting":
+    - highlight_single_match
+    - highlight_multiple_matches
+    - highlight_matches_in_multiple_lines
+    - disable_highlighting
+    - auto_color_option
+
+  "File Search":
+    - search_single_file
+    - search_multiline_file
+    - search_multiple_files
+    - recursive_search
+
+  "Regex Engine Internals: Thompson NFA":
+    - catastrophic_backtracking_benchmark
+    - matcher_interface_refactor
+    - regex_tokenization
+    - nfa_state_machine
+    - thompson_construction
+    - nfa_simulation_and_matching
+    - engine_swap_and_benchmark
