@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "Preserve",
+    "outDir": "./dist",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
+    /* type-checking */
+    "strict": true,
+    "noImplicitAny": true,
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    /* module resolution options */
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true,
+    /* other options */
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": [
+      "vite/client",
+      "@types/node"
+    ]
+  },
+  "include": [
+    "src/**/*",
+    "vite.config.ts",
+    "scripts/**/*"
+  ]
+}

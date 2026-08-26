@@ -1,0 +1,32 @@
+# OCaml build artifacts
+*.annot
+*.cmo
+*.cma
+*.cmi
+*.a
+*.o
+*.cmx
+*.cmxs
+*.cmxa
+
+# Build directories
+_build/
+_opam/
+
+# Dune specific
+*.install
+.merlin
+
+# OCamlbuild
+_build/
+*.native
+*.byte
+
+# Executables
+*.exe
+main
+
+# Editor and IDE files
+*.swp
+*.swo
+.DS_Store
