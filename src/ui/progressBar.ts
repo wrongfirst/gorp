@@ -4,7 +4,7 @@ import { store } from '../core/store';
 
 let isListenerBound = false;
 
-const MAX_VISIBLE_STEPS = 5;
+const MAX_TOTAL_VISIBLE = 7;
 
 export function renderProgressBar(
     container: HTMLElement | null,
@@ -17,6 +17,15 @@ export function renderProgressBar(
     if (!isListenerBound) {
         isListenerBound = true;
         container.addEventListener('click', (e) => {
+            const gap = (e.target as HTMLElement).closest<HTMLElement>('.progress-shift-gap');
+            if (gap) {
+                const targetId = gap.getAttribute('data-target-exercise-id');
+                if (targetId) {
+                    window.location.hash = '#' + targetId;
+                    store.getState().setCurrent(targetId);
+                }
+                return;
+            }
             const item = (e.target as HTMLElement).closest<HTMLElement>('.progress-step');
             if (!item) return;
             const exId = item.getAttribute('data-exercise-id');
@@ -33,123 +42,109 @@ export function renderProgressBar(
         return;
     }
 
-    const total = currentChapter.exercises.length;
-    const nextUncompletedIndex = currentChapter.exercises.findIndex(e => !completedSlugs.includes(e.id));
-    let currentIndex = currentChapter.exercises.findIndex(e => e.id === activeLessonSlug);
+    const exercises = currentChapter.exercises;
+    const total = exercises.length;
+    let currentIndex = exercises.findIndex(e => e.id === activeLessonSlug);
     if (currentIndex === -1) currentIndex = 0;
 
-    let startIndex = 0;
-    let endIndex = total - 1;
+    // Calculate display items (0-indexed indices into exercises array)
+    let displayIndices: number[] = [];
 
-    if (total > MAX_VISIBLE_STEPS) {
-        const half = Math.floor(MAX_VISIBLE_STEPS / 2);
-        startIndex = currentIndex - half;
-        endIndex = currentIndex + half;
+    if (total <= MAX_TOTAL_VISIBLE) {
+        for (let i = 0; i < total; i++) displayIndices.push(i);
+    } else {
+        let midStart = currentIndex - 2;
+        let midEnd = currentIndex + 2;
 
-        if (startIndex < 0) {
-            endIndex = Math.min(total - 1, endIndex - startIndex);
-            startIndex = 0;
+        if (midStart <= 1) {
+            midStart = 1;
+            midEnd = 5;
         }
-        if (endIndex >= total) {
-            startIndex = Math.max(0, startIndex - (endIndex - (total - 1)));
-            endIndex = total - 1;
+        if (midEnd >= total - 2) {
+            midEnd = total - 2;
+            midStart = total - 6;
         }
+
+        displayIndices.push(0);
+        for (let i = midStart; i <= midEnd; i++) displayIndices.push(i);
+        displayIndices.push(total - 1);
     }
 
-    const showLeftEllipsis = startIndex > 0;
-    const showRightEllipsis = endIndex < total - 1;
+    let trackHtml = '';
 
-    let html = '';
+    for (let idx = 0; idx < displayIndices.length; idx++) {
+        const i = displayIndices[idx];
+        const ex = exercises[i];
+        const isLast = idx === displayIndices.length - 1;
+        const nextIdx = !isLast ? displayIndices[idx + 1] : null;
 
-    // Left truncation (Chevron Node)
-    if (showLeftEllipsis) {
-        const prevEx = currentChapter.exercises[startIndex - 1];
-        const isPrevCompleted = completedSlugs.includes(prevEx.id);
-        const leftLineClass = isPrevCompleted ? 'bg-brand' : 'bg-border-default opacity-50';
+        const isCompleted = completedSlugs.includes(ex.id);
+        const isActive = ex.id === activeLessonSlug;
 
-        html += `
-            <div class="progress-step relative flex items-center group cursor-pointer" data-exercise-id="${prevEx.id}" title="Previous: ${prevEx.title}">
-                <div class="w-4 h-4 rounded-full flex items-center justify-center border border-border-default bg-bg-surface group-hover:border-brand transition-all duration-300 z-10">
-                    <svg class="w-2.5 h-2.5 text-fg-muted group-hover:text-brand transition-colors pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 18 9 12 15 6"></polyline>
-                    </svg>
-                </div>
-                <div class="w-8 h-0.5 mx-0.5 rounded ${leftLineClass}"></div>
-                <!-- tooltip on hover -->
-                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-bg-surface border border-border-default px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-20 pointer-events-none">
-                    Previous (${startIndex} before)
-                </div>
-            </div>
-        `;
-    }
-
-    // Visible exercise steps
-    for (let idx = startIndex; idx <= endIndex; idx++) {
-        const e = currentChapter.exercises[idx];
-        const isCompleted = completedSlugs.includes(e.id);
-        const isNext = idx === nextUncompletedIndex;
-        const isLastVisible = idx === endIndex;
-        const isActive = e.id === activeLessonSlug;
-
-        // Circle style
-        let circleClass = 'border border-border-default bg-bg-surface';
-        let content = '';
-
-        if (isNext) {
-            circleClass = 'border border-brand bg-bg-surface';
-        }
+        // Node Styling (Fixed 28x28 Slot)
+        let circleClass = "w-5 h-5 rounded-full border border-border-default bg-bg-surface text-fg-muted flex items-center justify-center font-mono tabular-nums text-[10px]";
+        let content = `${i + 1}`;
 
         if (isCompleted) {
-            circleClass = 'border border-brand bg-brand';
+            circleClass = "w-5 h-5 rounded-full border border-brand bg-brand text-white flex items-center justify-center";
             content = ICONS.WHITE_CHECK;
         }
 
         if (isActive) {
-            const baseBg = isCompleted ? 'bg-brand' : 'bg-bg-surface';
-            circleClass = `border border-brand ${baseBg} shadow-[0_0_6px_3px_color-mix(in_srgb,var(--color-brand)_30%,transparent)]`;
+            circleClass = "w-6 h-6 rounded-full border-2 border-brand bg-bg-surface text-brand font-mono tabular-nums text-xs font-bold flex items-center justify-center";
+            content = `${i + 1}`;
+            if (isCompleted) {
+                circleClass = "w-6 h-6 rounded-full border-2 border-fg-primary bg-brand text-white font-bold flex items-center justify-center";
+                content = ICONS.WHITE_CHECK;
+            }
         }
 
-        // Connection line
-        let line = '';
-        if (!isLastVisible || showRightEllipsis) {
-            const lineClass = isCompleted ? 'bg-brand' : 'bg-border-default opacity-50';
-            line = `<div class="w-8 h-0.5 mx-0.5 rounded ${lineClass}"></div>`;
+        // Connecting Line Logic (Fixed Width)
+        let lineHtml = '';
+        if (!isLast && nextIdx !== null) {
+            const isGap = (nextIdx - i) > 1;
+            const isLineCompleted = isCompleted;
+
+            if (isGap) {
+                const isLeftGap = idx === 0;
+                // If left gap, jump to exercise right before midStart; if right gap, jump to exercise right after midEnd
+                const targetJumpIdx = isLeftGap ? displayIndices[1] - 1 : displayIndices[idx] + 1;
+                const targetJumpEx = exercises[targetJumpIdx];
+
+                const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
+
+                lineHtml = `
+                    <div class="progress-shift-gap w-5 sm:w-7 h-7 flex items-center justify-center cursor-pointer shrink-0 group/dash" data-target-exercise-id="${targetJumpEx.id}" title="${isLeftGap ? 'Previous exercises' : 'Next exercises'}">
+                        <div class="w-full h-0 border-t-2 border-dashed ${colorClass} group-hover/dash:border-brand transition-colors"></div>
+                    </div>
+                `;
+            } else {
+                const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
+                lineHtml = `
+                    <div class="w-5 sm:w-7 h-7 flex items-center justify-center shrink-0">
+                        <div class="w-full h-0 border-t-2 border-solid ${colorClass}"></div>
+                    </div>
+                `;
+            }
         }
 
-        html += `
-            <div class="progress-step relative flex items-center group cursor-pointer" data-exercise-id="${e.id}" title="${e.title}">
-                <div class="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-300 z-10 ${circleClass}">
+        trackHtml += `
+            <div class="progress-step w-7 h-7 flex items-center justify-center shrink-0 group relative cursor-pointer" data-exercise-id="${ex.id}">
+                <div class="transition-transform duration-200 ${circleClass}">
                     ${content}
                 </div>
-                ${line}
-                <!-- tooltip on hover -->
-                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-bg-surface border border-border-default px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-20 pointer-events-none">
-                    ${e.title}
+                <!-- Tooltip -->
+                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-bg-surface border border-border-default px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-30 pointer-events-none text-fg-primary">
+                    ${ex.title} ${isCompleted ? '✓' : ''}
                 </div>
             </div>
+            ${lineHtml}
         `;
     }
 
-    // Right truncation (Chevron Node)
-    if (showRightEllipsis) {
-        const nextEx = currentChapter.exercises[endIndex + 1];
-
-        html += `
-            <div class="progress-step relative flex items-center group cursor-pointer" data-exercise-id="${nextEx.id}" title="Next: ${nextEx.title}">
-                <div class="w-4 h-4 rounded-full flex items-center justify-center border border-border-default bg-bg-surface group-hover:border-brand transition-all duration-300 z-10">
-                    <svg class="w-2.5 h-2.5 text-fg-muted group-hover:text-brand transition-colors pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="9 18 15 12 9 6"></polyline>
-                    </svg>
-                </div>
-                <!-- tooltip on hover -->
-                <div class="absolute -bottom-8 left-1/2 -translate-x-1/2 bg-bg-surface border border-border-default px-2 py-1 rounded text-[10px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity shadow-lg z-20 pointer-events-none">
-                    More (${total - 1 - endIndex} remaining)
-                </div>
-            </div>
-        `;
-    }
-
-    container.innerHTML = html;
+    container.innerHTML = `
+        <div class="flex items-center justify-center py-1">
+            ${trackHtml}
+        </div>
+    `;
 }
-
-
