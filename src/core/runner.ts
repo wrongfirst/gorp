@@ -28,7 +28,7 @@ class Orchestrator {
                     this.isReady = false;
                     const langName = activeRunner.name || 'runtime';
                     const capitalizedLang = langName.charAt(0).toUpperCase() + langName.slice(1);
-                    status.setLoading(`Loading ${capitalizedLang}...`);
+                    status.setLoading(`Loading...`);
                     this.setRunningState(this.isRunning);
                 } else if (runnerStatus === 'error') {
                     this.isReady = false;
@@ -49,7 +49,7 @@ class Orchestrator {
         if (!this.isReady) {
             const langName = activeRunner.name || 'runtime';
             const capitalizedLang = langName.charAt(0).toUpperCase() + langName.slice(1);
-            status.setLoading(`Loading ${capitalizedLang}...`);
+            status.setLoading(`Loading...`);
             try {
                 if (activeRunner.whenReady) {
                     await activeRunner.whenReady();

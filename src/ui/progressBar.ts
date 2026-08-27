@@ -4,8 +4,6 @@ import { store } from '../core/store';
 
 let isListenerBound = false;
 
-const MAX_TOTAL_VISIBLE = 7;
-
 export function renderProgressBar(
     container: HTMLElement | null,
     curriculum: Chapter[],
@@ -47,22 +45,26 @@ export function renderProgressBar(
     let currentIndex = exercises.findIndex(e => e.id === activeLessonSlug);
     if (currentIndex === -1) currentIndex = 0;
 
+    const MAX_TOTAL_VISIBLE = typeof window !== 'undefined' && window.innerWidth < 1024 ? 5 : 7;
+    const midCount = MAX_TOTAL_VISIBLE - 2;
+    const half = Math.floor(midCount / 2);
+
     // Calculate display items (0-indexed indices into exercises array)
     let displayIndices: number[] = [];
 
     if (total <= MAX_TOTAL_VISIBLE) {
         for (let i = 0; i < total; i++) displayIndices.push(i);
     } else {
-        let midStart = currentIndex - 2;
-        let midEnd = currentIndex + 2;
+        let midStart = currentIndex - half;
+        let midEnd = currentIndex + half;
 
         if (midStart <= 1) {
             midStart = 1;
-            midEnd = 5;
+            midEnd = midCount;
         }
         if (midEnd >= total - 2) {
             midEnd = total - 2;
-            midStart = total - 6;
+            midStart = total - 1 - midCount;
         }
 
         displayIndices.push(0);
