@@ -5,6 +5,7 @@ export const metadata: LanguageMetadata = {
   name: 'TypeScript',
   extension: '.ts',
   cmLanguage: 'typescript',
+  weight: 'light'
 };
 
 export default metadata;

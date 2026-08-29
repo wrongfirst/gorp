@@ -1,13 +1,13 @@
 import type { LanguageMetadata } from '../types';
 
 export const metadata: LanguageMetadata = {
-  id: 'python',
-  name: 'Python',
-  extension: '.py',
-  cmLanguage: 'python',
+  id: 'cpp',
+  name: 'C++',
+  extension: '.cpp',
+  cmLanguage: 'cpp',
   weight: 'heavy',
   prefetchUrls: [
-    'https://cdn.jsdelivr.net/pyodide/v314.0.5/full/pyodide.js'
+    'https://cdn.jsdelivr.net/npm/@yowasp/clang@22.0.0-git20542-10/gen/bundle.js'
   ]
 };
 

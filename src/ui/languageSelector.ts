@@ -1,16 +1,26 @@
 import { store } from '../core/store';
 import { getEnabledLanguages } from '../languages/language-registry';
 import { Exercise } from '../core/types';
+import { elements } from '../core/elements';
 
 export function renderLanguageSelector(container: HTMLElement, currentExercise: Exercise | undefined) {
     if (!container) return;
 
     const enabledLanguages = getEnabledLanguages();
+    const editorTitle = elements.editorTitle;
 
-    // If only 1 or 0 languages enabled site-wide, hide selector to keep UI clean
+    // If only 1 or 0 languages enabled site-wide, show "Editor" text and hide selector
     if (enabledLanguages.length <= 1) {
+        if (editorTitle) {
+            editorTitle.classList.remove('hidden');
+        }
         container.innerHTML = '';
         return;
+    }
+
+    // Keep "Editor" text hidden when multiple languages are enabled
+    if (editorTitle) {
+        editorTitle.classList.add('hidden');
     }
 
     const { currentLanguageId } = store.getState();

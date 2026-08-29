@@ -4,7 +4,8 @@ export const metadata: LanguageMetadata = {
   id: 'go',
   name: 'Go',
   extension: '.go',
-  cmLanguage: 'go'
+  cmLanguage: 'go',
+  weight: 'light'
 };
 
 export default metadata;

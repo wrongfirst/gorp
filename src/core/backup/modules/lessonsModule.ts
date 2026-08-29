@@ -80,15 +80,15 @@ export function sanitizeLessons(raw: unknown, current: AppState): Partial<AppSta
     typeof payload.activeLessonSlug === 'string' && isValidExerciseId(payload.activeLessonSlug)
       ? payload.activeLessonSlug
       : isValidExerciseId(current.activeLessonSlug)
-      ? current.activeLessonSlug
-      : exercises[0]?.id || '';
+        ? current.activeLessonSlug
+        : exercises[0]?.id || '';
 
   const resolvedActiveLang =
     typeof payload.activeLanguageId === 'string' && payload.activeLanguageId
       ? payload.activeLanguageId
       : typeof payload.currentLanguageId === 'string' && payload.currentLanguageId
-      ? payload.currentLanguageId
-      : current.currentLanguageId;
+        ? payload.currentLanguageId
+        : current.currentLanguageId;
 
   const completedSet = new Set<string>();
   const userCode: Record<string, string> = {};

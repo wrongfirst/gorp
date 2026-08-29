@@ -6,6 +6,8 @@ export interface LanguageMetadata {
   name: string;
   extension: string;
   cmLanguage: string;  //codemirror language extension identifier
+  weight?: 'light' | 'heavy';
+  prefetchUrls?: string[];
 }
 
 export interface LanguageModule {

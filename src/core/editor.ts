@@ -236,7 +236,6 @@ export function loadExerciseCode(
                 ]),
                 languageCompartment.of(languageExtension || []),
                 themeCompartment.of(getTheme(isDark)),
-                EditorView.lineWrapping,
                 EditorView.theme({
                     "&": { height: "100%", backgroundColor: "var(--bg-app)", color: "var(--fg-primary)" },
                     ".cm-scroller": { overflow: "auto", fontFamily: "var(--font-mono)" },

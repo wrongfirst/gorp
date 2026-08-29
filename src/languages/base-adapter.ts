@@ -11,7 +11,7 @@ export abstract class BaseAdapter implements CodeRunner {
 
   protected worker: Worker | null = null;
   protected ready = false;
-  protected status: RunnerStatus = 'loading';
+  protected status: RunnerStatus = 'idle';
   protected initError: string | null = null;
   protected statusListeners = new Set<(status: RunnerStatus, error?: string | null) => void>();
   protected readyResolvers: Array<() => void> = [];
@@ -32,12 +32,13 @@ export abstract class BaseAdapter implements CodeRunner {
   private activeLintRequestId: string | null = null;
 
   constructor() {
-    // Defer initWorker to microtask to ensure derived class fields are initialized
-    queueMicrotask(() => {
-      if (!this.worker) {
-        this.initWorker();
-      }
-    });
+    // Lazy: Worker is instantiated on-demand (when whenReady(), isReady(), run(), or ensureWorker() is called)
+  }
+
+  public ensureWorker(): void {
+    if (!this.worker && this.status !== 'error') {
+      this.initWorker();
+    }
   }
 
   protected postToWorker(message: WorkerInboundMessage): void {
@@ -89,7 +90,9 @@ export abstract class BaseAdapter implements CodeRunner {
 
   protected initWorker() {
     if (this.worker) {
-      this.worker.terminate();
+      try {
+        this.worker.terminate();
+      } catch { }
       this.worker = null;
     }
     this.ready = false;
@@ -198,6 +201,7 @@ export abstract class BaseAdapter implements CodeRunner {
   }
 
   async whenReady(): Promise<void> {
+    this.ensureWorker();
     if (this.ready) return Promise.resolve();
     if (this.status === 'error' && this.initError) {
       return Promise.reject(new Error(this.initError));
@@ -217,6 +221,7 @@ export abstract class BaseAdapter implements CodeRunner {
   }
 
   protected async waitUntilReady(maxWaitMs = 15_000): Promise<boolean> {
+    this.ensureWorker();
     if (this.ready) return true;
     if (this.initError) return false;
 
@@ -234,6 +239,8 @@ export abstract class BaseAdapter implements CodeRunner {
   async run(userCode: string, testCode: string = ''): Promise<ExecutionResult> {
     if (this.initError || this.status === 'error') {
       this.initWorker();
+    } else {
+      this.ensureWorker();
     }
 
     const isReadyNow = await this.waitUntilReady();
@@ -337,7 +344,19 @@ export abstract class BaseAdapter implements CodeRunner {
   }
 
   terminate(): void {
-    this.initWorker();
+    if (this.worker) {
+      try {
+        this.worker.terminate();
+      } catch (err) {
+        console.warn(`[${this.name} worker terminate error]:`, err);
+      }
+      this.worker = null;
+    }
+    this.ready = false;
+    this.status = 'idle';
+    this.initError = null;
+    this.clearPendingCallbacks(`${this.name} runtime was terminated to free memory.`);
+    this.notifyStatusListeners();
   }
 }
 
@@ -352,7 +371,6 @@ export class GenericLanguageAdapter extends BaseAdapter {
     super();
     this.name = name;
     this.workerFactory = workerFactory;
-    this.initWorker();
   }
 
   protected createWorker(): Worker {

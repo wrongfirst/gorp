@@ -5,6 +5,7 @@ export const metadata: LanguageMetadata = {
   name: 'OCaml',
   extension: '.ml',
   cmLanguage: 'ocaml',
+  weight: 'light',
 };
 
 export default metadata;

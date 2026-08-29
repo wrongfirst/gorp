@@ -27,7 +27,8 @@ import { initResetProgress } from './ui/resetProgress';
 import { initSettings } from './ui/settings';
 import { initChatPanel } from './ui/chatPanel';
 import { renderLanguageSelector } from './ui/languageSelector';
-import { getLanguageExtension, prewarmBackgroundLanguages, loadLanguageRunner } from './languages/language-registry';
+import { getLanguageExtension, prefetchInactiveLanguageAssets } from './languages/language-registry';
+import { activeRunner } from './language';
 
 //freeze fetch to prevent monkey-patching by injected scripts 
 Object.defineProperty(window, 'fetch', { value: window.fetch, writable: false, configurable: false });
@@ -129,10 +130,12 @@ function render() {
             showPopup('Saved!');
         });
 
-        //reset console and status on exercise or language switch
+        //reset console on exercise or language switch
         if (isExerciseChanged || isLanguageChanged) {
             elements.console.textContent = "// Ready...";
-            status.setReady();
+            if (activeRunner.getStatus?.() === 'ready') {
+                status.setReady();
+            }
         }
     } else if (isUserCodeChanged) {
         // In-place update of editor code when store changes externally (e.g. backup restore or Gist pull)
@@ -224,32 +227,21 @@ ensureSettingsDecrypted(store)
         console.warn('[main] Startup decryption or sync check failed:', err);
     });
 
-//immediately boot the active language runner
-const activeLangId = store.getState().currentLanguageId;
-if (activeLangId) {
-    loadLanguageRunner(activeLangId)
-        .then(async (activeRunnerInstance) => {
-            // Stage 1: Wait until the active runner is 100% ready before pre-warming other languages
-            if (activeRunnerInstance.whenReady) {
-                await activeRunnerInstance.whenReady();
-            } else {
-                await activeRunnerInstance.isReady();
-            }
+// Wait for active runner readiness, then schedule background asset prefetch for inactive languages
+activeRunner.whenReady?.()
+    .then(() => {
+        const scheduleBackgroundPrefetch = () => {
+            const currentLang = store.getState().currentLanguageId;
+            prefetchInactiveLanguageAssets(currentLang).catch(() => { });
+        };
 
-            // Stage 2: Pre-warm remaining enabled languages sequentially in browser idle time
-            const scheduleBackgroundPrewarm = () => {
-                const currentLang = store.getState().currentLanguageId;
-                prewarmBackgroundLanguages(currentLang).catch(() => { });
-            };
-
-            if ('requestIdleCallback' in window) {
-                (window as any).requestIdleCallback(scheduleBackgroundPrewarm, { timeout: 8000 });
-            } else {
-                setTimeout(scheduleBackgroundPrewarm, 2000);
-            }
-        })
-        .catch((err) => {
-            console.error(`[main] Failed to load active language runner '${activeLangId}':`, err);
-        });
-}
+        if ('requestIdleCallback' in window) {
+            (window as any).requestIdleCallback(scheduleBackgroundPrefetch, { timeout: 8000 });
+        } else {
+            setTimeout(scheduleBackgroundPrefetch, 2000);
+        }
+    })
+    .catch((err) => {
+        console.warn('[main] Active runner initialization or prefetch deferred:', err);
+    });
 

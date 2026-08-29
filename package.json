@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@astral-sh/ruff-wasm-web": "^0.9.10",
+    "@bjorn3/browser_wasi_shim": "^0.4.2",
     "@catppuccin/codemirror": "^1.0.3",
     "@codemirror/autocomplete": "^6.20.2",
     "@codemirror/commands": "^6.10.3",
@@ -23,6 +24,7 @@
     "@replit/codemirror-vim": "^6.4.0",
     "@types/canvas-confetti": "^1.9.0",
     "@typescript/vfs": "^1.6.4",
+    "@yowasp/clang": "^22.0.0-git20542-10",
     "canvas-confetti": "^1.9.4",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.13",

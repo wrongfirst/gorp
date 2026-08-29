@@ -2,7 +2,7 @@ import { siteConfig } from '../core/siteConfig';
 import type { Extension } from '@codemirror/state';
 import type { CodeRunner } from '../core/types';
 import type { LanguageMetadata } from './types';
-import { createLanguageLinter } from './lint-helper';
+import { createLanguageLinter, setLanguageRunnerLookup } from './lint-helper';
 
 // Discover metadata and syntax extensions synchronously for immediate UI rendering
 const metadataModules = import.meta.glob<{ metadata?: LanguageMetadata; default?: LanguageMetadata }>(
@@ -75,6 +75,64 @@ export const defaultLanguageId: string =
 const runnerCache = new Map<string, CodeRunner>();
 const runnerLoadPromises = new Map<string, Promise<CodeRunner>>();
 
+export function isMobileDevice(): boolean {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+
+  const nav = navigator as any;
+
+  // 1. Direct hardware memory constraint detection (devices with <= 4GB RAM)
+  if (typeof nav.deviceMemory === 'number' && nav.deviceMemory <= 4) {
+    return true;
+  }
+
+  // 2. Modern Client Hints API
+  if (nav.userAgentData?.mobile !== undefined) {
+    return Boolean(nav.userAgentData.mobile);
+  }
+
+  // 3. Media Query (coarse touch pointer + mobile viewport)
+  if (typeof window.matchMedia === 'function') {
+    const isTouch = window.matchMedia('(pointer: coarse)').matches;
+    const isMobileWidth = window.matchMedia('(max-width: 768px)').matches;
+    if (isTouch && isMobileWidth) return true;
+  }
+
+  // 4. Fallback touch and screen check
+  const isSmallScreen = typeof window.innerWidth === 'number' && window.innerWidth <= 768;
+  const hasTouch = typeof nav.maxTouchPoints === 'number' && nav.maxTouchPoints > 1;
+  return isSmallScreen && hasTouch;
+}
+
+// Track active heavy language runners for LRU eviction
+const activeHeavyRunners: string[] = [];
+
+export function notifyLanguageActivated(id: string): void {
+  const meta = metadataMap.get(id);
+  if (!meta || meta.weight !== 'heavy') return;
+
+  const idx = activeHeavyRunners.indexOf(id);
+  if (idx !== -1) {
+    activeHeavyRunners.splice(idx, 1);
+  }
+  activeHeavyRunners.push(id);
+
+  const maxAllowed = isMobileDevice() ? 1 : 2;
+
+  while (activeHeavyRunners.length > maxAllowed) {
+    const oldestId = activeHeavyRunners.shift();
+    if (oldestId && oldestId !== id) {
+      const runner = runnerCache.get(oldestId);
+      if (runner && typeof runner.terminate === 'function') {
+        try {
+          runner.terminate();
+        } catch (err) {
+          console.warn(`[LanguageRegistry] Failed to terminate evicted runner '${oldestId}':`, err);
+        }
+      }
+    }
+  }
+}
+
 export function getEnabledLanguages(): LanguageMetadata[] {
   return enabledLanguageIds
     .map(id => metadataMap.get(id))
@@ -89,6 +147,8 @@ export function getLoadedLanguageRunner(id: string): CodeRunner | null {
   return runnerCache.get(id) || null;
 }
 
+setLanguageRunnerLookup(getLoadedLanguageRunner);
+
 export async function loadLanguageRunner(id: string): Promise<CodeRunner> {
   if (!enabledLanguageIds.includes(id)) {
     throw new Error(
@@ -96,6 +156,8 @@ export async function loadLanguageRunner(id: string): Promise<CodeRunner> {
       `Enabled languages: ${enabledLanguageIds.join(', ')}`
     );
   }
+
+  notifyLanguageActivated(id);
 
   if (runnerCache.has(id)) {
     return runnerCache.get(id)!;
@@ -138,13 +200,9 @@ export function getLanguageLinter(id: string): Extension | undefined {
   if (linterMap.has(id)) {
     return linterMap.get(id);
   }
-  const runner = runnerCache.get(id);
-  if (runner && typeof runner.lint === 'function') {
-    const autoLinter = createLanguageLinter(runner, id);
-    linterMap.set(id, autoLinter);
-    return autoLinter;
-  }
-  return undefined;
+  const autoLinter = createLanguageLinter(() => getLoadedLanguageRunner(id), id);
+  linterMap.set(id, autoLinter);
+  return autoLinter;
 }
 
 export function getLanguageExtension(id: string): Extension {
@@ -156,30 +214,62 @@ export function getLanguageExtension(id: string): Extension {
   return extensions;
 }
 
-let isPrewarming = false;
-
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const prefetchedUrls = new Set<string>();
 
-export async function prewarmBackgroundLanguages(activeLangId?: string): Promise<void> {
-  if (isPrewarming) return;
-  isPrewarming = true;
+function prefetchUrl(url: string): void {
+  if (!url || prefetchedUrls.has(url) || typeof document === 'undefined') return;
+  prefetchedUrls.add(url);
+  try {
+    if ('fetch' in window) {
+      fetch(url, { mode: 'cors', priority: 'low' as any }).catch(() => {});
+    } else {
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.href = url;
+      document.head.appendChild(link);
+    }
+  } catch { }
+}
+
+let isPrefetching = false;
+
+/**
+ * Downloads adapter bundles and CDN compiler assets into browser HTTP cache
+ * during browser idle time, without creating Web Workers or allocating WebAssembly RAM.
+ */
+export async function prefetchInactiveLanguageAssets(activeLangId?: string): Promise<void> {
+  if (isPrefetching) return;
+  isPrefetching = true;
 
   const activeId = activeLangId || defaultLanguageId;
   const otherLangIds = enabledLanguageIds.filter(id => id !== activeId);
 
   for (const langId of otherLangIds) {
     try {
-      // Yield to browser event loop before initializing next worker
-      await sleep(150);
-      const runner = await loadLanguageRunner(langId);
-      if (runner.whenReady) {
-        await runner.whenReady();
-      } else {
-        await runner.isReady();
+      await sleep(200);
+
+      // 1. Prefetch the dynamic adapter JS module (adapter is lazy, so no worker is spawned)
+      const adapterPath = `./${langId}/adapter.ts`;
+      const importFn = adapterModules[adapterPath];
+      if (importFn) {
+        await importFn().catch(() => {});
+      }
+
+      // 2. Prefetch heavy external CDN compiler scripts declared in metadata
+      const meta = metadataMap.get(langId);
+      if (meta?.prefetchUrls) {
+        for (const url of meta.prefetchUrls) {
+          prefetchUrl(url);
+        }
       }
     } catch (err) {
-      console.warn(`[LanguageRegistry] Background pre-warm for '${langId}' deferred:`, err);
+      console.warn(`[LanguageRegistry] Asset prefetch for '${langId}' deferred:`, err);
     }
   }
+}
+
+export async function prewarmBackgroundLanguages(activeLangId?: string): Promise<void> {
+  return prefetchInactiveLanguageAssets(activeLangId);
 }
 

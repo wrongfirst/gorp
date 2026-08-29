@@ -62,11 +62,22 @@ export function convertDiagnostics(
   return result;
 }
 
+export type RunnerOrGetter =
+  | { lint?: (code: string) => Promise<DiagnosticItem[]> }
+  | CodeRunner
+  | (() => ({ lint?: (code: string) => Promise<DiagnosticItem[]> } | CodeRunner | null | undefined));
+
+let dynamicRunnerLookup: ((id: string) => CodeRunner | null) | null = null;
+
+export function setLanguageRunnerLookup(lookup: (id: string) => CodeRunner | null) {
+  dynamicRunnerLookup = lookup;
+}
+
 /**
- * Creates a standard CodeMirror lint Extension for any CodeRunner that supports .lint(code).
+ * Creates a standard CodeMirror lint Extension for any CodeRunner (or runner getter) that supports .lint(code).
  */
 export function createLanguageLinter(
-  runner: { lint?: (code: string) => Promise<DiagnosticItem[]> } | CodeRunner,
+  runnerOrGetter: RunnerOrGetter,
   langId: string,
   options?: { delay?: number }
 ): Extension {
@@ -74,7 +85,16 @@ export function createLanguageLinter(
   return linter(
     async (view) => {
       const code = view.state.doc.toString();
-      if (!code.trim() || !runner.lint) return [];
+      if (!code.trim()) return [];
+
+      const runner = typeof runnerOrGetter === 'function' ? runnerOrGetter() : runnerOrGetter;
+      if (!runner || typeof runner.lint !== 'function') return [];
+
+      // If runner has a getStatus method, ensure it is ready before invoking lint
+      if (typeof (runner as any).getStatus === 'function') {
+        const status = (runner as any).getStatus();
+        if (status !== 'ready') return [];
+      }
 
       try {
         const items = await runner.lint(code);
@@ -86,4 +106,11 @@ export function createLanguageLinter(
     },
     { delay }
   );
+}
+
+/**
+ * Creates a lazy dynamic linter for a language ID without requiring static adapter imports.
+ */
+export function createDynamicLanguageLinter(langId: string, options?: { delay?: number }): Extension {
+  return createLanguageLinter(() => (dynamicRunnerLookup ? dynamicRunnerLookup(langId) : null), langId, options);
 }

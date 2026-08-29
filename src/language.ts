@@ -59,15 +59,28 @@ export const activeRunner: CodeRunner = {
             currentLangId = langId;
 
             try {
-                // Emit loading immediately while fetching adapter
                 const existingRunner = getLoadedLanguageRunner(langId);
-                if (existingRunner?.subscribeStatus) {
-                    currentRunnerUnsub = existingRunner.subscribeStatus(listener);
+                if (existingRunner) {
+                    if (existingRunner.subscribeStatus) {
+                        currentRunnerUnsub = existingRunner.subscribeStatus(listener);
+                    }
+                    if (existingRunner.whenReady) {
+                        existingRunner.whenReady().catch(() => { });
+                    } else if ((existingRunner as any).ensureWorker) {
+                        (existingRunner as any).ensureWorker();
+                    }
                 } else {
                     listener('loading', null);
                     const runner = await loadLanguageRunner(langId);
-                    if (currentLangId === langId && runner.subscribeStatus) {
-                        currentRunnerUnsub = runner.subscribeStatus(listener);
+                    if (currentLangId === langId) {
+                        if (runner.subscribeStatus) {
+                            currentRunnerUnsub = runner.subscribeStatus(listener);
+                        }
+                        if (runner.whenReady) {
+                            runner.whenReady().catch(() => { });
+                        } else if ((runner as any).ensureWorker) {
+                            (runner as any).ensureWorker();
+                        }
                     }
                 }
             } catch (err: any) {

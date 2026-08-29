@@ -1,4 +1,4 @@
 import { createDynamicLanguageLinter } from '../lint-helper';
  
-export const lintExtension = createDynamicLanguageLinter('typescript');
+export const lintExtension = createDynamicLanguageLinter('c');
 export default lintExtension;

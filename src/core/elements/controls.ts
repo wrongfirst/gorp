@@ -9,5 +9,6 @@ export const controlElements = {
     get settingsBtn() { return byId<HTMLButtonElement>('settings-btn'); },
     get resetProgressBtn() { return byId<HTMLButtonElement>('reset-progress-btn'); },
     get languageSelectorContainer() { return byId('language-selector-container'); },
+    get editorTitle() { return byId('editor-title'); },
 };
 

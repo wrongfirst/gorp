@@ -5,6 +5,7 @@ export const metadata: LanguageMetadata = {
   name: 'Markdown',
   extension: '.md',
   cmLanguage: 'markdown',
+  weight: 'light'
 };
 
 export default metadata;

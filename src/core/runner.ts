@@ -24,7 +24,7 @@ class Orchestrator {
                     this.isReady = true;
                     status.setReady();
                     this.setRunningState(this.isRunning);
-                } else if (runnerStatus === 'loading') {
+                } else if (runnerStatus === 'loading' || runnerStatus === 'idle') {
                     this.isReady = false;
                     const langName = activeRunner.name || 'runtime';
                     const capitalizedLang = langName.charAt(0).toUpperCase() + langName.slice(1);
