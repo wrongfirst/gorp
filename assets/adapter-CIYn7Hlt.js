@@ -1,0 +1,1 @@
+import{t as e}from"./base-adapter-BeNSAm5t.js";var t=e(`c`,()=>new Worker(new URL(``+new URL(`worker-rBsTe40d.js`,import.meta.url).href,``+import.meta.url),{type:`module`}));export{t as default,t as runner};

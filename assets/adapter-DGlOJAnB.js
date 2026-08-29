@@ -1,0 +1,1 @@
+import{t as e}from"./base-adapter-BeNSAm5t.js";var t=e(`go`,()=>new Worker(new URL(``+new URL(`worker-Dkvave30.js`,import.meta.url).href,``+import.meta.url),{type:`module`}));export{t as default,t as runner};
