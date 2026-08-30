@@ -9,8 +9,12 @@ gorp/
 ├── bin/              # Directory for compiled binaries
 │   └── gorp          # Built executable binary
 ├── go.mod            # Go module definition
-└── main.go           # CLI entry point
+├── main.go           # CLI entry point
+└── matcher.go        # Pattern matching logic (added in subsequent exercises)
 ```
+
+> [!TIP]
+> As your project grows across chapters, you can organize your logic across multiple files (such as `matcher.go` for regex algorithms, or sub-packages). Go packages allow functions across files in the same package (like `package main`) to call each other directly without imports.
 
 ## Local Setup Guide
 
@@ -46,9 +50,9 @@ func main() {
 ```
 
 ### 5. Build and Run Your Binary
-Compile the binary directly into the `bin/` folder:
+Compile the entire project directly into the `bin/` folder using `.` (which compiles all Go files in the root package):
 ```bash
-go build -o bin/gorp main.go
+go build -o bin/gorp .
 ```
 
 Run your newly compiled binary:
