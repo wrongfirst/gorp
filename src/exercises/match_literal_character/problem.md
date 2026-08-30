@@ -2,6 +2,8 @@ The foundational operation of any grep utility is searching through text for mat
 
 Let's implement pattern matching for a single literal character.
 
+You can add the code from this exercise to a new `matcher.go` file in your project directory. We will add in more functions here and then integrate with the `main.go` later on.
+
 ## How Literal Matching Works
 
 When given a pattern consisting of a single character and a target input line:
