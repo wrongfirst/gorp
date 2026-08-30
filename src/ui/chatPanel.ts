@@ -3,7 +3,7 @@ import { store, ChatMessage, ChatConversation } from '../core/store';
 import { ICONS } from './icons';
 import { parseChatMarkdown } from '../core/markdown';
 import { copyToClipboardSafe } from '../core/clipboard';
-import { streamCompletion, StreamStatus } from '../core/chat/client';
+import { streamCompletion, StreamStatus, generateConversationTitle } from '../core/chat/client';
 import { flushAutoSave } from '../core/editor';
 
 export interface QuickStart {
@@ -641,6 +641,31 @@ function handleRetryFailedMessage(errorMsgId: string) {
   scrollToBottom(true);
 }
 
+async function handleChatCommand(rawInput: string, currentExId: string, convId: string): Promise<boolean> {
+  const trimmed = rawInput.trim();
+  const renameMatch = trimmed.match(/^\/rename(?:\s+(.+))?$/i);
+  if (renameMatch) {
+    const manualTitle = renameMatch[1]?.trim();
+    if (manualTitle) {
+      const sanitized = manualTitle.replace(/[#*_`]/g, '').trim().slice(0, 24);
+      if (sanitized) {
+        store.getState().updateConversationTitle(currentExId, convId, sanitized);
+      }
+    } else {
+      generateConversationTitle(convId)
+        .then((aiTitle) => {
+          if (aiTitle) {
+            store.getState().updateConversationTitle(currentExId, convId, aiTitle);
+          }
+        })
+        .catch(() => {});
+    }
+    return true;
+  }
+
+  return false;
+}
+
 async function submitUserMessage() {
   const input = elements.chat.input;
   if (!input) return;
@@ -670,6 +695,16 @@ async function submitUserMessage() {
   }
 
   const convId = activeConv.id;
+
+  // Intercept slash commands (e.g. /rename) without adding to message history
+  if (content.startsWith('/')) {
+    const isCommandHandled = await handleChatCommand(content, currentExId, convId);
+    if (isCommandHandled) {
+      input.value = '';
+      handleInputResize();
+      return;
+    }
+  }
 
   if (activeStreams.has(convId)) {
     abortCurrentGeneration(convId);

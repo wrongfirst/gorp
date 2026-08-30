@@ -229,3 +229,110 @@ export function getModelsUrl(baseUrl: string): string {
   return `${clean}/models`;
 }
 
+/**
+ * Generates a concise topic title for an existing conversation using the configured AI endpoint.
+ * Used by the automated `/rename` slash command without adding messages to chat history.
+ */
+export async function generateConversationTitle(conversationId: string): Promise<string | null> {
+  const state = store.getState();
+  const settings = state.chatSettings;
+  const { activeLessonSlug } = state;
+
+  if (!settings?.enabled || !settings.baseUrl || !settings.model) {
+    return null;
+  }
+
+  const convs = state.chatConversations[activeLessonSlug] || [];
+  const activeConv = convs.find(c => c.id === conversationId);
+  const history = (activeConv?.messages || [])
+    .filter(m => m.role === 'user' || m.role === 'assistant')
+    .map(m => ({ role: m.role, content: m.content }));
+
+  if (history.length === 0) {
+    return 'Chat';
+  }
+
+  const endpoint = getChatCompletionsUrl(settings.baseUrl);
+  const rawKey = settings.apiKey || '';
+  const resolvedKey = (await decryptSecret(rawKey)).trim();
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (resolvedKey) {
+    headers['Authorization'] = `Bearer ${resolvedKey}`;
+  }
+  if (settings.baseUrl.includes('anthropic.com')) {
+    headers['anthropic-dangerous-direct-browser-access'] = 'true';
+  }
+
+  const messages = [
+    {
+      role: 'system',
+      content:
+        'You are a concise conversation summarizer. Output a 1-3 word topic title summarizing the user discussion enclosed in <title>...</title> tags (e.g. <title>Binary Search</title>). Respond ONLY with the title tags, no other text.',
+    },
+    ...history,
+    {
+      role: 'user',
+      content: 'Summarize the topic of this conversation in a 1-3 word title enclosed in <title>...</title> tags.',
+    },
+  ];
+
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        model: settings.model,
+        messages,
+        temperature: 0.3,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const text = await response.text();
+    let rawContent = '';
+    try {
+      const data = JSON.parse(text);
+      const choice = data.choices?.[0];
+      rawContent = choice?.message?.content || choice?.text || '';
+      // Fallback if model output is in reasoning_content
+      if (!rawContent.trim() && choice?.message?.reasoning_content) {
+        const rMatch = choice.message.reasoning_content.match(/<title>([^<]*)<\/title>/i);
+        if (rMatch) {
+          rawContent = rMatch[0];
+        }
+      }
+    } catch {
+      // In case the endpoint returned SSE streaming text even without stream: true
+      const lines = text.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data:') && !line.includes('[DONE]')) {
+          try {
+            const parsed = JSON.parse(line.slice(5).trim());
+            rawContent += parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || '';
+          } catch {}
+        }
+      }
+    }
+
+    const match = rawContent.match(/<title>([^<]*)<\/title>/i) || rawContent.match(/^\s*<title>([^<]*)<\/title>/i);
+    let title: string | null = null;
+    if (match) {
+      title = match[1].trim().replace(/[#*_`]/g, '').slice(0, 24);
+    } else if (rawContent.trim()) {
+      title = rawContent.trim().replace(/[#*_`]/g, '').replace(/^title:\s*/i, '').slice(0, 24);
+    }
+
+    return title || null;
+  } catch {
+    return null;
+  }
+}
+
+

@@ -21,10 +21,10 @@ logo_emoji = "📓"
 # `logo_image`: Path to optional image logo (uncomment to override logo_emoji)
 # logo_image = "/public/logo.png"
 
-# Meta & SEO
+# Meta & SEO (optional overrides; autopopulated from title, subtitle & languages by default)
 headline = "codebook | in-browser programming exercises"
-description = "Interactive coding exercises in the browser. By wrongfirst.dev"
-keywords = "codebook, interactive exercises, web-based compiler, wrongfirst"
+description = "Interactive programming exercises in the browser"
+keywords = ""
 
 # Open Graph Preview Image (uncomment to enable)
 # og_image = "/public/og_preview.png"

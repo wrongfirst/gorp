@@ -5,15 +5,17 @@ Instructions for syncing upstream template changes into an instance of this repo
 ## 1. Add Template Remote (One-Time Setup)
 
 ```bash
-git remote add template https://github.com/jitinnair1/codebook.git
+git remote add upstream https://github.com/wrongfirst/codebook.git
 ```
 
 ## 2. Fetch and Merge Upstream Changes
 
 ```bash
-git fetch template
-git merge template/main --allow-unrelated-histories
+git fetch upstream template
+git merge upstream/template
 ```
+
+NOTE: The first you you merge you might want to run it with `--allow-unrelated-histories`
 
 ## 3. Resolve Conflicts and Commit
 

@@ -143,9 +143,25 @@ function htmlMetaPlugin(): Plugin {
     transformIndexHtml(html) {
       try {
         const siteConfig = getSiteConfig();
-        const { title, subtitle, headline, description, keywords, og_image, logo_emoji } = siteConfig;
+        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji } = siteConfig;
 
         const pageTitle = headline || (subtitle ? `${title} | ${subtitle}` : title);
+        const pageDescription = description || `Interactive programming exercises in the browser`;
+        const pageKeywords =
+          keywords ||
+          Array.from(
+            new Set(
+              [
+                title,
+                subtitle,
+                "programming exercises",
+                "interactive exercises",
+                "in-browser programming",
+                "web-based compiler",
+                ...(Array.isArray(languages) ? languages : []),
+              ].filter(Boolean)
+            )
+          ).join(", ");
 
         let res = html;
         res = res.replace(/(<h1 id="header-title"[^>]*>).*?(<\/h1>)/s, `$1${title}$2`);
@@ -153,12 +169,12 @@ function htmlMetaPlugin(): Plugin {
         res = res.replace(/(<div [^>]*id="header-logo"[^>]*>).*?(<\/div>)/s, `$1${logo_emoji}$2`);
         res = res.replace(/<title>.*<\/title>/, `<title>${pageTitle}</title>`);
         res = res.replace("</head>", `  <meta property="og:title" content="${pageTitle}">\n</head>`);
-        if (description) {
-          res = res.replace("</head>", `  <meta name="description" content="${description}">\n</head>`);
-          res = res.replace("</head>", `  <meta property="og:description" content="${description}">\n</head>`);
+        if (pageDescription) {
+          res = res.replace("</head>", `  <meta name="description" content="${pageDescription}">\n</head>`);
+          res = res.replace("</head>", `  <meta property="og:description" content="${pageDescription}">\n</head>`);
         }
-        if (keywords) {
-          res = res.replace("</head>", `  <meta name="keywords" content="${keywords}">\n</head>`);
+        if (pageKeywords) {
+          res = res.replace("</head>", `  <meta name="keywords" content="${pageKeywords}">\n</head>`);
         }
         if (og_image) {
           res = res.replace("</head>", `  <meta property="og:image" content="${og_image}">\n</head>`);
