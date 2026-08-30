@@ -105,29 +105,64 @@ export function isMobileDevice(): boolean {
 
 // Track active heavy language runners for LRU eviction
 const activeHeavyRunners: string[] = [];
+const evictionTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+const EASING_GRACE_PERIOD_MS = 300_000; // 300 seconds (5 minutes)
+
+function terminateRunner(id: string): void {
+  const timer = evictionTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    evictionTimers.delete(id);
+  }
+
+  const idx = activeHeavyRunners.indexOf(id);
+  if (idx !== -1) {
+    activeHeavyRunners.splice(idx, 1);
+  }
+
+  const runner = runnerCache.get(id);
+  if (runner && typeof runner.terminate === 'function') {
+    try {
+      runner.terminate();
+    } catch (err) {
+      console.warn(`[LanguageRegistry] Failed to terminate runner '${id}':`, err);
+    }
+  }
+}
 
 export function notifyLanguageActivated(id: string): void {
   const meta = metadataMap.get(id);
   if (!meta || meta.weight !== 'heavy') return;
 
+  // 1. Cancel any pending eviction timer for this re-activated language
+  if (evictionTimers.has(id)) {
+    clearTimeout(evictionTimers.get(id));
+    evictionTimers.delete(id);
+  }
+
+  // 2. Move activated language to the end of MRU list
   const idx = activeHeavyRunners.indexOf(id);
   if (idx !== -1) {
     activeHeavyRunners.splice(idx, 1);
   }
   activeHeavyRunners.push(id);
 
-  const maxAllowed = isMobileDevice() ? 1 : 2;
-
-  while (activeHeavyRunners.length > maxAllowed) {
-    const oldestId = activeHeavyRunners.shift();
-    if (oldestId && oldestId !== id) {
-      const runner = runnerCache.get(oldestId);
-      if (runner && typeof runner.terminate === 'function') {
-        try {
-          runner.terminate();
-        } catch (err) {
-          console.warn(`[LanguageRegistry] Failed to terminate evicted runner '${oldestId}':`, err);
-        }
+  // 3. Schedule 5-minute grace-period easing for inactive runners exceeding steady limit
+  const steadyLimit = isMobileDevice() ? 1 : 2;
+  const excessCount = activeHeavyRunners.length - steadyLimit;
+  if (excessCount > 0) {
+    for (let i = 0; i < excessCount; i++) {
+      const candidateId = activeHeavyRunners[i];
+      if (candidateId && candidateId !== id && !evictionTimers.has(candidateId)) {
+        const timer = setTimeout(() => {
+          evictionTimers.delete(candidateId);
+          const currentIdx = activeHeavyRunners.indexOf(candidateId);
+          if (currentIdx !== -1 && currentIdx < activeHeavyRunners.length - steadyLimit) {
+            terminateRunner(candidateId);
+          }
+        }, EASING_GRACE_PERIOD_MS);
+        evictionTimers.set(candidateId, timer);
       }
     }
   }
@@ -156,8 +191,6 @@ export async function loadLanguageRunner(id: string): Promise<CodeRunner> {
       `Enabled languages: ${enabledLanguageIds.join(', ')}`
     );
   }
-
-  notifyLanguageActivated(id);
 
   if (runnerCache.has(id)) {
     return runnerCache.get(id)!;

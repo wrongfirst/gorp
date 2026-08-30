@@ -28,13 +28,14 @@ export interface ActiveStreamSession {
 }
 
 const activeStreams = new Map<string, ActiveStreamSession>();
-
+const activeRenames = new Set<string>();
 
 export function abortAllStreams() {
   for (const session of activeStreams.values()) {
     session.abortController.abort();
   }
   activeStreams.clear();
+  activeRenames.clear();
 }
 
 let lastRenderedExerciseId: string | null = null;
@@ -211,8 +212,14 @@ export function renderConversationTabs() {
     const isActive = conv.id === activeId;
     const title = conv.title || 'Chat';
     const isStreaming = activeStreams.has(conv.id);
+    const isRenaming = activeRenames.has(conv.id);
     const hasUnread = !isActive && !!conv.unread;
-    const showDot = !isActive && (hasUnread || isStreaming);
+    const showDot = isRenaming || (!isActive && (hasUnread || isStreaming));
+    const dotTooltip = isRenaming
+      ? 'Generating title...'
+      : isStreaming
+      ? 'Generating response...'
+      : 'Unread message';
 
     const baseClasses = "group relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded transition-all cursor-pointer select-none shrink-0 border";
     const activeClasses = isActive
@@ -223,7 +230,7 @@ export function renderConversationTabs() {
       <div data-conv-id="${conv.id}"
         class="chat-tab-item ${baseClasses} ${activeClasses}"
         title="${escapeHtml(title)} (${conv.languageId})">
-        ${showDot ? `<span class="w-1.5 h-1.5 rounded-full bg-brand shrink-0 ${isStreaming ? 'animate-pulse' : ''}" title="${isStreaming ? 'Generating response...' : 'Unread message'}"></span>` : ''}
+        ${showDot ? `<span class="w-1.5 h-1.5 rounded-full bg-brand shrink-0 ${isStreaming || isRenaming ? 'animate-pulse' : ''}" title="${dotTooltip}"></span>` : ''}
         <span class="truncate max-w-[80px] sm:max-w-[110px]">${escapeHtml(title)}</span>
         <button type="button"
           data-close-conv-id="${conv.id}"
@@ -652,13 +659,19 @@ async function handleChatCommand(rawInput: string, currentExId: string, convId: 
         store.getState().updateConversationTitle(currentExId, convId, sanitized);
       }
     } else {
+      activeRenames.add(convId);
+      renderConversationTabs();
       generateConversationTitle(convId)
         .then((aiTitle) => {
           if (aiTitle) {
             store.getState().updateConversationTitle(currentExId, convId, aiTitle);
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => {
+          activeRenames.delete(convId);
+          renderConversationTabs();
+        });
     }
     return true;
   }

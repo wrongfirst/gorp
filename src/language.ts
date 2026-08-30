@@ -1,5 +1,5 @@
 import { store } from './core/store';
-import { loadLanguageRunner, getLoadedLanguageRunner, defaultLanguageId, getLanguageMetadata } from './languages/language-registry';
+import { loadLanguageRunner, getLoadedLanguageRunner, defaultLanguageId, getLanguageMetadata, notifyLanguageActivated } from './languages/language-registry';
 import type { CodeRunner, RunnerStatus } from './core/types';
 
 export function getActiveLanguageId(): string {
@@ -48,6 +48,7 @@ export const activeRunner: CodeRunner = {
     subscribeStatus(listener: (status: RunnerStatus, error?: string | null) => void): () => void {
         let currentRunnerUnsub: (() => void) | null = null;
         let currentLangId = getActiveLanguageId();
+        let attachSeq = 0;
 
         const attachToCurrentLanguage = async () => {
             if (currentRunnerUnsub) {
@@ -57,34 +58,25 @@ export const activeRunner: CodeRunner = {
 
             const langId = getActiveLanguageId();
             currentLangId = langId;
+            const seq = ++attachSeq;
+
+            // Notify LRU that this language is now active (cancels any pending eviction timer)
+            notifyLanguageActivated(langId);
 
             try {
                 const existingRunner = getLoadedLanguageRunner(langId);
-                if (existingRunner) {
-                    if (existingRunner.subscribeStatus) {
-                        currentRunnerUnsub = existingRunner.subscribeStatus(listener);
-                    }
-                    if (existingRunner.whenReady) {
-                        existingRunner.whenReady().catch(() => { });
-                    } else if ((existingRunner as any).ensureWorker) {
-                        (existingRunner as any).ensureWorker();
-                    }
-                } else {
+                const runner = existingRunner || await (async () => {
                     listener('loading', null);
-                    const runner = await loadLanguageRunner(langId);
-                    if (currentLangId === langId) {
-                        if (runner.subscribeStatus) {
-                            currentRunnerUnsub = runner.subscribeStatus(listener);
-                        }
-                        if (runner.whenReady) {
-                            runner.whenReady().catch(() => { });
-                        } else if ((runner as any).ensureWorker) {
-                            (runner as any).ensureWorker();
-                        }
-                    }
+                    return loadLanguageRunner(langId);
+                })();
+
+                if (seq !== attachSeq) return;
+
+                if (runner.subscribeStatus) {
+                    currentRunnerUnsub = runner.subscribeStatus(listener);
                 }
             } catch (err: any) {
-                if (currentLangId === langId) {
+                if (seq === attachSeq) {
                     listener('error', err?.message || String(err));
                 }
             }

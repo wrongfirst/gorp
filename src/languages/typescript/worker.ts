@@ -51,6 +51,22 @@ async function loadTypeScriptCompiler(): Promise<any> {
   return (self as any).ts;
 }
 
+function createSafeCompilerHost(system: any, compilerOptions: any, ts: any) {
+  const host = tsvfs.createVirtualCompilerHost(system, compilerOptions, ts);
+  return {
+    ...host.compilerHost,
+    getSourceFile: (fileName: string, languageVersionOrOptions?: any) => {
+      const text = system.readFile(fileName);
+      if (typeof text !== 'string') return undefined;
+      try {
+        return host.compilerHost.getSourceFile(fileName, languageVersionOrOptions);
+      } catch {
+        return undefined;
+      }
+    },
+  };
+}
+
 createWorkerHandler({
   async init() {
     ts = await loadTypeScriptCompiler();
@@ -93,6 +109,13 @@ createWorkerHandler({
       customFetcher,
       storer
     );
+
+    // Remove DOM definitions to prevent collision with algorithmic structures like `class Node`
+    for (const key of Array.from(cachedFsMap.keys())) {
+      if (key.includes('dom') || key.includes('scripthost') || key.includes('webworker')) {
+        cachedFsMap.delete(key);
+      }
+    }
   },
 
   async execute(userCode: string, testCode: string = '') {
@@ -131,11 +154,11 @@ createWorkerHandler({
       fsMap.set('/index.ts', combinedSource);
 
       const system = tsvfs.createSystem(fsMap);
-      const host = tsvfs.createVirtualCompilerHost(system, compilerOptions, ts);
+      const safeHost = createSafeCompilerHost(system, compilerOptions, ts);
       const program = ts.createProgram({
         rootNames: ['/index.ts'],
         options: compilerOptions,
-        host: host.compilerHost,
+        host: safeHost,
       });
 
       const syntacticDiagnostics = program.getSyntacticDiagnostics();
@@ -151,6 +174,9 @@ createWorkerHandler({
 
         if (d.file && d.start !== undefined) {
           const { line, character } = d.file.getLineAndCharacterOfPosition(d.start);
+          if (line < harnessLines) {
+            continue;
+          }
           let loc = `Line ${line + 1}:${character + 1}`;
           if (line >= harnessLines && line < harnessLines + userLines) {
             loc = `Line ${line - harnessLines + 1}:${character + 1}`;
@@ -235,11 +261,11 @@ createWorkerHandler({
       };
 
       const system = tsvfs.createSystem(fsMap);
-      const host = tsvfs.createVirtualCompilerHost(system, compilerOptions, ts);
+      const safeHost = createSafeCompilerHost(system, compilerOptions, ts);
       const program = ts.createProgram({
         rootNames: ['/index.ts', '/harness.ts'],
         options: compilerOptions,
-        host: host.compilerHost,
+        host: safeHost,
       });
 
       const syntacticDiagnostics = program.getSyntacticDiagnostics();
@@ -275,3 +301,4 @@ createWorkerHandler({
     }
   }
 });
+

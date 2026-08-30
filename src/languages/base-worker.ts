@@ -46,19 +46,26 @@ export function createWorkerHandler(engine: WorkerEngine): void {
   const cancelledRequestIds = new Set<string>();
   let latestQueuedLintId: string | null = null;
 
+  let initDone = false;
+  let initError: Error | null = null;
+
   // Initialize engine on worker startup
-  Promise.resolve()
-    .then(() => engine.init?.())
-    .then(() => {
+  const initPromise = (async () => {
+    try {
+      if (engine.init) {
+        await engine.init();
+      }
+      initDone = true;
       send({ type: 'READY' });
-    })
-    .catch((err: any) => {
+    } catch (err: any) {
       console.error('[Worker Init Error]:', err);
+      initError = err instanceof Error ? err : new Error(String(err));
       send({
         type: 'INIT_ERROR',
         error: err?.message || String(err)
       });
-    });
+    }
+  })();
 
   async function processRun(msg: WorkerRunMessage) {
     const { id, userCode, testCode = '' } = msg;
@@ -175,6 +182,38 @@ export function createWorkerHandler(engine: WorkerEngine): void {
     isProcessing = true;
 
     try {
+      if (!initDone && !initError) {
+        await initPromise;
+      }
+
+      if (initError) {
+        // If engine init failed, reject all queued requests cleanly
+        while (messageQueue.length > 0) {
+          const msg = messageQueue.shift()!;
+          if (msg.type === 'RUN') {
+            send({
+              type: 'RESULT',
+              id: msg.id,
+              success: false,
+              output: '',
+              error: initError.message || 'Worker initialization failed.'
+            });
+          } else if (msg.type === 'LINT') {
+            send({
+              type: 'LINT_RESULT',
+              id: msg.id,
+              diagnostics: []
+            });
+          } else if (msg.type === 'RESET') {
+            send({
+              type: 'RESET_DONE',
+              id: msg.id
+            });
+          }
+        }
+        return;
+      }
+
       while (messageQueue.length > 0) {
         const msg = messageQueue.shift()!;
 

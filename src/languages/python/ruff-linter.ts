@@ -22,6 +22,7 @@ export async function initRuffLinter(): Promise<Workspace> {
     const workspace = new Workspace({
       'line-length': 88,
       'indent-width': 4,
+      'target-version': 'py310',
       format: {
         'indent-style': 'space',
         'quote-style': 'double',
@@ -37,7 +38,9 @@ export async function initRuffLinter(): Promise<Workspace> {
           'UP', // Pyupgrade (modern Python syntax)
         ],
         ignore: [],
+        builtins: ['TreeNode', 'ListNode', 'Node', 'Interval', 'Tests'],
       },
+      builtins: ['TreeNode', 'ListNode', 'Node', 'Interval', 'Tests'],
     });
 
     ruffWorkspace = workspace;

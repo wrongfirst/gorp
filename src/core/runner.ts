@@ -67,6 +67,8 @@ class Orchestrator {
         const currentEx = exercises.find(e => e.id === activeLessonSlug);
         if (!currentEx) return;
 
+        const targetLessonSlug = activeLessonSlug;
+        const targetLanguageId = currentLanguageId;
         const exerciseVariant = getExerciseVariant(currentEx, currentLanguageId);
 
         //prepare ui
@@ -82,6 +84,12 @@ class Orchestrator {
             //run via adapter
             const finalTestCode = exerciseVariant.testCode || "";
             const result = await activeRunner.run(userCode, finalTestCode);
+
+            // If user switched exercise or language while running, discard stale result
+            const currentState = store.getState();
+            if (currentState.activeLessonSlug !== targetLessonSlug || currentState.currentLanguageId !== targetLanguageId) {
+                return;
+            }
 
             //handle result
             if (!result.success) {
@@ -112,7 +120,10 @@ class Orchestrator {
             this.handleSuccess(currentEx.id, completedSlugs);
 
         } catch (e: any) {
-            this.handleError(e.message);
+            const currentState = store.getState();
+            if (currentState.activeLessonSlug === targetLessonSlug && currentState.currentLanguageId === targetLanguageId) {
+                this.handleError(e.message);
+            }
         } finally {
             this.setRunningState(false);
         }

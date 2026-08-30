@@ -1,11 +1,11 @@
-from typing import Optional, Any
+from __future__ import annotations
 import collections
 from collections import defaultdict, deque, Counter
 import heapq
 import math
 
 class ListNode:
-    def __init__(self, val: int = 0, next: Optional['ListNode'] = None):
+    def __init__(self, val: int = 0, next: ListNode | None = None):
         self.val = val
         self.next = next
 
@@ -13,7 +13,7 @@ class ListNode:
         return f"ListNode({self.val})"
 
 class TreeNode:
-    def __init__(self, val: int = 0, left: Optional['TreeNode'] = None, right: Optional['TreeNode'] = None):
+    def __init__(self, val: int = 0, left: TreeNode | None = None, right: TreeNode | None = None):
         self.val = val
         self.left = left
         self.right = right
@@ -25,10 +25,10 @@ class Node:
     def __init__(
         self,
         val: int = 0,
-        neighbors: Optional[list['Node']] = None,
-        next: Optional['Node'] = None,
-        random: Optional['Node'] = None,
-        prev: Optional['Node'] = None,
+        neighbors: list[Node] | None = None,
+        next: Node | None = None,
+        random: Node | None = None,
+        prev: Node | None = None,
     ):
         self.val = val
         self.neighbors = neighbors if neighbors is not None else []
@@ -48,7 +48,7 @@ class Interval:
         return f"Interval({self.start}, {self.end})"
 
 
-def list_to_linked_list(arr: list[int]) -> Optional[ListNode]:
+def list_to_linked_list(arr: list[int]) -> ListNode | None:
     if not arr:
         return None
     head = ListNode(arr[0])
@@ -58,7 +58,7 @@ def list_to_linked_list(arr: list[int]) -> Optional[ListNode]:
         curr = curr.next
     return head
 
-def linked_list_to_list(head: Optional[ListNode]) -> list[int]:
+def linked_list_to_list(head: ListNode | None) -> list[int]:
     res = []
     curr = head
     seen = set()
@@ -70,7 +70,7 @@ def linked_list_to_list(head: Optional[ListNode]) -> list[int]:
         curr = curr.next
     return res
 
-def list_to_tree(arr: list[Optional[int]]) -> Optional[TreeNode]:
+def list_to_tree(arr: list[int | None]) -> TreeNode | None:
     if not arr or arr[0] is None:
         return None
     root = TreeNode(arr[0])
@@ -88,10 +88,10 @@ def list_to_tree(arr: list[Optional[int]]) -> Optional[TreeNode]:
         i += 1
     return root
 
-def tree_to_list(root: Optional[TreeNode]) -> list[Optional[int]]:
+def tree_to_list(root: TreeNode | None) -> list[int | None]:
     if not root:
         return []
-    res: list[Optional[int]] = []
+    res: list[int | None] = []
     queue = collections.deque([root])
     while queue:
         node = queue.popleft()
@@ -105,7 +105,7 @@ def tree_to_list(root: Optional[TreeNode]) -> list[Optional[int]]:
         res.pop()
     return res
 
-def make_cycle(arr: list[int], pos: int) -> Optional[ListNode]:
+def make_cycle(arr: list[int], pos: int) -> ListNode | None:
     head = list_to_linked_list(arr)
     if pos == -1 or not head:
         return head
@@ -123,16 +123,16 @@ def make_cycle(arr: list[int], pos: int) -> Optional[ListNode]:
         tail.next = target
     return head
 
-def ints_to_tree(*vals: int) -> Optional[TreeNode]:
+def ints_to_tree(*vals: int) -> TreeNode | None:
     if not vals:
         return None
     return list_to_tree(list(vals))
 
-def tree_to_ints(root: Optional[TreeNode]) -> list[int]:
+def tree_to_ints(root: TreeNode | None) -> list[int]:
     raw = tree_to_list(root)
     return [v for v in raw if v is not None]
 
-def build_graph(adj: list[list[int]]) -> Optional[Node]:
+def build_graph(adj: list[list[int]]) -> Node | None:
     if not adj:
         return None
     nodes = [Node(i + 1) for i in range(len(adj))]
@@ -141,7 +141,7 @@ def build_graph(adj: list[list[int]]) -> Optional[Node]:
             nodes[i].neighbors.append(nodes[nei - 1])
     return nodes[0]
 
-def graph_to_adj(node: Optional[Node]) -> list[list[int]]:
+def graph_to_adj(node: Node | None) -> list[list[int]]:
     if not node:
         return []
     visited: dict[int, Node] = {}
@@ -160,7 +160,7 @@ def graph_to_adj(node: Optional[Node]) -> list[list[int]]:
             adj.append([])
     return adj
 
-def normalize_nested(groups: Any) -> Any:
+def normalize_nested(groups: object) -> object:
     if not isinstance(groups, list):
         return groups
     normalized = [normalize_nested(g) for g in groups]

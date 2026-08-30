@@ -189,6 +189,8 @@ export abstract class BaseAdapter implements CodeRunner {
 
   subscribeStatus(listener: (status: RunnerStatus, error?: string | null) => void): () => void {
     this.statusListeners.add(listener);
+    // Ensure worker is booting if currently idle
+    this.ensureWorker();
     // Immediately emit current state to new subscriber
     try {
       listener(this.status, this.initError);
