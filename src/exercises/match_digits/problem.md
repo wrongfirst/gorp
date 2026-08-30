@@ -30,5 +30,7 @@ Implement `matchPattern(line string, pattern string) bool` in the editor on the 
 
 The function should:
 - Return `true` if `pattern` is `\d` and `line` contains any digit (`0`-`9`).
+
+From earlier exercises we already:
 - Return `true` if `pattern` is a single literal character that appears anywhere in `line`.
 - Return `false` otherwise. If `pattern` is empty, return `true`.
