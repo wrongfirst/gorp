@@ -1,0 +1,1 @@
+import{t as e}from"./base-adapter-CjJqLzo9.js";var t=e(`go`,()=>new Worker(new URL(``+new URL(`worker-BijynDO_.js`,import.meta.url).href,``+import.meta.url),{type:`module`}));export{t as default,t as runner};

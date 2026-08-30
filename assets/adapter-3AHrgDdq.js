@@ -1,0 +1,1 @@
+import{t as e}from"./base-adapter-CjJqLzo9.js";var t=e(`markdown`,()=>new Worker(new URL(``+new URL(`worker-BgR5VseY.js`,import.meta.url).href,``+import.meta.url),{type:`module`}));export{t as default,t as runner};

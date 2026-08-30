@@ -1,1 +1,0 @@
-import{t as e}from"./base-adapter-BeNSAm5t.js";var t=e(`cpp`,()=>new Worker(new URL(``+new URL(`worker-GFt62JMI.js`,import.meta.url).href,``+import.meta.url),{type:`module`}));export{t as default,t as runner};
