@@ -1,6 +1,6 @@
 chapters:
   "Getting Started":
-    - hello_world
+    - project_setup
 
   "Pattern Matching Basics":
     - match_literal_character
