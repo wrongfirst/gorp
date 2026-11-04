@@ -1,55 +1,54 @@
 chapters:
-  "Getting Started":
+  "Stage 1: Core Pattern Matcher & Basic CLI":
     - project_setup
-
-  "Pattern Matching Basics":
     - match_literal_character
     - match_digits
     - match_word_characters
     - positive_character_groups
     - negative_character_groups
     - combining_character_classes
-
-  "Anchors & Basic Patterns":
+    - single_character_range
+    - multiple_character_ranges
+    - negated_character_ranges
     - start_of_string_anchor
     - end_of_string_anchor
     - match_one_or_more_times
     - match_zero_or_one_times
     - wildcard
-    - alternation
+    - gorp_basic_cli
 
-  "Extended Quantifiers":
+  "Stage 2: Extended Quantifiers, Captures & Match Extraction":
     - match_zero_or_more_times
     - match_exact_n_times
     - match_at_least_n_times
     - match_between_n_and_m_times
-
-  "Backreferences":
+    - alternation
     - single_backreference
     - multiple_backreferences
     - nested_backreferences
-
-  "Line Processing & Output":
-    - print_single_matching_line
-    - print_multiple_matching_lines
     - print_single_match
     - print_multiple_matches
-    - process_multiple_input_lines
+    - gorp_capture_cli
 
-  "Highlighting":
+  "Stage 3: Highlighting & Terminal Formatting":
+    - print_single_matching_line
+    - print_multiple_matching_lines
     - highlight_single_match
     - highlight_multiple_matches
     - highlight_matches_in_multiple_lines
     - disable_highlighting
     - auto_color_option
+    - gorp_color_cli
 
-  "File Search":
+  "Stage 4: Filesystem Traversal & Multi-File Search":
+    - process_multiple_input_lines
     - search_single_file
     - search_multiline_file
     - search_multiple_files
     - recursive_search
+    - gorp_filesystem_cli
 
-  "Regex Engine Internals":
+  "Stage 5: Regex Engine Internals & Dual-Engine Swap":
     - catastrophic_backtracking_benchmark
     - matcher_interface_refactor
     - regex_tokenization

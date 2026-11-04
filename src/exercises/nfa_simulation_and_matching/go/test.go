@@ -1,0 +1,20 @@
+nfa1, _ := CompileToNFA("ab")
+Tests.EqualCheck("ab anchored match exact", true, SimulateNFA(nfa1, "ab", true))
+Tests.EqualCheck("ab anchored match prefix fail", false, SimulateNFA(nfa1, "a", true))
+Tests.EqualCheck("ab anchored match longer fail", false, SimulateNFA(nfa1, "abc", true))
+Tests.EqualCheck("ab unanchored substring match", true, SimulateNFA(nfa1, "xyzab123", false))
+
+nfa2, _ := CompileToNFA("a(b|c)*d")
+Tests.EqualCheck("a(b|c)*d match ad", true, SimulateNFA(nfa2, "ad", true))
+Tests.EqualCheck("a(b|c)*d match abd", true, SimulateNFA(nfa2, "abd", true))
+Tests.EqualCheck("a(b|c)*d match complex repetition", true, SimulateNFA(nfa2, "abbcbccd", true))
+Tests.EqualCheck("a(b|c)*d mismatch", false, SimulateNFA(nfa2, "abxd", true))
+
+nfa3, _ := CompileToNFA(`\d+\.\w+`)
+Tests.EqualCheck("digit and word classes match", true, SimulateNFA(nfa3, "42.answer", true))
+Tests.EqualCheck("digit class mismatch", false, SimulateNFA(nfa3, "xy.answer", true))
+
+nfaPatho, _ := CompileToNFA("a?a?a?a?a?a?a?a?aaaaaaaa")
+metrics := SimulateNFAWithMetrics(nfaPatho, "aaaaaaaa", true)
+Tests.EqualCheck("pathological pattern matched", true, metrics.Matched)
+Tests.BoolCheck("linear lockstep transitions under 200", metrics.TransitionsTested < 200)

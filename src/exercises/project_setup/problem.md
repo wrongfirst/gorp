@@ -1,68 +1,45 @@
-Let's set up your local development environment and workspace. 
+Let's set up your local development environment and workspace.
 
-## Recommended Project Structure
+## Starter Project Scaffold
 
-When developing command-line utilities locally, organizing your project layout makes compilation, testing, and distribution straightforward.
+To accompany this course, a unified project scaffold is provided. You can download [**`gorp.zip`**](/gorp.zip) directly, which contains the starter directory structure, `Makefile`, package skeletons, and test datasets.
 
 ```text
 gorp/
-├── bin/              # Directory for compiled binaries
-│   └── gorp          # Built executable binary
-├── go.mod            # Go module definition
-├── main.go           # CLI entry point
-└── matcher.go        # Pattern matching logic (added in subsequent exercises)
+├── go.mod                     # Go module definition (Go 1.22+)
+├── Makefile                   # make build, make test, make bench
+├── cmd/
+│   └── gorp/
+│       └── main.go            # CLI entry point
+├── pkg/
+│   ├── matcher/               # Pattern matching engines (Backtracking & Thompson NFA)
+│   ├── display/               # ANSI color formatting & TTY detection
+│   └── search/                # Streaming file reader & recursive directory walker
+└── testdata/
+    ├── sample.txt             # Text verification corpus
+    ├── emails.txt             # Realistic capture group & backreference corpus
+    ├── server.log             # Production log file for ANSI highlighting & -n/-v
+    ├── codebase/              # Nested Go project tree for recursive -r search
+    └── pathological.txt       # ReDoS test input ("aaaaaaaaaaaaaaaaaaaaaaaaaaaa!")
 ```
 
 > [!TIP]
-> As your project grows across chapters, you can organize your logic across multiple files (such as `matcher.go` for regex algorithms, or sub-packages). Go packages allow functions across files in the same package (like `package main`) to call each other directly without imports.
+> Download and extract `gorp.zip` once. Throughout each chapter, you'll solve micro-exercises in the browser editor and assemble them into your local codebase at the end-of-stage **Assembly Capstone (⭐)** milestones.
 
 ## Local Setup Guide
 
-Follow these steps in your terminal to set up your project locally:
+In your local terminal:
 
-### 1. Create a Project Directory
 ```bash
-mkdir gorp
+# 1. Download and extract the starter scaffold
+unzip gorp.zip
 cd gorp
-```
 
-### 2. Initialize the Go Module
-```bash
-go mod init gorp
-```
+# 2. Verify compilation
+make build
 
-### 3. Create the Binary Directory
-Create a dedicated `bin/` folder where compiled binaries will be placed:
-```bash
-mkdir -p bin
-```
-
-### 4. Create `main.go`
-Create `main.go` at the root of your project as the entry point for the CLI:
-```go
-package main
-
-import "fmt"
-
-func main() {
-    fmt.Println("hello world")
-}
-```
-
-### 5. Build and Run Your Binary
-Compile the entire project directly into the `bin/` folder using `.` (which compiles all Go files in the root package):
-```bash
-go build -o bin/gorp .
-```
-
-Run your newly compiled binary:
-```bash
+# 3. Run the initial binary
 ./bin/gorp
-```
-
-Output:
-```text
-hello world
 ```
 
 ---

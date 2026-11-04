@@ -1,0 +1,157 @@
+package main
+
+import (
+	"strings"
+	"unicode"
+)
+
+type Token struct {
+	pattern    string
+	quantifier rune // 0, '+', or '?'
+}
+
+func isWordChar(r rune) bool {
+	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+// parsePattern parses a regex pattern string into a slice of Tokens.
+func parsePattern(pattern string) []Token {
+	var tokens []Token
+	i := 0
+	for i < len(pattern) {
+		var tokStr string
+		if pattern[i] == '\\' && i+1 < len(pattern) {
+			tokStr = pattern[i : i+2]
+			i += 2
+		} else if pattern[i] == '[' {
+			closeIdx := strings.IndexByte(pattern[i:], ']')
+			if closeIdx != -1 {
+				tokStr = pattern[i : i+closeIdx+1]
+				i += closeIdx + 1
+			} else {
+				tokStr = string(pattern[i])
+				i++
+			}
+		} else {
+			tokStr = string(pattern[i])
+			i++
+		}
+
+		if i < len(pattern) && (pattern[i] == '+' || pattern[i] == '?') {
+			tokens = append(tokens, Token{pattern: tokStr, quantifier: rune(pattern[i])})
+			i++
+		} else {
+			tokens = append(tokens, Token{pattern: tokStr, quantifier: 0})
+		}
+	}
+	return tokens
+}
+
+// matchToken checks if a single character matches a single token pattern.
+func matchToken(char rune, token string) bool {
+	if token == "." {
+		return char != '\n'
+	}
+	if token == `\d` {
+		return unicode.IsDigit(char)
+	}
+	if token == `\w` {
+		return isWordChar(char)
+	}
+	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
+		return !strings.ContainsRune(token[2:len(token)-1], char)
+	}
+	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
+		return strings.ContainsRune(token[1:len(token)-1], char)
+	}
+	if len(token) == 1 {
+		return char == rune(token[0])
+	}
+	return false
+}
+
+// matchHere checks if the tokens match lineRunes starting at index 0.
+func matchHere(lineRunes []rune, tokens []Token, anchoredEnd bool) bool {
+	if len(tokens) == 0 {
+		if anchoredEnd {
+			return len(lineRunes) == 0
+		}
+		return true
+	}
+
+	curr := tokens[0]
+	rest := tokens[1:]
+
+	if curr.quantifier == '+' {
+		if len(lineRunes) == 0 || !matchToken(lineRunes[0], curr.pattern) {
+			return false
+		}
+		k := 1
+		for k < len(lineRunes) && matchToken(lineRunes[k], curr.pattern) {
+			k++
+		}
+		for j := k; j >= 1; j-- {
+			if matchHere(lineRunes[j:], rest, anchoredEnd) {
+				return true
+			}
+		}
+		return false
+	}
+
+	if curr.quantifier == '?' {
+		if len(lineRunes) > 0 && matchToken(lineRunes[0], curr.pattern) {
+			if matchHere(lineRunes[1:], rest, anchoredEnd) {
+				return true
+			}
+		}
+		return matchHere(lineRunes, rest, anchoredEnd)
+	}
+
+	if len(lineRunes) == 0 || !matchToken(lineRunes[0], curr.pattern) {
+		return false
+	}
+	return matchHere(lineRunes[1:], rest, anchoredEnd)
+}
+
+// matchPattern checks if line matches pattern, supporting alternation and grouping.
+func matchPattern(line string, pattern string) bool {
+	if len(pattern) == 0 {
+		return true
+	}
+
+	// TODO: Handle grouped alternation (opt1|opt2) and top-level alternation opt1|opt2.
+	// If the pattern contains '|', evaluate each alternative branch.
+
+	anchoredStart := false
+	if strings.HasPrefix(pattern, "^") {
+		anchoredStart = true
+		pattern = pattern[1:]
+	}
+
+	anchoredEnd := false
+	if strings.HasSuffix(pattern, "$") {
+		anchoredEnd = true
+		pattern = pattern[:len(pattern)-1]
+	}
+
+	tokens := parsePattern(pattern)
+	lineRunes := []rune(line)
+
+	if len(tokens) == 0 {
+		if anchoredStart && anchoredEnd {
+			return len(lineRunes) == 0
+		}
+		return true
+	}
+
+	if anchoredStart {
+		return matchHere(lineRunes, tokens, anchoredEnd)
+	}
+
+	for i := 0; i <= len(lineRunes); i++ {
+		if matchHere(lineRunes[i:], tokens, anchoredEnd) {
+			return true
+		}
+	}
+	return false
+}

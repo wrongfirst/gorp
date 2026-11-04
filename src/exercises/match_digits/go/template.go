@@ -1,9 +1,6 @@
 package main
 
-import (
-	"strings"
-	"unicode"
-)
+import "strings"
 
 // matchPattern checks if line matches the pattern (literal character or \d).
 func matchPattern(line string, pattern string) bool {

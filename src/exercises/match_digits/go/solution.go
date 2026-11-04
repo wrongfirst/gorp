@@ -1,9 +1,6 @@
 package main
 
-import (
-	"strings"
-	"unicode"
-)
+import "strings"
 
 // matchPattern checks if line matches the pattern (literal character or \d).
 func matchPattern(line string, pattern string) bool {
@@ -13,7 +10,7 @@ func matchPattern(line string, pattern string) bool {
 
 	if pattern == `\d` {
 		for _, r := range line {
-			if unicode.IsDigit(r) {
+			if r >= '0' && r <= '9' {
 				return true
 			}
 		}
