@@ -25,16 +25,16 @@ Let's extend our pattern matcher to support alternation.
 
 | Line | Pattern | Match Result | Explanation |
 | :--- | :--- | :--- | :--- |
-| `"I have a cat"` | `"cat|dog"` | `true` | Matches `"cat"` |
-| `"I have a dog"` | `"cat|dog"` | `true` | Matches `"dog"` |
-| `"I have a fish"` | `"cat|dog"` | `false` | Neither alternative matches |
-| `"I love cats!"` | `"I love (cats|dogs)!"` | `true` | Matches option `"cats"` |
-| `"I love dogs!"` | `"I love (cats|dogs)!"` | `true` | Matches option `"dogs"` |
-| `"I love birds!"` | `"I love (cats|dogs)!"` | `false` | `"birds"` is not an option |
-| `"cat"` | `"^(cat|dog)$"` | `true` | Entire string is `"cat"` |
-| `"cats"` | `"^(cat|dog)$"` | `false` | Neither exact `"cat"` nor `"dog"` |
-| `"3 dogs"` | `"^\d+ (cat|dog)s?$"` | `true` | Digit quantifier combined with alternation |
-| `"category"` | `"^cat|dog$"` | `true` | Matches `^cat` alternative |
+| `"I have a cat"` | `"cat\|dog"` | `true` | Matches `"cat"` |
+| `"I have a dog"` | `"cat\|dog"` | `true` | Matches `"dog"` |
+| `"I have a fish"` | `"cat\|dog"` | `false` | Neither alternative matches |
+| `"I love cats!"` | `"I love (cats\|dogs)!"` | `true` | Matches option `"cats"` |
+| `"I love dogs!"` | `"I love (cats\|dogs)!"` | `true` | Matches option `"dogs"` |
+| `"I love birds!"` | `"I love (cats\|dogs)!"` | `false` | `"birds"` is not an option |
+| `"cat"` | `"^(cat\|dog)$"` | `true` | Entire string is `"cat"` |
+| `"cats"` | `"^(cat\|dog)$"` | `false` | Neither exact `"cat"` nor `"dog"` |
+| `"3 dogs"` | `"^\d+ (cat\|dog)s?$"` | `true` | Digit quantifier combined with alternation |
+| `"category"` | `"^cat\|dog$"` | `true` | Matches `^cat` alternative |
 
 ---
 

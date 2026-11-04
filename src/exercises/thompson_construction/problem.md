@@ -1,4 +1,4 @@
-In 1968, Ken Thompson published his landmark paper introducing the algorithm that compiles regular expressions into NFAs in guaranteed linear time $O(N)$ with $O(N)$ states.
+In 1968, Ken Thompson published his landmark paper introducing the algorithm that compiles regular expressions into NFAs in guaranteed linear time `O(N)` with `O(N)` states.
 
 The algorithm consumes a regular expression in **Postfix Notation** (from Exercise 3) and processes it from left to right using a stack of **NFA fragments**:
 
@@ -11,7 +11,7 @@ type Frag struct {
 
 A fragment represents an incomplete sub-automaton with:
 - An entry state (`Start`).
-- A list of dangling outgoing arrows (`Out`). Each arrow is stored as `**State` — a pointer to a `*State` field — so that when downstream states are created, all dangling arrows can be connected (**patched**) instantly in $O(1)$ without searching:
+- A list of dangling outgoing arrows (`Out`). Each arrow is stored as `**State` — a pointer to a `*State` field — so that when downstream states are created, all dangling arrows can be connected (**patched**) instantly in `O(1)` without searching:
 
 ```go
 func patch(l []**State, s *State) {

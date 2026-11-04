@@ -31,7 +31,7 @@ In this exercise, we implement:
 ### Examples
 
 Given `config.ini` containing:
-```
+```text
 1: server_port=8080
 2: max_connections=500
 3: server_timeout=30

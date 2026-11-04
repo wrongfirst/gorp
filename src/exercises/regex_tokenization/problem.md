@@ -20,15 +20,15 @@ In this exercise, we build a regex tokenizer and postfix parser:
    - Alternation (`|`) has precedence (1).
    - Parentheses enforce grouping.
 
-### Examples
+## Examples
 
 | Input Pattern | Tokens with Concat | Postfix Representation |
 | :--- | :--- | :--- |
-| `\"ab\"` | `a · b` | `\"ab·\"` |
-| `\"a\|b\|c\"` | `a \| b \| c` | `\"ab\|c\|\"` |
-| `\"a(b\|c)*d\"` | `a · ( b \| c ) * · d` | `\"abc\|*·d·\"` |
-| `\"a+b?\"` | `a + · b ?` | `\"a+b?·\"` |
-| `\"(a\|b\"` | Unmatched `(` | Error |
+| `"ab"` | `a · b` | `"ab·"` |
+| `"a\|b\|c"` | `a \| b \| c` | `"ab\|c\|"` |
+| `"a(b\|c)*d"` | `a · ( b \| c ) * · d` | `"abc\|*·d·"` |
+| `"a+b?"` | `a + · b ?` | `"a+b?·"` |
+| `"(a\|b"` | Unmatched `(` | Error |
 
 ---
 

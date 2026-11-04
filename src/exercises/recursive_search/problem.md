@@ -46,7 +46,7 @@ In this exercise, we implement `searchDirectory(fsys fs.FS, rootDir string, patt
 ### Examples
 
 Given an `fsys` containing:
-```
+```text
 project/
   main.go      -> "func main() {}"
   config/

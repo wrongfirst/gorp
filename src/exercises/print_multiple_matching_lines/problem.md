@@ -1,12 +1,12 @@
 When `grep` runs against an input stream or file with multiple lines, it filters all lines sequentially.
 
 Each line is tested against the pattern in order:
-- If line $i$ matches, it is included in the output.
-- If line $i$ does not match, it is skipped.
+- If line `i` matches, it is included in the output.
+- If line `i` does not match, it is skipped.
 - The relative ordering of matching lines is strictly preserved.
 
 For example, given the lines:
-```
+```text
 1. "INFO: server started"
 2. "ERROR: connection refused"
 3. "DEBUG: retrying in 5s"
@@ -14,7 +14,7 @@ For example, given the lines:
 5. "INFO: shutdown complete"
 ```
 And the pattern `"ERROR"`, `grep` outputs:
-```
+```text
 "ERROR: connection refused"
 "ERROR: timeout after 30s"
 ```

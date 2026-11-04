@@ -27,7 +27,7 @@ The color decision rules:
 | Option | isTTY | noColorSet | ShouldColor? | Explanation |
 | :--- | :--- | :--- | :--- | :--- |
 | `ColorAuto` | `true` | `false` | `true` | Interactive terminal with no NO_COLOR |
-| `ColorAuto` | `false` | `false` | `false` | Piped to file or command (`| wc -l`) |
+| `ColorAuto` | `false` | `false` | `false` | Piped to file or command (`\| wc -l`) |
 | `ColorAuto` | `true` | `true` | `false` | User requested NO_COLOR in terminal |
 | `ColorAlways` | `false` | `false` | `true` | Force color even when piped |
 | `ColorNever` | `true` | `false` | `false` | Color explicitly disabled |

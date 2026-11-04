@@ -9,7 +9,7 @@ For example, if you run:
 echo "user id is 42 in the database" | grep -o "[0-9]\+"
 ```
 The output is just:
-```
+```text
 42
 ```
 Not the entire sentence `"user id is 42 in the database"`.
@@ -35,7 +35,7 @@ In this exercise, we implement `findSingleMatch`, which locates the first matchi
 | `"order [AB-123] confirmed"` | `"\\[[A-Z]+-\\d+\\]"` | `"[AB-123]"` | `true` | Extracts bracketed order ID |
 | `"the quick brown fox"` | `"[a-z]{5}"` | `"quick"` | `true` | First 5-letter word |
 | `"apple and banana"` | `"cherry"` | `""` | `false` | Pattern not in line |
-| `"prefix_cat_suffix"` | `"(cat|dog)"` | `"cat"` | `true` | Extracts matched alternation branch |
+| `"prefix_cat_suffix"` | `"(cat\|dog)"` | `"cat"` | `true` | Extracts matched alternation branch |
 
 ---
 

@@ -8,7 +8,7 @@ Notice the crucial difference:
 - Pattern `[a-z] [a-z]` matches any lowercase letter followed by a space and *any* lowercase letter (like `"a b"` or `"a a"`).
 - Pattern `([a-z]) \1` matches a lowercase letter followed by a space and the **exact same letter** (like `"a a"`, but **not** `"a b"`).
 
-### Practical Uses of Backreferences
+## Practical Uses of Backreferences
 
 1. **Repeated Words**:
    - `(\w+) \1`: matches repeated words like `"hello hello"` or `"test test"`.
@@ -41,7 +41,7 @@ Let's extend our pattern matcher to support capturing groups `(...)` and the sin
 | `"42 42"` | `"^(\\d+) \\1$"` | `true` | Exactly two identical numbers |
 | `"42 43"` | `"^(\\d+) \\1$"` | `false` | Numbers differ |
 | `"apple is apple"` | `"^(\\w+) is \\1$"` | `true` | Same word on both sides |
-| `"dog and dog"` | `"(cat|dog) and \\1"` | `true` | Alternation inside capturing group |
+| `"dog and dog"` | `"(cat\|dog) and \\1"` | `true` | Alternation inside capturing group |
 
 ---
 

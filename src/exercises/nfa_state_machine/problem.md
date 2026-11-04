@@ -1,12 +1,12 @@
 A **Non-deterministic Finite Automaton (NFA)** is a directed graph of states connected by transitions. Unlike a Deterministic Finite Automaton (DFA) which must have exactly one transition per input symbol, an NFA can have:
 - Multiple possible transitions for the same symbol.
-- **$\epsilon$-transitions** (epsilon transitions): transitions that jump to another state without consuming any input character.
+- **ε-transitions** (epsilon transitions): transitions that jump to another state without consuming any input character.
 
 In Ken Thompson's classic design, every state has at most **two** outgoing arrows (`Out` and `Out1`). This keeps the data structure compact and bounded:
 
 1. **Character / Matcher state**:
    Matches an input character or class (literal rune, wildcard `.`, digit `\d`, or word character `\w`). When the condition is met, it advances along `Out`. `Out1` is `nil`.
-2. **Split state ($\epsilon$-transition)**:
+2. **Split state (ε-transition)**:
    Has two outgoing arrows (`Out` and `Out1`). The machine branches simultaneously to both destinations without consuming any input character (used for alternation `|` and repetition `*`, `+`, `?`).
 3. **Match state**:
    The accepting state signifying that the pattern has matched successfully. It has no outgoing arrows (`Out == nil` and `Out1 == nil`).

@@ -33,7 +33,7 @@ Implement `matchPattern(line string, pattern string) bool` in the editor on the 
 
 The function should:
 - Return `true` if `pattern` is `\w` and `line` contains any word character (`a`-`z`, `A`-`Z`, `0`-`9`, or `_`).
- 
+
 From earlier exercises we already:
 - Return `true` if `pattern` is `\d` and `line` contains any digit (`0`-`9`).
 - Return `true` if `pattern` is a single literal character that appears anywhere in `line`.

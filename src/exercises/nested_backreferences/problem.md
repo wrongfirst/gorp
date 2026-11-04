@@ -2,7 +2,7 @@ In regular expressions, capturing groups can be **nested inside one another**.
 
 When groups are nested, they are numbered strictly by the order in which their **opening parentheses** `(` appear from left to right:
 
-```
+```text
   (  ( hello )   ( world )  )
   ^  ^           ^
   |  |           |
@@ -19,7 +19,7 @@ Later in the regex:
 - `\2` matches `"hello"`.
 - `\3` matches `"world"`.
 
-### Practical Examples of Nested Groups
+## Practical Examples of Nested Groups
 
 1. **Quoted Strings and Contents**:
    - `^('([^']*)') \1 \2$`:

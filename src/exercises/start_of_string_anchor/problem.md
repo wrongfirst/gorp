@@ -7,7 +7,8 @@ For example:
 - Pattern `^apple`: does **not** match `"an apple"` because `"apple"` does not start at index 0.
 - Pattern `apple` (without `^`): matches both `"apple pie"` and `"an apple"` because unanchored patterns can match anywhere.
 
-> NOTE: Notice the difference between `^` inside brackets `[^...]` (which defines a negative character group) and `^` at the start of a pattern (which anchors the match to the start of the line).
+> [!NOTE]
+> Notice the difference between `^` inside brackets `[^...]` (which defines a negative character group) and `^` at the start of a pattern (which anchors the match to the start of the line).
 
 Let's update our pattern matcher to support the `^` start-of-string anchor.
 

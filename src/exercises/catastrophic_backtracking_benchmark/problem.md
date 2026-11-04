@@ -4,7 +4,7 @@ For simple patterns, recursive backtracking feels instantaneous. However, it har
 
 When a pattern contains multiple adjacent quantifiers (e.g. `^a*a*a*a*b$`) or nested quantifiers (e.g. `^(a+)+$`), the number of ways to partition the input string among the quantifiers grows **exponentially** with the length of the string:
 
-```
+```text
 Pattern: ^a*a*a*a*b$
 Input:   "aaaa" (no 'b' exists!)
 
@@ -15,7 +15,7 @@ Branch 3: a* takes 2, next a* takes 2, ...
 Every possible combination is exhaustively tested before reporting failure!
 ```
 
-For $N$ characters with 4 adjacent quantifiers, the recursive engine evaluates $O(N^4)$ paths. With nested quantifiers like `(a+)+`, the complexity explodes to $O(2^N)$! An input of just 30 characters can trigger over a billion function calls, freezing a CPU core for hours.
+For `N` characters with 4 adjacent quantifiers, the recursive engine evaluates `O(N^4)` paths. With nested quantifiers like `(a+)+`, the complexity explodes to `O(2^N)`! An input of just 30 characters can trigger over a billion function calls, freezing a CPU core for hours.
 
 In this exercise, we instrument our backtracking engine to track its computational cost by counting how many times `matchAt` is invoked.
 
@@ -41,11 +41,11 @@ In this exercise, we instrument our backtracking engine to track its computation
 
 | Pattern | Input | Matched | Step Count | Explanation |
 | :--- | :--- | :--- | :--- | :--- |
-| `\"^hello$\"` | `\"hello\"` | `true` | ~6 | Deterministic linear match (1 step per token) |
-| `\"^a+b$\"` | `\"aaaa\"` | `false` | ~5 | Fast failure: single quantifier tries lengths 4, 3, 2, 1 |
-| `\"^a*a*a*a*b$\"` | `\"aaaa\"` | `false` | 126 | 4 adjacent quantifiers exhaustively backtrack |
-| `\"^a*a*a*a*b$\"` | `\"aaaaaaaa\"` | `false` | 715 | Doubling input length more than quintuples the steps |
-| `\"^a?a?a?a?a?a?a?a?b$\"` | `\"aaaaaaaa\"` | `false` | 256+ | Exponential branching: $2^8$ combinations tested |
+| `"^hello$"` | `"hello"` | `true` | ~6 | Deterministic linear match (1 step per token) |
+| `"^a+b$"` | `"aaaa"` | `false` | ~5 | Fast failure: single quantifier tries lengths 4, 3, 2, 1 |
+| `"^a*a*a*a*b$"` | `"aaaa"` | `false` | 126 | 4 adjacent quantifiers exhaustively backtrack |
+| `"^a*a*a*a*b$"` | `"aaaaaaaa"` | `false` | 715 | Doubling input length more than quintuples the steps |
+| `"^a?a?a?a?a?a?a?a?b$"` | `"aaaaaaaa"` | `false` | 256+ | Exponential branching: `2^8` combinations tested |
 
 ---
 

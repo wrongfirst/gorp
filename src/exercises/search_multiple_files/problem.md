@@ -6,7 +6,7 @@ grep "TODO" main.go auth.go db.go
 
 `grep` automatically prefixes each matching line with the **name of the file** in which it was found:
 
-```
+```text
 main.go: // TODO: add graceful shutdown
 db.go:   // TODO: implement connection retry
 ```

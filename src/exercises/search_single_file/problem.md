@@ -33,7 +33,7 @@ In this exercise, we implement `searchFile(fsys fs.FS, filePath string, pattern 
 ### Examples
 
 Assuming an `fsys` containing `app.log`:
-```
+```text
 INFO: application started
 ERROR: cannot connect to db
 DEBUG: retrying in 3s

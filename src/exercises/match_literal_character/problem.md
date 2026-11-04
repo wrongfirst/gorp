@@ -22,6 +22,6 @@ When given a pattern consisting of a single character and a target input line:
 
 ## Problem Statement
 
-Implement `matchPattern(line string, pattern string) bool` in the editor on the right. 
+Implement `matchPattern(line string, pattern string) bool` in the editor on the right.
 
 The function should return `true` if the literal character in `pattern` appears anywhere in `line`, and `false` otherwise. If `pattern` is empty, return `true`.

@@ -7,7 +7,7 @@ The standard ANSI sequence for red text in Unix terminals is:
 - **Reset Color**: `\033[0m` (or `\x1b[0m`)
 
 When `grep` finds a match within a line, it wraps the matched substring with these codes:
-```
+```text
 line[:start] + "\033[31m" + line[start:end] + "\033[0m" + line[end:]
 ```
 

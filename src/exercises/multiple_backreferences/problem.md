@@ -10,7 +10,7 @@ Backreferences can appear in any order and can be referenced multiple times:
 - `^(\d+) (\w+) \2 \1$`: matches palindromic structures like `"100 test test 100"`.
 - `(\w+)-\1-\1`: matches three identical repetitions like `"go-go-go"`.
 
-### Practical Uses of Multiple Backreferences
+## Practical Uses of Multiple Backreferences
 
 1. **Structured Data Validation**:
    - `^(\w+) (\d+), again \1 \2$`: matches a name and ID repeated in the second part.

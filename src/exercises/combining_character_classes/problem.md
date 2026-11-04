@@ -7,7 +7,8 @@ In real-world regular expressions, patterns combine multiple character classes a
 
 Let's upgrade our pattern matcher to parse patterns into individual tokens and match sequences of tokens anywhere within a line.
 
-> NOTE: Breaking down your pattern into a list of parsed tokens (such as `\d`, `\w`, `[...]`, `[^...]`, or a literal rune) and matching them position-by-position makes your matcher robust and ready for future chapters.
+> [!NOTE]
+> Breaking down your pattern into a list of parsed tokens (such as `\d`, `\w`, `[...]`, `[^...]`, or a literal rune) and matching them position-by-position makes your matcher robust and ready for future chapters.
 
 You can update `matchPattern` and add helper functions in your `matcher.go` file.
 

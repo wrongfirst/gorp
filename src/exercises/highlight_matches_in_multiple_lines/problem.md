@@ -3,7 +3,7 @@ When `grep --color` runs against multi-line input (such as a file or piped strea
 2. **Highlights** every match occurrence within those matching lines using ANSI escape codes (`\033[31m` ... `\033[0m`).
 
 For example, given:
-```
+```text
 1. "INFO: database online"
 2. "ERROR: disk read failure on drive 1"
 3. "DEBUG: verbose ping"

@@ -5,7 +5,7 @@ For example, running:
 echo "apple, banana, apple, cherry, apple" | grep -o "apple"
 ```
 Outputs:
-```
+```text
 apple
 apple
 apple
@@ -15,13 +15,13 @@ Similarly, extracting numbers from a sentence:
 echo "Server ports 8080, 8443, and 9000 are open" | grep -o "[0-9]\+"
 ```
 Outputs:
-```
+```text
 8080
 8443
 9000
 ```
 
-Notice that matches are **non-overlapping**: after finding a match spanning from index $i$ to $j$, the search continues from index $j$ onwards.
+Notice that matches are **non-overlapping**: after finding a match spanning from index `i` to `j`, the search continues from index `j` onwards.
 
 In this exercise, we implement `findAllMatches`, which extracts all non-overlapping matching substrings from a single line.
 

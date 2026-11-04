@@ -12,7 +12,7 @@ When processing an input stream, `grep`:
 3. Evaluates each individual line against the regex pattern.
 4. Outputs or collects all matching lines in order.
 
-### Line Processing Details
+## Line Processing Details
 
 - **Newline Delimiters**: Handles standard Unix newlines (`\n`) and Windows CRLF (`\r\n`).
 - **Trailing Newlines**: Trailing newline at the end of the input does not create a spurious empty line.
