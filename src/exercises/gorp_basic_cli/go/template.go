@@ -2,11 +2,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
 	"unicode"
 )
+
+func _unusedImports() {
+	var _ = bytes.Buffer{}
+}
 
 type Token struct {
 	pattern    string

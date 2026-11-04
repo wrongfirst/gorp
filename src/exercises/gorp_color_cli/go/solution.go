@@ -2,12 +2,17 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"unicode"
 )
+
+func _unusedImports() {
+	var _ = bytes.Buffer{}
+}
 
 const (
 	ColorRed   = "\033[31m"

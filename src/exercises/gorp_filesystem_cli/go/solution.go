@@ -2,13 +2,20 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
 	"strconv"
 	"strings"
+	"testing/fstest"
 	"unicode"
 )
+
+func _unusedImports() {
+	var _ = bytes.Buffer{}
+	var _ = fstest.MapFS{}
+}
 
 type TokenType int
 
