@@ -2,7 +2,7 @@ import { siteConfig } from '../core/siteConfig';
 import type { Extension } from '@codemirror/state';
 import type { CodeRunner } from '../core/types';
 import type { LanguageMetadata } from './types';
-import { createLanguageLinter, setLanguageRunnerLookup } from './lint-helper';
+import { createDynamicLanguageLinter, setLanguageRunnerLookup } from './lint-helper';
 
 // Discover metadata and syntax extensions synchronously for immediate UI rendering
 const metadataModules = import.meta.glob<{ metadata?: LanguageMetadata; default?: LanguageMetadata }>(
@@ -11,7 +11,7 @@ const metadataModules = import.meta.glob<{ metadata?: LanguageMetadata; default?
 );
 
 // Discover adapters as lazy dynamic imports (loaded on-demand for enabled languages)
-const adapterModules = import.meta.glob<{ runner?: CodeRunner; default?: CodeRunner; [key: string]: any }>(
+const adapterModules = import.meta.glob<{ runner?: CodeRunner; default?: CodeRunner;[key: string]: any }>(
   './*/adapter.ts'
 );
 
@@ -225,15 +225,11 @@ export async function loadLanguageRunner(id: string): Promise<CodeRunner> {
   return promise;
 }
 
-export function getLanguageSyntax(id: string): Extension | undefined {
-  return syntaxMap.get(id);
-}
-
 export function getLanguageLinter(id: string): Extension | undefined {
   if (linterMap.has(id)) {
     return linterMap.get(id);
   }
-  const autoLinter = createLanguageLinter(() => getLoadedLanguageRunner(id), id);
+  const autoLinter = createDynamicLanguageLinter(id);
   linterMap.set(id, autoLinter);
   return autoLinter;
 }
@@ -255,7 +251,7 @@ function prefetchUrl(url: string): void {
   prefetchedUrls.add(url);
   try {
     if ('fetch' in window) {
-      fetch(url, { mode: 'cors', priority: 'low' as any }).catch(() => {});
+      fetch(url, { mode: 'cors', priority: 'low' as any }).catch(() => { });
     } else {
       const link = document.createElement('link');
       link.rel = 'prefetch';
@@ -286,7 +282,7 @@ export async function prefetchInactiveLanguageAssets(activeLangId?: string): Pro
       const adapterPath = `./${langId}/adapter.ts`;
       const importFn = adapterModules[adapterPath];
       if (importFn) {
-        await importFn().catch(() => {});
+        await importFn().catch(() => { });
       }
 
       // 2. Prefetch heavy external CDN compiler scripts declared in metadata
@@ -300,9 +296,5 @@ export async function prefetchInactiveLanguageAssets(activeLangId?: string): Pro
       console.warn(`[LanguageRegistry] Asset prefetch for '${langId}' deferred:`, err);
     }
   }
-}
-
-export async function prewarmBackgroundLanguages(activeLangId?: string): Promise<void> {
-  return prefetchInactiveLanguageAssets(activeLangId);
 }
 

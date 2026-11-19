@@ -1,7 +1,19 @@
 // src/core/sync/gistClient.ts
+import { Effect, Schedule } from 'effect';
 import { SITE_TITLE, SITE_SLUG } from '../siteConfig';
+import {
+  GistAuthError,
+  GistNotFoundError,
+  GistRateLimitError,
+  GistNetworkError,
+  GistTimeoutError,
+  OAuthExchangeError,
+  GistParseError,
+  GistHttpError,
+  GistError,
+} from './errors';
 
-const GIST_DEFAULT_DESCRIPTION = `${SITE_TITLE} Progress & Settings Backup`;
+export const GIST_DEFAULT_DESCRIPTION = `${SITE_TITLE} Progress & Settings Backup`;
 
 export interface TokenValidationResult {
   valid: boolean;
@@ -10,7 +22,7 @@ export interface TokenValidationResult {
   error?: string;
 }
 
-interface GistFileEntry {
+export interface GistFileEntry {
   filename: string;
   content?: string;
   truncated?: boolean;
@@ -19,13 +31,11 @@ interface GistFileEntry {
 }
 
 export interface GistActionResult {
-  success: boolean;
   gistId?: string;
   htmlUrl?: string;
   files?: Record<string, GistFileEntry>;
   updatedAt?: string;
   notModified?: boolean;
-  error?: string;
 }
 
 export interface DiscoveredGist {
@@ -38,10 +48,6 @@ export interface DiscoveredGist {
 
 /**
  * Extracts a bare Gist ID from a raw ID or full GitHub Gist URL.
- * Handles inputs like:
- * - "https://gist.github.com/username/6a7b8c9d0e1f2a3b"
- * - "gist.github.com/6a7b8c9d0e1f2a3b#file-progress-json"
- * - "6a7b8c9d0e1f2a3b"
  */
 export function extractGistId(input: string): string {
   if (!input) return '';
@@ -82,51 +88,134 @@ function getHeaders(token?: string, ifModifiedSince?: string): Record<string, st
 }
 
 /**
- * Parses JSON response error text safely.
+ * Parses HTTP error response from GitHub into typed TaggedErrors.
  */
-async function parseErrorMessage(res: Response): Promise<string> {
-  try {
-    const data = await res.json();
-    if (data?.message) {
-      if (res.status === 401) return 'Bad credentials or expired GitHub token.';
-      if (res.status === 404) return 'Gist not found. Check the Gist ID.';
-      if (res.status === 403)
-        return data.message.includes('rate limit')
-          ? 'GitHub API rate limit exceeded. Please try again later.'
-          : `Access forbidden: ${data.message}`;
-      return data.message;
+function parseResponseError(
+  res: Response
+): Effect.Effect<never, GistAuthError | GistNotFoundError | GistRateLimitError | GistNetworkError | GistHttpError> {
+  return Effect.gen(function* () {
+    let errorMsg = '';
+    try {
+      const data = yield* Effect.promise(() => res.json().catch(() => null));
+      if (data && typeof data === 'object' && 'message' in data) {
+        errorMsg = String((data as any).message);
+      }
+    } catch {
+      // non-JSON fallback
     }
-  } catch {
-    // Non-JSON response fallback
-  }
-  return `GitHub API error (HTTP ${res.status}: ${res.statusText})`;
+
+    if (res.status === 401) {
+      return yield* Effect.fail(
+        new GistAuthError({
+          message: errorMsg || 'Bad credentials or expired GitHub token.',
+          status: 401,
+        })
+      );
+    }
+
+    if (res.status === 404) {
+      return yield* Effect.fail(
+        new GistNotFoundError({
+          message: errorMsg || 'Gist not found. Check the Gist ID.',
+        })
+      );
+    }
+
+    if (res.status === 403) {
+      const isRateLimit =
+        errorMsg.toLowerCase().includes('rate limit') ||
+        res.headers.get('x-ratelimit-remaining') === '0';
+      if (isRateLimit) {
+        const retryAfter = res.headers.get('retry-after');
+        return yield* Effect.fail(
+          new GistRateLimitError({
+            message: 'GitHub API rate limit exceeded. Please try again later.',
+            retryAfterSeconds: retryAfter ? parseInt(retryAfter, 10) : undefined,
+          })
+        );
+      }
+      return yield* Effect.fail(
+        new GistAuthError({
+          message: errorMsg ? `Access forbidden: ${errorMsg}` : 'Access forbidden (HTTP 403).',
+          status: 403,
+        })
+      );
+    }
+
+    if (res.status >= 500) {
+      return yield* Effect.fail(
+        new GistNetworkError({
+          message: errorMsg || `GitHub server error (HTTP ${res.status}: ${res.statusText})`,
+        })
+      );
+    }
+
+    return yield* Effect.fail(
+      new GistHttpError({
+        message: errorMsg || `GitHub API error (HTTP ${res.status}: ${res.statusText})`,
+        status: res.status,
+      })
+    );
+  });
+}
+
+/**
+ * Exponential backoff schedule for transient network glitches (retries twice).
+ */
+const transientRetrySchedule = Schedule.exponential('500 millis').pipe(
+  Schedule.compose(Schedule.recurs(2))
+);
+
+function withTransientRetry<A, E extends GistError, R>(effect: Effect.Effect<A, E, R>): Effect.Effect<A, GistError, R> {
+  return effect.pipe(
+    Effect.retry({
+      schedule: transientRetrySchedule,
+      while: (err) => err._tag === 'GistNetworkError',
+    })
+  );
 }
 
 /**
  * Validates a GitHub Personal Access Token against the GitHub API.
  */
-export async function validateToken(token: string): Promise<TokenValidationResult> {
+export function validateToken(
+  token: string
+): Effect.Effect<TokenValidationResult, GistError> {
   if (!token || !token.trim() || token.startsWith('enc:v1:')) {
-    return { valid: false, error: 'Token cannot be empty or un-decrypted.' };
+    return Effect.fail(
+      new GistAuthError({
+        message: 'Token cannot be empty or un-decrypted.',
+      })
+    );
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-  try {
-    const res = await fetch('https://api.github.com/user', {
-      method: 'GET',
-      headers: getHeaders(token),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch('https://api.github.com/user', {
+          method: 'GET',
+          headers: getHeaders(token),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const errorMsg = await parseErrorMessage(res);
-      return { valid: false, error: errorMsg };
+      return yield* parseResponseError(res);
     }
 
-    const data = await res.json();
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new GistParseError({
+          message: 'Failed to parse GitHub user response as JSON.',
+        }),
+    });
+
     const scopesHeader = res.headers.get('x-oauth-scopes');
     const scopes = scopesHeader ? scopesHeader.split(',').map((s) => s.trim()) : undefined;
 
@@ -135,319 +224,444 @@ export async function validateToken(token: string): Promise<TokenValidationResul
       username: data.login || 'GitHub User',
       scopes,
     };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      valid: false,
-      error: err.name === 'AbortError' ? 'Token validation timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+  }).pipe(
+    Effect.timeout('12 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'Token validation timed out after 12s.',
+          timeoutMs: 12000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }
 
 /**
  * Creates a new secret Gist with the provided multi-file payload.
  */
-export async function createGist(
+export function createGist(
   token: string,
   files: Record<string, string>,
   description = GIST_DEFAULT_DESCRIPTION
-): Promise<GistActionResult> {
+): Effect.Effect<GistActionResult, GistError> {
   if (!token || !token.trim() || token.startsWith('enc:v1:')) {
-    return { success: false, error: 'GitHub token is required to create a Gist.' };
+    return Effect.fail(
+      new GistAuthError({
+        message: 'GitHub token is required to create a Gist.',
+      })
+    );
   }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   const filesPayload: Record<string, { content: string }> = {};
   for (const [filename, content] of Object.entries(files)) {
     filesPayload[filename] = { content };
   }
 
-  try {
-    const res = await fetch('https://api.github.com/gists', {
-      method: 'POST',
-      headers: {
-        ...getHeaders(token),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        description,
-        public: false, // Secret / unlisted gist
-        files: filesPayload,
-      }),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch('https://api.github.com/gists', {
+          method: 'POST',
+          headers: {
+            ...getHeaders(token),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            description,
+            public: false, // Secret / unlisted gist
+            files: filesPayload,
+          }),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const errorMsg = await parseErrorMessage(res);
-      return { success: false, error: errorMsg };
+      return yield* parseResponseError(res);
     }
 
-    const data = await res.json();
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new GistParseError({
+          message: 'Failed to parse Gist creation response as JSON.',
+        }),
+    });
+
     return {
-      success: true,
       gistId: data.id,
       htmlUrl: data.html_url,
       updatedAt: data.updated_at,
     };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      success: false,
-      error: err.name === 'AbortError' ? 'Gist creation timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+  }).pipe(
+    Effect.timeout('15 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'Gist creation timed out after 15s.',
+          timeoutMs: 15000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }
 
 /**
  * Fetches all files and contents from an existing Gist.
  * Supports conditional fetching via options.ifModifiedSince (returns notModified: true on HTTP 304).
  */
-export async function fetchGist(
+export function fetchGist(
   gistId: string,
   token?: string,
   options?: { ifModifiedSince?: string }
-): Promise<GistActionResult> {
+): Effect.Effect<GistActionResult, GistError> {
   const cleanId = extractGistId(gistId);
   if (!cleanId) {
-    return { success: false, error: 'Invalid Gist ID provided.' };
+    return Effect.fail(
+      new GistNotFoundError({
+        message: 'Invalid Gist ID provided.',
+        gistId,
+      })
+    );
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const res = await fetch(`https://api.github.com/gists/${cleanId}`, {
-      method: 'GET',
-      headers: getHeaders(token, options?.ifModifiedSince),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(`https://api.github.com/gists/${cleanId}`, {
+          method: 'GET',
+          headers: getHeaders(token, options?.ifModifiedSince),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
     if (res.status === 304) {
       return {
-        success: true,
         notModified: true,
         gistId: cleanId,
       };
     }
 
     if (!res.ok) {
-      const errorMsg = await parseErrorMessage(res);
-      return { success: false, error: errorMsg };
+      return yield* parseResponseError(res);
     }
 
-    const data = await res.json();
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new GistParseError({
+          message: 'Failed to parse Gist fetch response as JSON.',
+        }),
+    });
+
     const rawFiles = data.files || {};
-    const parsedFiles: Record<string, GistFileEntry> = {};
+    const entries = Object.entries<any>(rawFiles);
 
-    // Read and resolve all files (handling truncated files if any)
-    for (const [filename, fileObj] of Object.entries<any>(rawFiles)) {
-      let content = fileObj.content;
-      if (fileObj.truncated && fileObj.raw_url) {
-        try {
-          const rawRes = await fetch(fileObj.raw_url, {
-            headers: (token && !token.startsWith('enc:v1:')) ? { Authorization: `Bearer ${token.trim()}` } : {},
-          });
-          if (rawRes.ok) {
-            content = await rawRes.text();
+    // Fetch truncated raw files with bounded concurrency (pure aggregation)
+    const parsedEntries = yield* Effect.forEach(
+      entries,
+      ([filename, fileObj]) =>
+        Effect.gen(function* () {
+          let content = fileObj.content;
+          if (fileObj.truncated && fileObj.raw_url) {
+            const rawRes = yield* Effect.tryPromise({
+              try: (signal) =>
+                fetch(fileObj.raw_url, {
+                  headers:
+                    token && !token.startsWith('enc:v1:') ? { Authorization: `Bearer ${token.trim()}` } : {},
+                  signal,
+                }),
+              catch: () => null,
+            }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+
+            if (rawRes && rawRes.ok) {
+              content = yield* Effect.tryPromise(() => rawRes.text()).pipe(
+                Effect.catchAll(() => Effect.succeed(fileObj.content))
+              );
+            }
           }
-        } catch (e) {
-          console.warn(`[sync] Failed to fetch truncated raw file ${filename}:`, e);
-        }
-      }
 
-      parsedFiles[filename] = {
-        filename,
-        content,
-        truncated: fileObj.truncated,
-        raw_url: fileObj.raw_url,
-        size: fileObj.size,
-      };
-    }
+          const entry: GistFileEntry = {
+            filename,
+            content,
+            truncated: fileObj.truncated,
+            raw_url: fileObj.raw_url,
+            size: fileObj.size,
+          };
+          return [filename, entry] as const;
+        }),
+      { concurrency: 4 }
+    );
+
+    const parsedFiles = Object.fromEntries(parsedEntries);
 
     return {
-      success: true,
       gistId: data.id,
       htmlUrl: data.html_url,
       files: parsedFiles,
       updatedAt: data.updated_at,
     };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      success: false,
-      error: err.name === 'AbortError' ? 'Gist fetch timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+  }).pipe(
+    Effect.timeout('15 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'Gist fetch timed out after 15s.',
+          timeoutMs: 15000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }
 
 /**
  * Updates an existing Gist with new multi-file contents.
  * Passing null for a filename in `files` removes that file from the Gist.
  */
-export async function updateGist(
+export function updateGist(
   gistId: string,
   token: string,
   files: Record<string, string | null>,
   description = GIST_DEFAULT_DESCRIPTION
-): Promise<GistActionResult> {
+): Effect.Effect<GistActionResult, GistError> {
   const cleanId = extractGistId(gistId);
   if (!cleanId) {
-    return { success: false, error: 'Invalid Gist ID provided.' };
+    return Effect.fail(
+      new GistNotFoundError({
+        message: 'Invalid Gist ID provided.',
+        gistId,
+      })
+    );
   }
   if (!token || !token.trim() || token.startsWith('enc:v1:')) {
-    return { success: false, error: 'GitHub token is required to update a Gist.' };
+    return Effect.fail(
+      new GistAuthError({
+        message: 'GitHub token is required to update a Gist.',
+      })
+    );
   }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
 
   const filesPayload: Record<string, { content: string } | null> = {};
   for (const [filename, content] of Object.entries(files)) {
     filesPayload[filename] = content === null ? null : { content };
   }
 
-  try {
-    const res = await fetch(`https://api.github.com/gists/${cleanId}`, {
-      method: 'PATCH',
-      headers: {
-        ...getHeaders(token),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        description,
-        files: filesPayload,
-      }),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(`https://api.github.com/gists/${cleanId}`, {
+          method: 'PATCH',
+          headers: {
+            ...getHeaders(token),
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            description,
+            files: filesPayload,
+          }),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const errorMsg = await parseErrorMessage(res);
-      return { success: false, error: errorMsg };
+      return yield* parseResponseError(res);
     }
 
-    const data = await res.json();
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new GistParseError({
+          message: 'Failed to parse Gist update response as JSON.',
+        }),
+    });
+
     return {
-      success: true,
       gistId: data.id,
       htmlUrl: data.html_url,
       updatedAt: data.updated_at,
     };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      success: false,
-      error: err.name === 'AbortError' ? 'Gist update timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+  }).pipe(
+    Effect.timeout('15 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'Gist update timed out after 15s.',
+          timeoutMs: 15000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }
 
 /**
  * Exchanges a temporary OAuth authorization code with the Cloudflare Worker proxy for a GitHub access_token.
  */
-export async function exchangeOAuthCode(
+export function exchangeOAuthCode(
   workerUrl: string,
   code: string
-): Promise<{ success: boolean; token?: string; error?: string }> {
+): Effect.Effect<string, GistError> {
   if (!workerUrl || !workerUrl.trim()) {
-    return { success: false, error: 'OAuth worker URL is not configured.' };
+    return Effect.fail(
+      new OAuthExchangeError({
+        message: 'OAuth worker URL is not configured.',
+      })
+    );
   }
   if (!code || !code.trim()) {
-    return { success: false, error: 'OAuth code is required.' };
+    return Effect.fail(
+      new OAuthExchangeError({
+        message: 'OAuth code is required.',
+      })
+    );
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const res = await fetch(workerUrl.trim(), {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({ code: code.trim() }),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch(workerUrl.trim(), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({ code: code.trim() }),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
-    const data = await res.json();
+    const data = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new OAuthExchangeError({
+          message: `HTTP ${res.status}: Failed to parse authorization response as JSON.`,
+          status: res.status,
+        }),
+    });
+
     if (!res.ok || data.error) {
-      return {
-        success: false,
-        error: data.error_description || data.error || `HTTP ${res.status}: Failed to exchange code.`,
-      };
+      return yield* Effect.fail(
+        new OAuthExchangeError({
+          message: data.error_description || data.error || `HTTP ${res.status}: Failed to exchange code.`,
+          status: res.status,
+        })
+      );
     }
 
     if (data.access_token) {
-      return { success: true, token: data.access_token };
+      return String(data.access_token);
     }
 
-    return { success: false, error: 'No access token received from authorization server.' };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      success: false,
-      error: err.name === 'AbortError' ? 'OAuth exchange timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+    return yield* Effect.fail(
+      new OAuthExchangeError({
+        message: 'No access token received from authorization server.',
+        status: res.status,
+      })
+    );
+  }).pipe(
+    Effect.timeout('15 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'OAuth code exchange timed out after 15s.',
+          timeoutMs: 15000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }
 
 /**
  * Searches the authenticated user's Gists to automatically locate an existing backup for this site instance.
  */
-export async function findSiteGist(
+export function findSiteGist(
   token: string
-): Promise<{ success: boolean; gist?: DiscoveredGist; error?: string }> {
+): Effect.Effect<DiscoveredGist | undefined, GistError> {
   if (!token || !token.trim() || token.startsWith('enc:v1:')) {
-    return { success: false, error: 'GitHub token is required.' };
+    return Effect.fail(
+      new GistAuthError({
+        message: 'GitHub token is required.',
+      })
+    );
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const res = await fetch('https://api.github.com/gists?per_page=100', {
-      method: 'GET',
-      headers: getHeaders(token),
-      signal: controller.signal,
+  const pipeline = Effect.gen(function* () {
+    const res = yield* Effect.tryPromise({
+      try: (signal) =>
+        fetch('https://api.github.com/gists?per_page=100', {
+          method: 'GET',
+          headers: getHeaders(token),
+          signal,
+        }),
+      catch: (cause) =>
+        new GistNetworkError({
+          message: cause instanceof Error ? cause.message : 'Network request failed.',
+          cause,
+        }),
     });
-    clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const errorMsg = await parseErrorMessage(res);
-      return { success: false, error: errorMsg };
+      return yield* parseResponseError(res);
     }
 
-    const gists = await res.json();
+    const gists = yield* Effect.tryPromise({
+      try: () => res.json(),
+      catch: () =>
+        new GistParseError({
+          message: 'Failed to parse Gist list response as JSON.',
+        }),
+    });
+
     if (!Array.isArray(gists)) {
-      return { success: true, gist: undefined };
+      return undefined;
     }
 
     const targetMetadataFilename = `_${SITE_SLUG}.json`;
 
-    // 1. Primary check: Gist contains this site's exact metadata signature file (e.g. `_codebook.json` or `_learn-rust.json`)
+    // 1. Primary check: Gist contains this site's exact metadata signature file
     for (const g of gists) {
       const files = g.files || {};
       if (files[targetMetadataFilename]) {
         return {
-          success: true,
-          gist: {
-            gistId: g.id,
-            htmlUrl: g.html_url,
-            updatedAt: g.updated_at,
-            description: g.description,
-            filenames: Object.keys(files),
-          },
+          gistId: g.id,
+          htmlUrl: g.html_url,
+          updatedAt: g.updated_at,
+          description: g.description,
+          filenames: Object.keys(files),
         };
       }
     }
 
-    // 2. Secondary check: exact description match AND has no conflicting _foreign-slug.json metadata file
+    // 2. Secondary check: exact description match AND no conflicting _foreign-slug.json file
     for (const g of gists) {
       if (g.description === GIST_DEFAULT_DESCRIPTION) {
         const files = g.files || {};
@@ -456,25 +670,28 @@ export async function findSiteGist(
         );
         if (!foreignMetaFile) {
           return {
-            success: true,
-            gist: {
-              gistId: g.id,
-              htmlUrl: g.html_url,
-              updatedAt: g.updated_at,
-              description: g.description,
-              filenames: Object.keys(files),
-            },
+            gistId: g.id,
+            htmlUrl: g.html_url,
+            updatedAt: g.updated_at,
+            description: g.description,
+            filenames: Object.keys(files),
           };
         }
       }
     }
 
-    return { success: true, gist: undefined };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    return {
-      success: false,
-      error: err.name === 'AbortError' ? 'Gist discovery timed out.' : (err.message || 'Network request failed.'),
-    };
-  }
+    return undefined;
+  }).pipe(
+    Effect.timeout('15 seconds'),
+    Effect.catchTag('TimeoutException', () =>
+      Effect.fail(
+        new GistTimeoutError({
+          message: 'Gist discovery timed out after 15s.',
+          timeoutMs: 15000,
+        })
+      )
+    )
+  );
+
+  return withTransientRetry(pipeline);
 }

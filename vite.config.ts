@@ -4,7 +4,11 @@ import { readFileSync, copyFileSync, existsSync } from "node:fs";
 import { parse } from "toml";
 import { parse as parseYaml } from "yaml";
 import { resolve } from "node:path";
+import { createRequire } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
+
+const require = createRequire(import.meta.url);
+const pyodideVersion: string = require("pyodide/package.json").version;
 
 const buildDate = new Date().toLocaleDateString(undefined, {
   year: "numeric",
@@ -79,6 +83,7 @@ function yamlPlugin(): Plugin {
 const DEFAULT_SITE_CONFIG = {
   title: "codebook",
   subtitle: "by wrongfirst",
+  home_page: "https://wrongfirst.github.io",
   logo_emoji: "📓",
 };
 
@@ -143,7 +148,7 @@ function htmlMetaPlugin(): Plugin {
     transformIndexHtml(html) {
       try {
         const siteConfig = getSiteConfig();
-        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji } = siteConfig;
+        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji, home_page } = siteConfig;
 
         const pageTitle = headline || (subtitle ? `${title} | ${subtitle}` : title);
         const pageDescription = description || `Interactive programming exercises in the browser`;
@@ -165,7 +170,13 @@ function htmlMetaPlugin(): Plugin {
 
         let res = html;
         res = res.replace(/(<h1 id="header-title"[^>]*>).*?(<\/h1>)/s, `$1${title}$2`);
-        res = res.replace(/(<p id="header-subtitle"[^>]*>).*?(<\/p>)/s, `$1${subtitle}$2`);
+        res = res.replace(/(<span id="header-subtitle-text"[^>]*>).*?(<\/span>)/s, `$1${subtitle}$2`);
+        if (home_page) {
+          res = res.replace(/(<a id="header-subtitle"[^>]*href=")[^"]*(")/s, `$1${home_page}$2`);
+        } else {
+          res = res.replace(/(<a id="header-subtitle"[^>]*)\s+href="[^"]*"\s+target="[^"]*"\s+rel="[^"]*"/s, `$1`);
+          res = res.replace(/<svg id="header-subtitle-icon"[^>]*>.*?<\/svg>/s, "");
+        }
         res = res.replace(/(<div [^>]*id="header-logo"[^>]*>).*?(<\/div>)/s, `$1${logo_emoji}$2`);
         res = res.replace(/<title>.*<\/title>/, `<title>${pageTitle}</title>`);
         res = res.replace("</head>", `  <meta property="og:title" content="${pageTitle}">\n</head>`);
@@ -201,6 +212,7 @@ export default defineConfig({
   },
   define: {
     BUILD_DATE: JSON.stringify(buildDate),
+    PYODIDE_VERSION: JSON.stringify(pyodideVersion),
   },
   plugins: [tailwindcss(), rawTextPlugin(), yamlPlugin(), tomlPlugin(), htmlMetaPlugin()],
 });

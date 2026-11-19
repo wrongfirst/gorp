@@ -1,0 +1,61 @@
+name: Sync Template to Instances
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'Target repository to synchronize'
+        type: choice
+        required: true
+        default: 'all'
+        options:
+          - 'all'
+          - 'wrongfirst/warmup'
+          - 'wrongfirst/dsa'
+          - 'wrongfirst/more-dsa'
+          - 'wrongfirst/most-dsa'
+          - 'wrongfirst/fft'
+          - 'wrongfirst/vim-better'
+          - 'wrongfirst/gorp'
+      dry_run:
+        description: 'Simulate sync without pushing changes'
+        type: boolean
+        default: false
+      deploy:
+        description: 'Trigger deployment workflow on instance after sync'
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: nautilus
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Sync Pipeline
+        env:
+          FORGEJO_TOKEN: ${{ secrets.CODEBOOK_SYNC_INSTANCES }}
+        run: |
+          DRY_RUN_ARG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_ARG="--dry-run"
+          fi
+          DEPLOY_ARG=""
+          if [ "${{ inputs.deploy }}" = "true" ]; then
+            DEPLOY_ARG="--deploy"
+          fi
+          npm run sync:instances -- \
+            --repo "${{ inputs.target_repo }}" \
+            $DRY_RUN_ARG \
+            $DEPLOY_ARG

@@ -10,58 +10,66 @@ const CLANG_CDN_URL = 'https://cdn.jsdelivr.net/npm/@yowasp/clang@22.0.0-git2054
 
 let runClang: YowaspCommand | null = null;
 let isClangReady = false;
+let clangReadyPromise: Promise<void> | null = null;
 let cachedPchBytes: Uint8Array | null = null;
 
 async function ensureClangReady(): Promise<void> {
   if (isClangReady && runClang) return;
-  try {
-    // Load from CDN to ensure import.meta.url inside the package resolves to the CDN,
-    // avoiding Vite bundling issues and local 404s.
-    const yowaspClang = await import(/* @vite-ignore */ CLANG_CDN_URL);
-    
-    runClang = (
-      yowaspClang.runClang ||
-      yowaspClang.commands?.clang ||
-      yowaspClang.default?.runClang
-    ) as YowaspCommand;
+  if (clangReadyPromise) return clangReadyPromise;
 
-    if (!runClang) {
-      throw new Error("Failed to find runClang in the loaded module");
-    }
-
-    // Warm up Clang and attempt to precompile the harness header into a PCH
+  clangReadyPromise = (async () => {
     try {
-      const pchRes = await runClang(
-        ['clang', '-x', 'c-header', '-Xclang', '-fno-pch-timestamp', 'harness.h', '-o', 'harness.pch'],
-        { 'harness.h': harness },
-        {
+      // Load from CDN to ensure import.meta.url inside the package resolves to the CDN,
+      // avoiding Vite bundling issues and local 404s.
+      const yowaspClang = await import(/* @vite-ignore */ CLANG_CDN_URL);
+      
+      runClang = (
+        yowaspClang.runClang ||
+        yowaspClang.commands?.clang ||
+        yowaspClang.default?.runClang
+      ) as YowaspCommand;
+
+      if (!runClang) {
+        throw new Error("Failed to find runClang in the loaded module");
+      }
+
+      // Warm up Clang and attempt to precompile the harness header into a PCH
+      try {
+        const pchRes = await runClang(
+          ['clang', '-x', 'c-header', '-Xclang', '-fno-pch-timestamp', 'harness.h', '-o', 'harness.pch'],
+          { 'harness.h': harness },
+          {
+            stdout: () => {},
+            stderr: () => {}
+          }
+        ) as YowaspTree | undefined;
+
+        const pch = pchRes?.['harness.pch'];
+        if (pch && pch instanceof Uint8Array) {
+          cachedPchBytes = pch;
+        }
+      } catch (pchErr) {
+        console.warn('[C Worker] PCH precompilation skipped, using direct include fallback:', pchErr);
+        cachedPchBytes = null;
+      }
+
+      if (!cachedPchBytes) {
+        // Fallback warmup via standard version check if PCH generation was skipped
+        await runClang(['clang', '--version'], {}, {
           stdout: () => {},
           stderr: () => {}
-        }
-      ) as YowaspTree | undefined;
-
-      const pch = pchRes?.['harness.pch'];
-      if (pch && pch instanceof Uint8Array) {
-        cachedPchBytes = pch;
+        });
       }
-    } catch (pchErr) {
-      console.warn('[C Worker] PCH precompilation skipped, using direct include fallback:', pchErr);
-      cachedPchBytes = null;
-    }
 
-    if (!cachedPchBytes) {
-      // Fallback warmup via standard version check if PCH generation was skipped
-      await runClang(['clang', '--version'], {}, {
-        stdout: () => {},
-        stderr: () => {}
-      });
+      isClangReady = true;
+    } catch (err) {
+      console.error('[C Worker] Clang warmup failed:', err);
+      clangReadyPromise = null;
+      throw err;
     }
+  })();
 
-    isClangReady = true;
-  } catch (err) {
-    console.error('[C Worker] Clang warmup failed:', err);
-    throw err;
-  }
+  return clangReadyPromise;
 }
 
 
@@ -308,6 +316,7 @@ createWorkerHandler({
 
   async reset() {
     isClangReady = false;
+    clangReadyPromise = null;
     cachedPchBytes = null;
     await ensureClangReady();
   }

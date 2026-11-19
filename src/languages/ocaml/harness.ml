@@ -41,7 +41,6 @@ let make_cycle (arr : int list) (pos : int) : list_node option =
     | Some h ->
         let target = ref None in
         let tail = ref h in
-        let idx = ref 0 in
         let rec loop node i =
           if i = pos then target := Some node;
           match node.next with

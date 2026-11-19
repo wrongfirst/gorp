@@ -7,7 +7,8 @@ export const metadata: LanguageMetadata = {
   cmLanguage: 'python',
   weight: 'heavy',
   prefetchUrls: [
-    'https://cdn.jsdelivr.net/pyodide/v314.0.5/full/pyodide.js'
+    `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide-lock.json`,
+    `https://cdn.jsdelivr.net/pyodide/v${PYODIDE_VERSION}/full/pyodide.asm.mjs`,
   ]
 };
 

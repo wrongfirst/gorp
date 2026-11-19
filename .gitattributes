@@ -1,0 +1,6 @@
+site.toml merge=ours
+README.md merge=ours
+instances.json merge=ours
+.github/instances.json merge=ours
+src/exercises/** merge=ours
+public/** merge=ours

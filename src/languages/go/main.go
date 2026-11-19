@@ -50,7 +50,7 @@ func mergeGoAST(harness, userCode, testCode string) (string, error) {
 
 	var testFile *ast.File
 	if strings.TrimSpace(testCode) != "" {
-		testWrapped := "package main\n\nfunc main() {\n" + testCode + "\n}\n\nfunc init() {\n\tmain()\n}"
+		testWrapped := "package main\n\nfunc main() {\n" + testCode + "\n}"
 		tf, _, err := parseSnippet(fset, "test.go", testWrapped, false)
 		if err != nil {
 			return "", fmt.Errorf("test code syntax error: %w", err)

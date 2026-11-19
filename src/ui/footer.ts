@@ -1,7 +1,8 @@
+import { elements } from "../core/elements";
 import { siteConfig } from "../core/siteConfig";
 
 export function renderFooter() {
-    const footer = document.getElementById("footer");
+    const footer = elements.footer;
     if (!footer) return;
     const projectUrl = siteConfig.project_url || 'https://github.com';
     footer.innerHTML = `

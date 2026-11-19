@@ -1,6 +1,8 @@
+import { elements } from '../core/elements';
+
 export const status = {
-    element: document.getElementById('status') as HTMLElement,
-    dot: document.getElementById('status-dot') as HTMLElement,
+    get element() { return elements.status; },
+    get dot() { return elements.statusDot; },
 
     setLoading(message = "Loading...") {
         if (this.element) {

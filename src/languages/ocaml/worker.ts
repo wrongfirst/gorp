@@ -1,5 +1,5 @@
 import harness from './harness.ml?raw';
-import toplevelUrl from './toplevel.bc.js?url';
+import toplevelUrl from './toplevel.bc.js.gz?url';
 import { createWorkerHandler } from '../base-worker';
 import type { DiagnosticItem } from '../types';
 
@@ -73,19 +73,43 @@ function parseOCamlDiagnostics(errText: string, harnessLines: number): Diagnosti
 
 function stripHarnessSignatures(output: string): string {
   if (!output) return '';
-  return output
-    .replace(/^module Tests : sig[\s\S]*?end\n?/m, '')
-    .replace(/^module Tests :[\s\S]*?end\n?/m, '')
-    .trimStart();
+  let cleaned = output;
+
+  // Remove module signature blocks (e.g. module Tests : sig ... end)
+  cleaned = cleaned.replace(/^module\s+\w+\s*:\s*(?:sig[\s\S]*?end|[\s\S]*?end)\n?/gm, '');
+
+  // Remove multi-line and single-line type signatures printed by the REPL
+  cleaned = cleaned.replace(/^type\s+[\s\S]*?;\s*}/gm, '');
+  cleaned = cleaned.replace(/^type\s+[^\n]*\n?/gm, '');
+
+  // Remove val bindings printed by the REPL (e.g. val create_list_node : int -> list_node = <fun>)
+  cleaned = cleaned.replace(/^val\s+[\s\S]*?=\s*<fun>\n?/gm, '');
+  cleaned = cleaned.replace(/^val\s+[^\n]*\n?/gm, '');
+
+  // Remove anonymous toplevel signatures (e.g. "- : unit = ()")
+  cleaned = cleaned.replace(/^-\s*:\s*[^\n]*\n?/gm, '');
+
+  return cleaned.trim();
 }
 
 createWorkerHandler({
   async init() {
     const response = await fetch(toplevelUrl);
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status} fetching toplevel.bc.js`);
+      throw new Error(`HTTP ${response.status} fetching toplevel.bc.js.gz`);
     }
-    const script = await response.text();
+
+    let buffer = await response.arrayBuffer();
+    const bytes = new Uint8Array(buffer, 0, 2);
+    // If the server served with Content-Encoding: gzip, the browser already decompressed it.
+    // Otherwise, manually decompress if still gzip-compressed (magic bytes 0x1f, 0x8b).
+    if (bytes[0] === 0x1f && bytes[1] === 0x8b) {
+      const ds = new DecompressionStream('gzip');
+      const decompressedStream = new Response(buffer).body!.pipeThrough(ds);
+      buffer = await new Response(decompressedStream).arrayBuffer();
+    }
+
+    const script = new TextDecoder().decode(buffer);
     // Indirect eval: (0, eval)(...) runs in global scope in sloppy mode (required for `with()` statements in js_of_ocaml)
     (0, eval)(script);
 

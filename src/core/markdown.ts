@@ -1,9 +1,6 @@
 import { Marked } from 'marked';
 import DOMPurify, { type Config } from 'dompurify';
-import { EditorView } from 'codemirror';
-import { EditorState, Extension } from '@codemirror/state';
-import { getTheme } from '../ui/theme';
-import { getLanguageSyntax, defaultLanguageId } from '../languages/language-registry';
+import { highlightCodeSnippet } from './highlighter';
 
 // DOMPurify configuration: allow safe formatting tags, block scripts/iframes/forms/event handlers
 const PURIFY_CONFIG: Config = {
@@ -36,7 +33,7 @@ export function escapeHtml(str: string): string {
         .replace(/'/g, '&#039;');
 }
 
-function isSafeUrl(url: string): boolean {
+export function isSafeUrl(url: string): boolean {
     if (!url) return false;
     const trimmed = url.trim().toLowerCase();
     // Allow safe absolute web and email protocols
@@ -44,7 +41,11 @@ function isSafeUrl(url: string): boolean {
         return true;
     }
     // Allow safe in-page anchor links and relative paths (blocking protocol-relative //)
-    if (trimmed.startsWith('#') || (trimmed.startsWith('/') && !trimmed.startsWith('//'))) {
+    if (
+        trimmed.startsWith('#') ||
+        (trimmed.startsWith('/') && !trimmed.startsWith('//')) ||
+        (trimmed.startsWith('./') && !trimmed.includes(':'))
+    ) {
         return true;
     }
     // Reject javascript:, data:, vbscript:, file:, and other unsafe pseudo-protocols
@@ -69,7 +70,9 @@ const safeImageRenderer = ({ href, title, text }: { href: string; title?: string
 const descMarked = new Marked({
     renderer: {
         code({ text, lang }: { text: string; lang?: string }) {
-            return `<div class="cm-static-code mb-4" data-lang="${lang || ''}">${escapeHtml(text)}</div>`;
+            const highlighted = highlightCodeSnippet(text, lang);
+            const langClass = lang ? ` language-${escapeHtml(lang)}` : '';
+            return `<pre class="cm-static-code mb-4 p-3.5 overflow-x-auto text-xs font-mono leading-relaxed"><code class="hljs${langClass}">${highlighted}</code></pre>`;
         },
         link: safeLinkRenderer,
         html({ text }: { text: string }) {
@@ -83,7 +86,7 @@ const chatMarked = new Marked({
     renderer: {
         code({ text, lang }: { text: string; lang?: string }) {
             const langClass = lang ? ` language-${escapeHtml(lang)}` : '';
-            const cleanCode = escapeHtml(text.trim());
+            const highlighted = highlightCodeSnippet(text.trim(), lang);
             return `
 <div class="code-block-container not-prose my-2 rounded-md overflow-hidden border border-border-default bg-bg-app text-left">
     <div class="flex items-center justify-between px-2.5 py-1 bg-bg-surface/90 border-b border-border-default text-[10px] text-fg-muted font-mono select-none">
@@ -92,7 +95,7 @@ const chatMarked = new Marked({
             <span>Copy</span>
         </button>
     </div>
-    <pre class="px-3 py-2 max-h-60 overflow-auto text-xs leading-snug font-mono m-0 bg-transparent"><code class="${langClass}">${cleanCode}</code></pre>
+    <pre class="px-3 py-2 max-h-60 overflow-auto text-xs leading-snug font-mono m-0 bg-transparent"><code class="hljs${langClass}">${highlighted}</code></pre>
 </div>`;
         },
         link: safeLinkRenderer,
@@ -128,61 +131,4 @@ export const parseChatMarkdown = (text: string): string => {
     const raw = chatMarked.parse(cleaned) as string;
     return DOMPurify.sanitize(raw, PURIFY_CONFIG);
 };
-
-
-let activeStaticViews: EditorView[] = [];
-
-/**
- * Destroys all currently active static CodeMirror editor views to prevent memory leaks.
- */
-export function destroyStaticBlocks(): void {
-    for (const view of activeStaticViews) {
-        try {
-            view.destroy();
-        } catch {
-            // Non-fatal if view is already unmounted
-        }
-    }
-    activeStaticViews = [];
-}
-
-//JN: Right now, codemirror essentially "injects" a read only editor in the markdown codeblocks using this
-//function. So all codeblocks in the problem description are effectively read-only editors. Does this add
-//an overhead as the number of code blocks across all exercises scales?
-export function highlightStaticBlocks(): void {
-    destroyStaticBlocks();
-
-    if (typeof document === 'undefined') return;
-
-    const isDark = typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const blocks = document.querySelectorAll('.cm-static-code');
-    blocks.forEach(block => {
-        const text = block.textContent || "";
-        const lang = block.getAttribute('data-lang');
-        const targetLang = lang || defaultLanguageId;
-        const syntaxExt: Extension | undefined = getLanguageSyntax(targetLang) || getLanguageSyntax(defaultLanguageId);
-
-        block.textContent = "";
-
-        const view = new EditorView({
-            state: EditorState.create({
-                doc: text,
-                extensions: [
-                    EditorState.readOnly.of(true),
-                    EditorView.editable.of(false),
-                    getTheme(isDark),
-                    ...(syntaxExt ? [syntaxExt] : []),
-                    EditorView.lineWrapping,
-                    EditorView.theme({
-                        "&": { borderRadius: "4px", overflow: "hidden", backgroundColor: "var(--bg-app)" },
-                        ".cm-scroller": { overflow: "visible" }
-                    })
-                ]
-            }),
-            parent: block as HTMLElement
-        });
-
-        activeStaticViews.push(view);
-    });
-}
 

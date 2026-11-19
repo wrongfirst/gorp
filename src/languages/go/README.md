@@ -13,6 +13,8 @@ go mod tidy
 2. Compile to WebAssembly:
 ```bash
 GOOS=js GOARCH=wasm go build -ldflags="-s -w" -o yaegi.wasm main.go
+gzip -c -9 yaegi.wasm > yaegi.wasm.gz
+rm yaegi.wasm
 ```
 
 3. Update `wasm_exec.js` (if upgrading Go version):

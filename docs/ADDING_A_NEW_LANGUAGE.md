@@ -6,7 +6,7 @@ Language support is decoupled into three layers:
 
 1. **Site Configuration** (`site.toml`): Controls globally enabled languages and default selection.
 2. **Language Modules** (`src/languages/<lang_id>/`): Defines metadata, runner adapter, worker engine, syntax highlighting, and optional linter.
-3. **Exercise Variants** (`src/exercises/<exercise_id>/<lang_id>/`): Starter template, test harness, and optional custom validators.
+3. **Exercise Variants** (`src/exercises/<exercise_id>/<lang_id>/`): Starter template, solution code, and optional test harness fallback.
 
 All modules are auto-discovered at build/dev time via Vite's `import.meta.glob`:
 - `metadata.ts`, `syntax.ts`, and `linter.ts` are loaded eagerly for immediate UI and editor rendering.
@@ -152,14 +152,9 @@ export default lintExtension;
 Add the language folder to each supported exercise:
 
 - **`template.<ext>`** (e.g. `template.py`): Starter code displayed in the editor.
-- **`test.<ext>`** (e.g. `test.py`): Test harness appended during execution.
-- **`validator.ts`** *(Optional)*: Custom TypeScript validation logic:
-  ```ts
-  export function validate(code: string, output: string): true | string {
-    if (!code.includes('def solve')) return 'Must define solve function';
-    return true;
-  }
-  ```
+- **`solution.<ext>`** (e.g. `solution.py`): Reference solution used for verification and speedrun validation.
+- **`test.<ext>`** *(Optional)*: Fallback test harness if `canonical-data.json` is not provided for the exercise.
+- **`validator.ts`** *(Optional)*: Post-run TypeScript check (`validate(code, output, languageId?) => true | string`) for stdout-only (`main()`) or structural source checks. Place at `src/exercises/<exercise_id>/validator.ts` to share across all languages, or inside `<lang_id>/validator.ts` for a language-specific override.
 
 ---
 
@@ -179,7 +174,7 @@ languages = ["ocaml", "python", "go", "typescript"] # Add language ID
 ## More Checks
 
 ### 1. Static Code Blocks in Markdown Descriptions (`problem.md`)
-`highlightStaticBlocks()` in `src/core/markdown.ts` automatically queries `getLanguageSyntax(lang)` from `language-registry.ts`. Fenced blocks (e.g. ` ```python `) in `problem.md` are highlighted automatically as long as `syntax.ts` exists.
+Fenced code blocks (e.g. ` ```python `) in `problem.md` are highlighted automatically via Highlight.js in `src/core/markdown.ts`.
 
 ### 2. Custom File Import Declarations (`src/declarations.d.ts`)
 If starter code, harnesses, or tests are imported as raw strings (e.g. `import harness from './harness.py?raw'`), ensure the file extension pattern is covered in `src/declarations.d.ts`.

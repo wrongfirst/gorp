@@ -1,4 +1,4 @@
-import { loadPyodide } from 'pyodide';
+import { loadPyodide, version as pyodideVersion } from 'pyodide';
 import { createWorkerHandler } from '../base-worker';
 import type { DiagnosticItem } from '../types';
 import harness from './harness.py?raw';
@@ -24,7 +24,7 @@ async function setupPyodide(): Promise<any> {
     const instance = await loadPyodide({
       // JN: We specify the url here since by default it looks to fetch assets from
       // bundled module path which fails on deployment.
-      indexURL: 'https://cdn.jsdelivr.net/pyodide/v314.0.5/full/'
+      indexURL: `https://cdn.jsdelivr.net/pyodide/v${pyodideVersion}/full/`
     });
 
     instance.setStdout({

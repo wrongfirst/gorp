@@ -15,8 +15,8 @@ export const layoutElements = {
 
     // Problem and editor panels
     get problemAndChatPanel() { return byId('problem-and-chat-panel'); },
-    get editorConsolePanel() { return byId('editor-and-console-panel'); },
-    get console() { return byId('console-output'); },
+    get editorOutputPanel() { return byId('editor-and-output-panel'); },
+    get output() { return byId('output-content'); },
     get status() { return byId('status'); },
     get statusDot() { return byId('status-dot'); },
 
@@ -33,12 +33,15 @@ export const layoutElements = {
     // Resize handles and panes
     resize: {
         get paneProblem() { return byId('problem-and-chat-panel'); },
-        get paneConsole() { return byId('pane-console'); },
+        get paneOutput() { return byId('pane-output'); },
         get dragHDesktop() { return byId('drag-h-desktop'); },
-        get dragVConsole() { return byId('drag-v-console'); },
+        get dragVOutput() { return byId('drag-v-output'); },
     },
 
     // Progress bar container
     get progressContainer() { return byId('progress-container'); },
+
+    // Footer
+    get footer() { return byId('footer'); },
 };
 

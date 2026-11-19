@@ -396,6 +396,16 @@ func (t TestHarness) EqualCheck(msg string, expected, actual interface{}) {
 
 func (t TestHarness) UnorderedEqualCheck(msg string, expected, actual interface{}) {
 	switch exp := expected.(type) {
+	case []int:
+		if act, ok := actual.([]int); ok {
+			t.EqualCheck(msg, SortInts(exp), SortInts(act))
+			return
+		}
+	case []string:
+		if act, ok := actual.([]string); ok {
+			t.EqualCheck(msg, SortStrings(exp), SortStrings(act))
+			return
+		}
 	case [][]int:
 		if act, ok := actual.([][]int); ok {
 			t.EqualCheck(msg, NormalizeNested(exp), NormalizeNested(act))

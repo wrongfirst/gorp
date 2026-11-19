@@ -12,6 +12,7 @@ default_language = "typescript"
 languages = ["typescript", "ocaml", "python", "go", "c", "cpp"]
 
 # URLs
+home_page = "https://wrongfirst.github.io"
 project_url = "https://github.com/jitinnair1/codebook"
 author_url = "https://github.com/jitinnair1"
 

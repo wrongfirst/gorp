@@ -7,7 +7,10 @@
     "check": "tsc --noEmit",
     "build": "npm run clean && npm run check && vite build",
     "dev": "vite",
-    "serve": "node server.mjs"
+    "serve": "node server.mjs",
+    "deploy": "node scripts/deploy.ts",
+    "sync:instances": "node scripts/sync-instances.ts",
+    "prune:deployments": "node scripts/prune-deployments.ts"
   },
   "dependencies": {
     "@astral-sh/ruff-wasm-web": "^0.9.10",
@@ -28,8 +31,12 @@
     "canvas-confetti": "^1.9.4",
     "codemirror": "^6.0.2",
     "dompurify": "^3.4.13",
+    "effect": "^3.22.2",
+    "fzf": "^0.5.2",
+    "highlight.js": "^11.12.0",
     "marked": "^17.0.6",
     "pyodide": "^314.0.3",
+    "yaml": "^2.7.0",
     "zustand": "^5.0.13"
   },
   "devDependencies": {
@@ -42,6 +49,6 @@
     "toml": "^5.0.0",
     "typescript": "^7.0.2",
     "vite": "^8.1.5",
-    "yaml": "^2.7.0"
+    "wrangler": "^4.148.0"
   }
 }

@@ -1,6 +1,6 @@
 # Build the Toplevel
 
-The following are instrcutions to ONLY build the Toplevel. It is assumed you already have `opam` installed:
+The following are instructions to ONLY build the Toplevel. It is assumed you already have `opam` installed:
 
 Initialize a local switch (this creates a `_opam` folder hidden in the root)
 
@@ -24,10 +24,10 @@ Now, build the Toplevel
 ```bash
 dune build
 ```
-and copt the built file to `public`
+and copy/compress the built file:
 
 ```bash
-cp _build/default/toplevel.bc.js ./toplevel.bc.js
+gzip -c -9 _build/default/toplevel.bc.js > ./toplevel.bc.js.gz
 ```
 
 NOTE: If you run into eval `Unbound module` errors, it could be you've not run

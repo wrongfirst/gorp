@@ -8,6 +8,8 @@ export const chatElements = {
         get clearBtn() { return byId<HTMLButtonElement>('clear-chat-btn'); },
         get newTabBtn() { return byId<HTMLButtonElement>('new-chat-tab-btn'); },
         get tabsContainer() { return byId('chat-tabs-container'); },
+        get tabsFadeLeft() { return byId('chat-tabs-fade-left'); },
+        get tabsFadeRight() { return byId('chat-tabs-fade-right'); },
         get messages() { return byId('chat-messages'); },
         get quickChips() { return byId('chat-quick-chips'); },
         get input() { return byId<HTMLTextAreaElement>('chat-input'); },

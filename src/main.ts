@@ -1,10 +1,12 @@
 import './input.css';
 import { store, ensureSettingsDecrypted } from './core/store';
 import { initStartupSync } from './core/sync/syncManager';
+import { Effect } from 'effect';
 import { exercises, curriculum, getExerciseDisplayNumber } from './exercises/exercise-registry';
 import { getExerciseVariant } from './core/types';
-import { loadExerciseCode, setEditorCode, updateEditorTheme } from './core/editor';
-import { parseMarkdown, highlightStaticBlocks, escapeHtml } from './core/markdown';
+import { loadExerciseCode, setEditorCode, updateEditorTheme, getCode, formatEditorCode } from './core/editor';
+import { parseMarkdown, escapeHtml } from './core/markdown';
+import { renderMath } from './core/math';
 
 //module imports
 import { elements } from './core/elements';
@@ -21,8 +23,11 @@ import { setupResize } from './ui/resize';
 import { initTabs } from './ui/tabs';
 import { initNavigation } from './ui/navigation';
 import { resetEditorText } from './ui/resetEditorText';
+import { setupCopyCodeButton } from './ui/copyCode';
+import { setupFormatCodeButton } from './ui/formatCode';
 import { renderFooter } from './ui/footer';
 import { initShortcuts } from './ui/shortcuts';
+import { initCommandPalette } from './ui/commandPalette';
 import { initResetProgress } from './ui/resetProgress';
 import { initSettings } from './ui/settings';
 import { initChatPanel } from './ui/chatPanel';
@@ -36,6 +41,7 @@ Object.defineProperty(window, 'fetch', { value: window.fetch, writable: false, c
 //initialisation
 initBranding();
 initShortcuts();
+initCommandPalette();
 initSettings();
 initChatPanel();
 initResetProgress();
@@ -50,7 +56,7 @@ const switchTab = initTabs(
     elements.tabs.problem,
     elements.tabs.code,
     elements.problemAndChatPanel,
-    elements.editorConsolePanel
+    elements.editorOutputPanel
 );
 
 const navActions = initNavigation(
@@ -113,13 +119,13 @@ function render() {
         const titleHtml = `<h1 class="text-3xl font-bold mb-6 text-fg-primary">${escapeHtml(headerTitle)}</h1>`;
         const fullContent = titleHtml + descHtml;
 
-        if (elements.description.desktop) elements.description.desktop.innerHTML = fullContent;
+        if (elements.description.desktop) {
+            elements.description.desktop.innerHTML = fullContent;
+            renderMath(elements.description.desktop);
+        }
 
         //update nav
         if (navActions) navActions.updateNavState(activeLessonSlug);
-
-        //highlight static blocks
-        highlightStaticBlocks();
 
         //language selector
         renderLanguageSelector(elements.languageSelectorContainer, currentEx);
@@ -130,9 +136,9 @@ function render() {
             showPopup('Saved!');
         });
 
-        //reset console on exercise or language switch
+        //reset output on exercise or language switch
         if (isExerciseChanged || isLanguageChanged) {
-            elements.console.textContent = "// Ready...";
+            elements.output.textContent = "// Ready...";
             if (activeRunner.getStatus?.() === 'ready') {
                 status.setReady();
             }
@@ -154,6 +160,16 @@ store.subscribe(render);
 //run button
 elements.runBtn.addEventListener('click', () => runner.run());
 
+//format button
+if (elements.formatCodeBtn) {
+    setupFormatCodeButton(elements.formatCodeBtn, () => formatEditorCode());
+}
+
+//copy button
+if (elements.copyCodeBtn) {
+    setupCopyCodeButton(elements.copyCodeBtn, () => getCode());
+}
+
 //reset button
 if (elements.resetBtn) {
     resetEditorText(elements.resetBtn, ICONS.TRASH, () => {
@@ -167,25 +183,27 @@ if (elements.resetBtn) {
     });
 }
 
-//clear console
-if (elements.clearConsoleBtn) {
-    elements.clearConsoleBtn.innerHTML = ICONS.TRASH;
-    elements.clearConsoleBtn.addEventListener('click', () => {
-        if (elements.console) elements.console.textContent = "";
+//clear output
+if (elements.clearOutputBtn) {
+    elements.clearOutputBtn.innerHTML = ICONS.TRASH;
+    elements.clearOutputBtn.addEventListener('click', () => {
+        if (elements.output) elements.output.textContent = "";
     });
 }
 
 //routing
-if (elements.branding.brandLink) {
-    elements.branding.brandLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        const firstExId = exercises[0]?.id;
-        if (firstExId) {
-            window.location.hash = `#${firstExId}`;
-            store.getState().setCurrent(firstExId);
-        }
-    });
-}
+const navigateHome = (e: MouseEvent) => {
+    e.preventDefault();
+    const firstExId = exercises[0]?.id;
+    if (firstExId) {
+        window.location.hash = `#${firstExId}`;
+        store.getState().setCurrent(firstExId);
+    }
+};
+
+//header anchor links
+elements.branding.brandLink?.addEventListener('click', navigateHome);
+elements.branding.titleLink?.addEventListener('click', navigateHome);
 
 window.addEventListener('hashchange', () => {
     const id = window.location.hash.slice(1);
@@ -198,7 +216,7 @@ window.addEventListener('hashchange', () => {
 
 //resize logic
 setupResize(elements.resize.dragHDesktop, elements.resize.paneProblem, 'horizontal');
-setupResize(elements.resize.dragVConsole, elements.resize.paneConsole, 'vertical', true);
+setupResize(elements.resize.dragVOutput, elements.resize.paneOutput, 'vertical', true);
 
 
 //startup
@@ -222,7 +240,9 @@ render();
 
 //kick off background credential decryption and startup sync (non-blocking)
 ensureSettingsDecrypted(store)
-    .then(() => initStartupSync())
+    .then(() => {
+        Effect.runFork(initStartupSync());
+    })
     .catch((err) => {
         console.warn('[main] Startup decryption or sync check failed:', err);
     });

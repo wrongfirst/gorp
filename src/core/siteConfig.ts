@@ -7,6 +7,7 @@ export interface SiteConfig {
     headline?: string;
     description?: string;
     keywords?: string;
+    home_page?: string;
     project_url?: string;
     author_url?: string;
     logo_emoji?: string;
@@ -24,6 +25,7 @@ export const SITE_SLUG: string =
     SITE_TITLE.toLowerCase()
         .replace(/[^a-z0-9_-]+/g, '-')
         .replace(/^-+|-+$/g, '') || 'codebook';
-const SITE_SUBTITLE: string = siteConfig.subtitle || '';
+export const SITE_SUBTITLE: string = siteConfig.subtitle || '';
+export const SITE_HOME_PAGE: string = siteConfig.home_page || '';
 
 export default siteConfig;

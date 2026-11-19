@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CanonicalData",
+  "description": "Schema for DSA canonical-data.json exercise specifications",
+  "type": "object",
+  "required": ["exercise", "cases"],
+  "properties": {
+    "exercise": {
+      "type": "string",
+      "description": "The unique exercise folder identifier (e.g. contains_duplicate)"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["function", "operations", "compose"],
+      "default": "function",
+      "description": "Problem paradigm: 'function' (default single function), 'operations' (class/data structure methods), or 'compose' (e.g. encode & decode)"
+    },
+    "property": {
+      "type": "string",
+      "description": "Name of the primary function or method called"
+    },
+    "inputs": {
+      "type": "object",
+      "description": "Mapping of input parameter name to canonical semantic type hint",
+      "additionalProperties": {
+        "$ref": "#/definitions/CanonicalInputType"
+      }
+    },
+    "returns": {
+      "$ref": "#/definitions/CanonicalReturnType"
+    },
+    "mutation": {
+      "type": "object",
+      "required": ["target"],
+      "properties": {
+        "target": {
+          "type": "string",
+          "description": "Name of the input parameter modified in-place"
+        }
+      },
+      "additionalProperties": false
+    },
+    "receiver": {
+      "type": "string",
+      "description": "Target class name when mode is 'operations' or 'compose'"
+    },
+    "compose": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "Two function names [outer, inner] invoked in sequence for compose problems (e.g. ['decode', 'encode'])"
+    },
+    "comparison": {
+      "$ref": "#/definitions/ComparisonType"
+    },
+    "comments": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "cases": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/CanonicalCase"
+      },
+      "minItems": 1
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "CanonicalInputType": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "tree",
+        "tree_node",
+        "linked_list",
+        "linked_list_array",
+        "linked_list_cycle",
+        "graph",
+        "interval",
+        "interval_array",
+        "byte_grid"
+      ]
+    },
+    "CanonicalReturnType": {
+      "type": "string",
+      "enum": [
+        "standard",
+        "tree",
+        "tree_node",
+        "linked_list",
+        "graph",
+        "void"
+      ]
+    },
+    "ComparisonType": {
+      "type": "string",
+      "enum": ["exact", "unordered", "unordered_nested"]
+    },
+    "CanonicalCase": {
+      "oneOf": [
+        { "$ref": "#/definitions/CanonicalTestCase" },
+        { "$ref": "#/definitions/CanonicalCaseGroup" }
+      ]
+    },
+    "CanonicalCaseGroup": {
+      "type": "object",
+      "required": ["description", "cases"],
+      "properties": {
+        "description": { "type": "string" },
+        "cases": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CanonicalCase" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "CanonicalTestCase": {
+      "type": "object",
+      "required": ["description", "input", "expected"],
+      "properties": {
+        "uuid": { "type": "string" },
+        "description": { "type": "string" },
+        "property": { "type": "string" },
+        "input": {
+          "type": "object",
+          "description": "Named map of arguments passed to the function"
+        },
+        "expected": {
+          "description": "Expected return value or post-mutation state"
+        },
+        "comparison": { "$ref": "#/definitions/ComparisonType" },
+        "returns": { "$ref": "#/definitions/CanonicalReturnType" },
+        "inputs": {
+          "type": "object",
+          "additionalProperties": { "$ref": "#/definitions/CanonicalInputType" }
+        },
+        "mutation": {
+          "type": "object",
+          "required": ["target"],
+          "properties": {
+            "target": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "comments": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

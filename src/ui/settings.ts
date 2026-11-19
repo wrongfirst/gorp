@@ -9,9 +9,12 @@ import { showConfirmDialog } from './resetProgress';
 import { showPopup } from './popup';
 import { pullFromGist, pushToGist, initiateOAuthLogin, subscribeSyncStatus, getSyncStatus, SyncStateEvent, createAndLinkGist } from '../core/sync/syncManager';
 import { validateToken, extractGistId } from '../core/sync/gistClient';
+import { Effect } from 'effect';
 import { SITE_SLUG } from '../core/siteConfig';
 import { buildManualExportPayload, parseManualImport } from '../core/backup';
-import { getModelsUrl } from '../core/chat/client';
+import { fetchAvailableModels } from '../core/chat/client';
+import { escapeHtml } from '../core/markdown';
+import { downloadJsonFile } from './download';
 
 let cachedModels: string[] = [];
 let isFetchingModels = false;
@@ -724,92 +727,20 @@ async function triggerModelFetch() {
     modelFetchError = null;
     syncSettingsUI();
 
-    const result = await fetchAvailableModels(baseUrl, apiKey);
-    isFetchingModels = false;
-
-    if (result.success) {
-        cachedModels = result.models;
+    try {
+        cachedModels = await Effect.runPromise(fetchAvailableModels(baseUrl, apiKey));
         modelFetchError = null;
         // If current model is not set or not in list, pick the first model from the endpoint
         const currentModel = store.getState().chatSettings.model;
         if (!currentModel || (!cachedModels.includes(currentModel) && cachedModels.length > 0)) {
             store.getState().setChatSettings({ model: cachedModels[0] });
         }
-    } else {
-        cachedModels = [];
-        modelFetchError = result.error || 'Failed to fetch models';
-    }
-
-    syncSettingsUI();
-}
-
-async function fetchAvailableModels(baseUrl: string, apiKey: string): Promise<{ success: boolean; models: string[]; error?: string }> {
-    if (!baseUrl) return { success: false, models: [], error: 'Base URL is required' };
-
-    const resolvedApiKey = (await decryptSecret(apiKey || '')).trim();
-    const endpoint = getModelsUrl(baseUrl);
-    const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
-
-    try {
-        const headers: Record<string, string> = {
-            'Content-Type': 'application/json',
-        };
-        if (resolvedApiKey) {
-            headers['Authorization'] = `Bearer ${resolvedApiKey}`;
-        }
-        if (cleanBaseUrl.includes('anthropic.com')) {
-            headers['anthropic-dangerous-direct-browser-access'] = 'true';
-        }
-
-        const abortController = new AbortController();
-        const timeoutId = setTimeout(() => abortController.abort(), 15000);
-
-        const res = await fetch(endpoint, {
-            method: 'GET',
-            headers,
-            signal: abortController.signal,
-        });
-        clearTimeout(timeoutId);
-
-        if (!res.ok) {
-            const errText = await res.text().catch(() => '');
-            let msg = `HTTP ${res.status} (${res.statusText})`;
-            try {
-                const parsed = JSON.parse(errText);
-                if (parsed.error?.message) msg = parsed.error.message;
-            } catch {
-                if (errText) msg = errText.slice(0, 80);
-            }
-            return { success: false, models: [], error: msg };
-        }
-
-        const data = await res.json();
-        let list: string[] = [];
-
-        if (Array.isArray(data?.data)) {
-            list = data.data.map((m: any) => m.id || m.name).filter(Boolean);
-        } else if (Array.isArray(data?.models)) {
-            list = data.models.map((m: any) => m.id || m.name).filter(Boolean);
-        } else if (Array.isArray(data)) {
-            list = data.map((m: any) => (typeof m === 'string' ? m : m.id || m.name)).filter(Boolean);
-        }
-
-        // Filter out non-chat / embedding / audio / tts / whisper models if standard OpenAI
-        if (cleanBaseUrl.includes('api.openai.com')) {
-            const excluded = ['embedding', 'whisper', 'tts', 'dall-e', 'davinci', 'babbage', 'moderation', 'realtime', 'audio'];
-            list = list.filter(id => !excluded.some(ex => id.toLowerCase().includes(ex)));
-        }
-
-        if (list.length === 0) {
-            return { success: false, models: [], error: 'Endpoint returned an empty list of models' };
-        }
-
-        // Sort alphabetically
-        list.sort((a, b) => a.localeCompare(b));
-
-        return { success: true, models: list };
     } catch (err: any) {
-        return { success: false, models: [], error: err?.message || 'Network request failed (Check CORS or Base URL)' };
+        cachedModels = [];
+        modelFetchError = err?.message || 'Failed to fetch models';
+    } finally {
+        isFetchingModels = false;
+        syncSettingsUI();
     }
 }
 
@@ -840,14 +771,6 @@ function formatMaskedKey(key: string): string {
     return `${prefix}••••••••`;
 }
 
-function escapeHtml(str: string): string {
-    return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-}
 
 function showBackupStatus(message: string, isError: boolean = false) {
     const el = elements.settings.backupStatusMsg;
@@ -871,20 +794,7 @@ async function handleExportBackup() {
         const includeKeys = !!elements.settings.includeKeysCheckbox?.checked;
 
         const dataStr = await buildManualExportPayload(state, { includeKeys });
-        const blob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-
-        const now = new Date();
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-
-        a.href = url;
-        a.download = `${SITE_SLUG}-backup-${timestamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        downloadJsonFile(`${SITE_SLUG}-backup`, dataStr);
 
         showBackupStatus('Backup exported successfully.');
     } catch (err: any) {
@@ -937,7 +847,7 @@ function formatBytes(bytes: number, decimals = 1): string {
     return `${formatted} ${sizes[i] || 'B'}`;
 }
 
-export function calculateLocalStorageUsage(): { bytes: number; formatted: string } {
+function calculateLocalStorageUsage(): { bytes: number; formatted: string } {
     let totalBytes = 0;
     try {
         for (let i = 0; i < localStorage.length; i++) {
@@ -1084,7 +994,7 @@ function renderGistSection(settings: GistSyncSettings) {
                 ensureSettingsDecrypted().then(() => {
                     const activeToken = store.getState().gistSyncSettings?.token;
                     if (activeToken && !activeToken.startsWith('enc:v1:')) {
-                        validateToken(activeToken).then((res) => {
+                        Effect.runPromise(validateToken(activeToken)).then((res) => {
                             if (res.valid && res.username) {
                                 cachedGitHubUsername = res.username;
                                 if (usernameEl) {
@@ -1143,22 +1053,22 @@ function showGistStatus(message: string, isError = false) {
 
 async function handleSyncNow() {
     showGistStatus('Syncing progress to GitHub Gist...');
-    const res = await pushToGist();
-    if (res.success) {
+    try {
+        await Effect.runPromise(pushToGist());
         showGistStatus('Synced successfully with GitHub Gist.');
-    } else {
-        showGistStatus(`Sync failed: ${res.error || 'Network error'}`, true);
+    } catch (err: any) {
+        showGistStatus(`Sync failed: ${err?.message || 'Network error'}`, true);
     }
 }
 
 async function handlePullGist() {
     showGistStatus('Pulling latest progress from GitHub Gist...');
-    const res = await pullFromGist({ smartMerge: true });
-    if (res.success) {
+    try {
+        await Effect.runPromise(pullFromGist({ smartMerge: true }));
         showGistStatus('Progress pulled and merged successfully.');
         syncSettingsUI();
-    } else {
-        showGistStatus(`Pull failed: ${res.error || 'Network error'}`, true);
+    } catch (err: any) {
+        showGistStatus(`Pull failed: ${err?.message || 'Network error'}`, true);
     }
 }
 
@@ -1206,29 +1116,29 @@ async function handleManualGistConnect() {
                 autoSync: true,
                 lastSyncedAt: now,
             });
-            showPopup('Syncing from GitHub...');
-            const res = await pullFromGist({ smartMerge: true });
-            if (res.success) {
+            showPopup('Syncing from GitHub...', 3000);
+            try {
+                await Effect.runPromise(pullFromGist({ smartMerge: true }));
                 showGistStatus('Connected and pulled from Gist successfully.');
                 showPopup('Connected to GitHub!');
                 tokenInput.value = '';
                 idInput.value = '';
                 syncSettingsUI();
-            } else {
+            } catch (err: any) {
                 store.getState().unlinkGist();
-                showGistStatus(`Failed to pull from Gist: ${res.error}`, true);
+                showGistStatus(`Failed to pull from Gist: ${err?.message || 'Network error'}`, true);
             }
         } else {
             // Create new Gist
-            const res = await createAndLinkGist(token);
-            if (res.success) {
+            try {
+                await Effect.runPromise(createAndLinkGist(token));
                 showGistStatus('New Gist created and linked successfully.');
                 showPopup('Connected to GitHub!');
                 tokenInput.value = '';
                 idInput.value = '';
                 syncSettingsUI();
-            } else {
-                showGistStatus(`Failed to create Gist: ${res.error}`, true);
+            } catch (err: any) {
+                showGistStatus(`Failed to create Gist: ${err?.message || 'Network error'}`, true);
             }
         }
     } finally {

@@ -1,3 +1,4 @@
+import { elements } from '../core/elements';
 import { Chapter } from '../core/types';
 import { ICONS } from './icons';
 import { store } from '../core/store';
@@ -24,7 +25,7 @@ export function renderSidebar(
                 store.getState().setCurrent(exId);
 
                 // Auto-close sidebar on mobile after selecting an exercise
-                const sidebarNav = document.getElementById('sidebar-nav');
+                const sidebarNav = elements.sidebar.nav;
                 if (sidebarNav && window.innerWidth < 1024 && !sidebarNav.classList.contains('hidden')) {
                     sidebarNav.classList.add('hidden');
                     sidebarNav.classList.remove('flex');

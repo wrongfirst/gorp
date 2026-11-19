@@ -2,6 +2,7 @@
 import { StateCreator } from 'zustand/vanilla';
 import { AppState, ChatConversation, ChatMessage, ChatSlice } from '../../types';
 import { scheduleAutoPush } from '../../sync/syncManager';
+import { createUniqueId } from '../../id';
 
 export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, get) => ({
   chatConversations: {},
@@ -9,7 +10,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
 
   createConversation: (lessonSlug: string, languageId: string, title?: string) => {
     const convs = get().chatConversations[lessonSlug] || [];
-    const id = `conv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const id = createUniqueId('conv');
     const newConv: ChatConversation = {
       id,
       lessonSlug,
@@ -22,7 +23,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
     set({
       chatConversations: {
         ...get().chatConversations,
-        [lessonSlug]: [...convs, newConv],
+        [lessonSlug]: [newConv, ...convs],
       },
       activeConversationId: {
         ...get().activeConversationId,
@@ -50,20 +51,6 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
     });
   },
 
-  updateConversationLanguage: (lessonSlug: string, conversationId: string, languageId: string) => {
-    const currentConvs = get().chatConversations[lessonSlug] || [];
-    const updatedConvs = currentConvs.map((c) =>
-      c.id === conversationId ? { ...c, languageId } : c
-    );
-    set({
-      chatConversations: {
-        ...get().chatConversations,
-        [lessonSlug]: updatedConvs,
-      },
-    });
-    scheduleAutoPush();
-  },
-
   updateConversationTitle: (lessonSlug: string, conversationId: string, title: string) => {
     const currentConvs = get().chatConversations[lessonSlug] || [];
     const updatedConvs = currentConvs.map((c) =>
@@ -80,11 +67,17 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
 
   deleteConversation: (lessonSlug: string, conversationId: string) => {
     const currentConvs = get().chatConversations[lessonSlug] || [];
+    const delIdx = currentConvs.findIndex((c) => c.id === conversationId);
     const updatedConvs = currentConvs.filter((c) => c.id !== conversationId);
     const activeId = get().activeConversationId[lessonSlug];
     let nextActiveId = activeId;
     if (activeId === conversationId) {
-      nextActiveId = updatedConvs.length > 0 ? updatedConvs[updatedConvs.length - 1].id : '';
+      if (updatedConvs.length > 0) {
+        const nextIdx = Math.min(Math.max(0, delIdx), updatedConvs.length - 1);
+        nextActiveId = updatedConvs[nextIdx].id;
+      } else {
+        nextActiveId = '';
+      }
     }
     set({
       chatConversations: {
@@ -103,7 +96,8 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
     const state = get();
     const convs = state.chatConversations[lessonSlug] || [];
     const activeId = state.activeConversationId[lessonSlug];
-    return convs.find((c) => c.id === activeId) || convs[0];
+    if (!activeId) return undefined;
+    return convs.find((c) => c.id === activeId);
   },
 
   addChatMessage: (lessonSlug: string, message: ChatMessage, conversationId?: string) => {
@@ -116,7 +110,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
 
     let targetConv = convs.find((c) => c.id === targetId);
     if (!targetConv) {
-      const newId = `conv-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+      const newId = createUniqueId('conv');
       targetConv = {
         id: newId,
         lessonSlug,
@@ -127,7 +121,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         messages: [message],
         unread: isUnread,
       };
-      convs.push(targetConv);
+      convs.unshift(targetConv);
       targetId = newId;
     } else {
       convs = convs.map((c) => {

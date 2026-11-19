@@ -1,0 +1,106 @@
+{
+  "exercise": "fizz_buzz",
+  "cases": [
+    {
+      "description": "numbers not divisible by 3 or 5",
+      "cases": [
+        {
+          "uuid": "1fc316ed-17ab-4fba-88ef-3ae78296b692",
+          "description": "1 returns '1'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 1
+          },
+          "expected": "1"
+        },
+        {
+          "uuid": "acd19dc1-2200-4317-bc2a-08f021276b40",
+          "description": "2 returns '2'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 2
+          },
+          "expected": "2"
+        },
+        {
+          "uuid": "d34e6b12-9844-42f7-873d-d4fa285c5a01",
+          "description": "4 returns '4'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 4
+          },
+          "expected": "4"
+        }
+      ]
+    },
+    {
+      "description": "numbers divisible by 3",
+      "cases": [
+        {
+          "uuid": "c376fcc8-349c-446c-94b0-903947315757",
+          "description": "3 returns 'Fizz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 3
+          },
+          "expected": "Fizz"
+        },
+        {
+          "uuid": "2d620f45-9617-4924-9d27-751c80d17db9",
+          "description": "6 returns 'Fizz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 6
+          },
+          "expected": "Fizz"
+        }
+      ]
+    },
+    {
+      "description": "numbers divisible by 5",
+      "cases": [
+        {
+          "uuid": "57712331-4896-4364-89f8-576421d69c44",
+          "description": "5 returns 'Buzz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 5
+          },
+          "expected": "Buzz"
+        },
+        {
+          "uuid": "149b4290-58e1-40f2-8ae4-8b87c46e765b",
+          "description": "10 returns 'Buzz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 10
+          },
+          "expected": "Buzz"
+        }
+      ]
+    },
+    {
+      "description": "numbers divisible by 15",
+      "cases": [
+        {
+          "uuid": "ba25dbbc-10bd-4a37-b18e-f89ecd098a5e",
+          "description": "15 returns 'FizzBuzz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 15
+          },
+          "expected": "FizzBuzz"
+        },
+        {
+          "uuid": "566b621b-f18e-4c5f-873e-be30544b838c",
+          "description": "30 returns 'FizzBuzz'",
+          "property": "fizzbuzz",
+          "input": {
+            "number": 30
+          },
+          "expected": "FizzBuzz"
+        }
+      ]
+    }
+  ]
+}

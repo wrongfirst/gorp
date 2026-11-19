@@ -6,6 +6,7 @@ import { chatElements } from './chat';
 import { speedrunElements } from './speedrun';
 import { shortcutElements } from './shortcuts';
 import { resetProgressElements } from './resetProgress';
+import { commandPaletteElements } from './commandPalette';
 
 export type ElementsType = typeof layoutElements &
     typeof controlElements &
@@ -14,7 +15,8 @@ export type ElementsType = typeof layoutElements &
     typeof chatElements &
     typeof speedrunElements &
     typeof shortcutElements &
-    typeof resetProgressElements;
+    typeof resetProgressElements &
+    typeof commandPaletteElements;
 
 export const elements: ElementsType = Object.defineProperties(
     {} as ElementsType,
@@ -27,6 +29,7 @@ export const elements: ElementsType = Object.defineProperties(
         ...Object.getOwnPropertyDescriptors(speedrunElements),
         ...Object.getOwnPropertyDescriptors(shortcutElements),
         ...Object.getOwnPropertyDescriptors(resetProgressElements),
+        ...Object.getOwnPropertyDescriptors(commandPaletteElements),
     }
 );
 

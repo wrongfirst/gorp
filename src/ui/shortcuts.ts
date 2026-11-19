@@ -1,7 +1,10 @@
 import { runner } from '../core/runner';
 import { elements } from '../core/elements';
 import { store } from '../core/store';
+import { focusEditor, formatEditorCode } from '../core/editor';
 import { focusChatInput } from './chatPanel';
+import { toggleCommandPalette } from './commandPalette';
+import { showPopup } from './popup';
 import { ICONS } from './icons';
 
 interface Shortcut {
@@ -11,14 +14,17 @@ interface Shortcut {
 
 const EDITOR_SHORTCUTS: Shortcut[] = [
     { action: "Save Code", keys: ["Cmd/Ctrl", "S"] },
+    { action: "Format Code", keys: ["Cmd/Ctrl", "Shift", "F"] },
     { action: "Indent", keys: ["Tab"] },
     { action: "Unindent", keys: ["Shift", "Tab"] },
     { action: "Focus Out", keys: ["Esc", "Tab"] },
 ];
 
 const NAVIGATION_SHORTCUTS: Shortcut[] = [
+    { action: "Command Palette", keys: ["Cmd/Ctrl", "K"] },
     { action: "Run Code", keys: ["Cmd/Ctrl", "Enter"] },
-    { action: "Focus Rubber Duck", keys: ["Cmd/Ctrl", "Shift", "A"] },
+    { action: "Focus Editor", keys: ["Cmd/Ctrl", "Shift", "E"] },
+    { action: "Focus Rubber Duck", keys: ["Cmd/Ctrl", "Shift", "D"] },
     { action: "Previous Lesson", keys: ["Cmd/Ctrl", "["] },
     { action: "Next Lesson", keys: ["Cmd/Ctrl", "]"] },
     { action: "Show Shortcuts", keys: ["?", "or", "F1"] },
@@ -61,6 +67,14 @@ export function initShortcuts() {
     //shortcut logic
     document.addEventListener('keydown', (e) => {
 
+        // command palette: Cmd/Ctrl + K
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleCommandPalette();
+            return;
+        }
+
         // run: Cmd/Ctrl+Enter
         if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
             e.preventDefault();
@@ -71,13 +85,32 @@ export function initShortcuts() {
             return;
         }
 
-        // focus Rubber Duck input: Cmd/Ctrl + Shift + A
-        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+        // focus Editor: Cmd/Ctrl + Shift + E
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            e.stopPropagation();
+            focusEditor();
+            return;
+        }
+
+        // focus Rubber Duck input: Cmd/Ctrl + Shift + D
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'd' || e.key === 'D')) {
             e.preventDefault();
             e.stopPropagation();
             const cs = store.getState().chatSettings;
             if (cs?.enabled) {
                 focusChatInput();
+            }
+            return;
+        }
+
+        // format code: Cmd/Ctrl + Shift + F
+        if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'f' || e.key === 'F')) {
+            e.preventDefault();
+            e.stopPropagation();
+            const success = formatEditorCode();
+            if (success) {
+                showPopup('Code formatted');
             }
             return;
         }

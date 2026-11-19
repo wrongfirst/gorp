@@ -1,9 +1,15 @@
+export type ExerciseValidator = (
+    code: string,
+    output: string,
+    languageId?: string
+) => true | string;
+
 export interface LanguageVariant {
     initialCode: string;
     testCode: string;
     solutionCode?: string;
     validatorCode?: string;
-    validate?: (code: string, output: string) => true | string;
+    validate?: ExerciseValidator;
 }
 
 export interface Exercise {
@@ -141,7 +147,6 @@ export interface ChatSlice {
     activeConversationId: Record<string, string>;
     createConversation: (lessonSlug: string, languageId: string, title?: string) => string;
     setActiveConversation: (lessonSlug: string, conversationId: string) => void;
-    updateConversationLanguage: (lessonSlug: string, conversationId: string, languageId: string) => void;
     updateConversationTitle: (lessonSlug: string, conversationId: string, title: string) => void;
     deleteConversation: (lessonSlug: string, conversationId: string) => void;
     getActiveConversation: (lessonSlug: string) => ChatConversation | undefined;

@@ -3,6 +3,7 @@ import { ICONS } from './icons';
 import { store } from '../core/store';
 import { abortAllStreams } from './chatPanel';
 import { pushToGist } from '../core/sync/syncManager';
+import { Effect } from 'effect';
 
 export interface ConfirmDialogOptions {
     title?: string;
@@ -32,7 +33,7 @@ export function initResetProgress() {
                 
                 const { gistSyncSettings } = store.getState();
                 if (gistSyncSettings?.enabled && gistSyncSettings?.gistId && gistSyncSettings?.token) {
-                    await pushToGist();
+                    await Effect.runPromise(pushToGist().pipe(Effect.ignoreLogged));
                 }
 
                 window.location.reload();

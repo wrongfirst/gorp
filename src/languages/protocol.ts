@@ -5,10 +5,6 @@ import type { DiagnosticItem } from './types';
 // Host -> Worker Messages (Inbound)
 // ============================================================================
 
-export interface WorkerInitMessage {
-  type: 'INIT';
-}
-
 export interface WorkerRunMessage {
   type: 'RUN';
   id: string;
@@ -33,7 +29,6 @@ export interface WorkerCancelMessage {
 }
 
 export type WorkerInboundMessage =
-  | WorkerInitMessage
   | WorkerRunMessage
   | WorkerLintMessage
   | WorkerResetMessage

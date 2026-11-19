@@ -135,10 +135,11 @@ export function sanitizeConversations(raw: unknown, current: AppState): Partial<
     restoredConvs[lessonSlug].push(conv);
   }
 
-  // Ensure active conversation pointer for each lesson
+  // Ensure active conversation pointer for each lesson and sort conversations newest first
   for (const [lessonSlug, convs] of Object.entries(restoredConvs)) {
     if (convs.length > 0) {
-      const mostRecent = [...convs].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      convs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const mostRecent = convs[0];
       const existingActive = restoredActive[lessonSlug];
       if (!existingActive || !convs.some((c) => c.id === existingActive)) {
         restoredActive[lessonSlug] = mostRecent.id;
@@ -234,7 +235,8 @@ export function mergeConversations(local: AppState, remote: ConversationsPayload
 
   for (const [lessonSlug, convs] of Object.entries(mergedConvs)) {
     if (convs.length > 0) {
-      const mostRecent = [...convs].sort((a, b) => b.updatedAt - a.updatedAt)[0];
+      convs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      const mostRecent = convs[0];
       const existingActive = mergedActive[lessonSlug];
       if (!existingActive || !convs.some((c) => c.id === existingActive)) {
         mergedActive[lessonSlug] = mostRecent.id;
