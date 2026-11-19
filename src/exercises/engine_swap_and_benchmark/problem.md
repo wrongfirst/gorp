@@ -1,80 +1,41 @@
-In this final assembly capstone, you bring together the Thompson NFA engine, comparative metrics, and engine swapping into your CLI tool.
-
-Throughout this stage, we have:
-1. Observed the catastrophic exponential cost of recursive backtracking (`O(2^N)`).
-2. Abstracted regex execution behind `Matcher` and `RegexEngine` interfaces.
-3. Built a tokenizer and Shunting-yard postfix parser.
-4. Created an NFA state machine graph.
-5. Implemented Ken Thompson's `O(N)` NFA construction algorithm.
-6. Implemented lockstep linear-time NFA simulation.
-
----
-
-## Code Self-Review: Backtracking vs. Linear NFA Simulation
-
-The starter template includes canonical reference implementations of both engines:
-- `BacktrackingEngine`: Speculative depth-first recursion exploring match branches.
-- `NFAEngine`: Thompson graph construction and lockstep state-set simulation.
-
-> [!NOTE]
-> Before implementing the comparative evaluation, inspect both engines in the editor:
-> - **State Set Deduping**: In `NFASimulator.step`, notice how duplicate states are pruned using a boolean lookup table `visited`. Why is set deduping the critical mechanism preventing exponential explosion?
-> - **Algorithmic Bound**: Why can Thompson's simulation never exceed `O(N * |states|)` operations regardless of pattern structure or repetitions?
-
----
-
-## Comparative Metrics
-
-```go
-type ComparisonResult struct {
-    Pattern        string
-    Text           string
-    BacktrackMatch bool
-    NFAMatch       bool
-    BacktrackSteps int
-    NFASteps       int
-}
-```
+Assemble the Thompson NFA engine behind `Matcher` / `RegexEngine` interfaces and compare its linear-time performance against the recursive backtracking engine.
 
 On pathological patterns like `^a?a?a?a?a?a?a?a?aaaaaaaa$`:
-- **Backtracking Engine**: Explores `2^8+` recursive branches before finding the match.
-- **Thompson NFA Engine**: Steps across the input in linear lockstep (< 100 transitions tested).
-- Both return `Matched == true`!
+- **Backtracking Engine**: Explores exponential (`2^8+`) recursive branches.
+- **Thompson NFA Engine**: Steps across input in linear lockstep (< 100 transitions).
+
+## Examples
+
+```go
+engine := NewNFAEngine()
+m, _ := engine.Compile("^abc$")
+m.Match("abc")  // true
+m.Match("abcd") // false
+
+Grep("^ap", []string{"apple", "banana", "apricot"})
+// => ["apple", "apricot"], nil
+
+CompareEngines("^a?a?a?a?a?a?a?a?aaaaaaaa$", "aaaaaaaa")
+// => BacktrackMatch: true, NFAMatch: true, BacktrackSteps > 1000, NFASteps < 100
+```
 
 ---
 
-## Task
+## Instructions
 
-Implement `NFAEngine`, `NFAMatcher`, `CompareEngines`, and `Grep` in the editor:
+Implement `Compile` on `*NFAEngine`, `CompareEngines`, and `Grep`:
 
-```go
-type NFAEngine struct{}
-func NewNFAEngine() *NFAEngine
-
-func CompareEngines(pattern string, text string) (ComparisonResult, error)
-func Grep(pattern string, lines []string) ([]string, error)
-```
-
-The functions should:
-- Implement `RegexEngine` on `*NFAEngine` and `Matcher` on `*NFAMatcher`.
-- Support prefix (`^`), suffix (`$`), and unanchored matching.
-- Accurately record execution steps and match outcomes in `ComparisonResult`.
-- Filter lines in `Grep` using the NFA engine.
+- In `Compile`: support leading `^`, trailing `$`, unanchored matching, and empty pattern `""` (matching every string); return an error for invalid pattern syntax.
+- In `CompareEngines`: populate `ComparisonResult` (`Pattern`, `Text`, `BacktrackMatch`, `NFAMatch`, `BacktrackSteps`, `NFASteps`) using the shared pattern syntax supported by both engines (`^`, `$`, literals, `.`, `\d`, `\w`, `*`, `+`, `?`), returning an error if NFA compilation fails.
+- In `Grep`: compile `pattern` with `NewNFAEngine()` (returning `nil, err` on error) and return all matching `lines` in order, or a non-nil empty slice `[]string{}` if none match.
 
 ---
 
 ## Running Locally
 
-In your local `gorp` workspace, copy your Thompson NFA implementation into `pkg/matcher/nfa.go` and run native Go benchmarks:
+Swap `matcher.DefaultEngine` in `pkg/matcher` to your Thompson NFA engine, add benchmarks in `pkg/matcher`, and test locally against `testdata/pathological.txt`:
 
 ```bash
-# 1. Run local benchmarks comparing Backtracking vs NFA
-make bench
-# go test -bench=. ./...
-
-# 2. Test pathological ReDoS patterns with NFA engine (completes in < 2ms)
-./bin/gorp --engine=nfa "a?{25}a{25}" testdata/pathological.txt
-
-# 3. Verify clean build and test suite
-make build && make test
+make build && make test && make bench
+./bin/gorp "^a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?a?aaaaaaaaaaaaaaaaaaaa$" testdata/pathological.txt
 ```

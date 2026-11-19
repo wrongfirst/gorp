@@ -1,80 +1,31 @@
-In 1968, Ken Thompson published his landmark paper introducing the algorithm that compiles regular expressions into NFAs in guaranteed linear time `O(N)` with `O(N)` states.
+Compile postfix regex tokens into a connected NFA in linear time `O(N)` using Ken Thompson's fragment-based construction.
 
-The algorithm consumes a regular expression in **Postfix Notation** (from Exercise 3) and processes it from left to right using a stack of **NFA fragments**:
+## Construction Rules
+- **Operand** (literal, `.`, `\d`, `\w`): creates a matcher state with one unresolved outgoing transition.
+- **Concatenation (`·`)**: connects the first fragment's unresolved exits to the second fragment's start state.
+- **Alternation (`|`)**: introduces a split state branching to both fragments, combining their unresolved exits.
+- **Zero or more (`*`)**: introduces a split state branching to the fragment or bypassing it, looping the fragment's exits back to that split state.
+- **One or more (`+`)**: runs the fragment first, then uses a split state to loop back to the fragment's start or continue onward.
+- **Zero or one (`?`)**: introduces a split state branching to the fragment or bypassing it, combining both exit paths.
+- **Completion**: connects the final unresolved exits to an accepting match state.
 
-```go
-type Frag struct {
-    Start *State
-    Out   []**State // pointers to dangling arrow targets to be patched
-}
-```
-
-A fragment represents an incomplete sub-automaton with:
-- An entry state (`Start`).
-- A list of dangling outgoing arrows (`Out`). Each arrow is stored as `**State` — a pointer to a `*State` field — so that when downstream states are created, all dangling arrows can be connected (**patched**) instantly in `O(1)` without searching:
+## Examples
 
 ```go
-func patch(l []**State, s *State) {
-    for _, ptr := range l {
-        *ptr = s
-    }
-}
+nfa, _ := CompileToNFA("ab")
+// start matches 'a', transitions to state matching 'b', then transitions to Match state
+
+nfa, _ = CompileToNFA("a|b")
+// start is a Split state branching to 'a' and 'b', both leading to Match state
 ```
-
-## Thompson's Construction Rules
-
-For each token in the postfix stream:
-
-1. **Operand** (Literal rune, Wildcard `.`, Digit `\d`, Word `\w`):
-   - Allocate state `s` matching the token.
-   - Push `Frag{Start: s, Out: []**State{&s.Out}}`.
-
-2. **Concatenation (`TokConcat`, `·`)**:
-   - Pop `e2`, Pop `e1`.
-   - Patch `e1`'s dangling arrows to enter `e2.Start`: `patch(e1.Out, e2.Start)`.
-   - Push `Frag{Start: e1.Start, Out: e2.Out}`.
-
-3. **Alternation (`TokAlter`, `|`)**:
-   - Pop `e2`, Pop `e1`.
-   - Allocate a split state branching to both: `s := NewSplitState(id, e1.Start, e2.Start)`.
-   - Push `Frag{Start: s, Out: append(e1.Out, e2.Out...)}`.
-
-4. **Zero or more (`TokStar`, `*`)**:
-   - Pop `e`.
-   - Allocate split state: `s := NewSplitState(id, e.Start, nil)`.
-   - Loop `e`'s exits back to `s`: `patch(e.Out, s)`.
-   - Push `Frag{Start: s, Out: []**State{&s.Out1}}`.
-
-5. **One or more (`TokPlus`, `+`)**:
-   - Pop `e`.
-   - Allocate split state: `s := NewSplitState(id, e.Start, nil)`.
-   - Connect `e`'s exits into `s`: `patch(e.Out, s)`.
-   - Push `Frag{Start: e.Start, Out: []**State{&s.Out1}}`.
-
-6. **Zero or one (`TokQuest`, `?`)**:
-   - Pop `e`.
-   - Allocate split state: `s := NewSplitState(id, e.Start, nil)`.
-   - Push `Frag{Start: s, Out: append(e.Out, &s.Out1)}`.
-
-7. **Completion**:
-   - Pop the final fragment `e`.
-   - Create the accepting `matchState := NewMatchState(id)`.
-   - Connect `patch(e.Out, matchState)`.
-   - Return `e.Start`!
 
 ---
 
-## Problem Statement
+## Instructions
 
-Implement `Post2NFA` and `CompileToNFA` in the editor on the right:
+Implement `patch`, `Post2NFA`, and `CompileToNFA`:
 
-```go
-func Post2NFA(postfix []Token) (*State, error)
-func CompileToNFA(pattern string) (*State, error)
-```
-
-The functions should:
-- Maintain a stack of `Frag`s and patch dangling pointers correctly according to Thompson's rules.
-- Connect the final fragment's dangling arrows to a newly created `StateMatch`.
-- Return the starting state `*State` of the assembled NFA.
-- Return an error if the postfix expression is invalid (e.g. stack underflow or empty expression).
+- Track dangling outgoing transitions for each compiled fragment and resolve them once their target state is known.
+- Connect the final fragment's dangling exits to a newly created match state.
+- Return the starting `*State` of the assembled NFA.
+- Return an error if the postfix expression is invalid or empty.

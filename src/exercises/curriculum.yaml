@@ -43,7 +43,7 @@ chapters:
   "Stage 4: Filesystem Traversal & Multi-File Search":
     - process_multiple_input_lines
     - search_single_file
-    - search_multiline_file
+    - file_line_numbers
     - search_multiple_files
     - recursive_search
     - gorp_filesystem_cli

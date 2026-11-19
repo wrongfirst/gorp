@@ -3,22 +3,22 @@ package main
 type TokenType int
 
 const (
-	TokLiteral TokenType = iota
-	TokDot
-	TokDigit
-	TokWord
-	TokConcat
-	TokAlter
-	TokStar
-	TokPlus
-	TokQuest
-	TokLParen
-	TokRParen
+	TokLiteral TokenType = iota // Value: literal rune (e.g., 'a', or '.' for escaped `\.`)
+	TokDot                      // Value: 0 (matches `.`)
+	TokDigit                    // Value: 0 (matches `\d`)
+	TokWord                     // Value: 0 (matches `\w`)
+	TokConcat                   // Value: '·'
+	TokAlter                    // Value: '|'
+	TokStar                     // Value: '*'
+	TokPlus                     // Value: '+'
+	TokQuest                    // Value: '?'
+	TokLParen                   // Value: '('
+	TokRParen                   // Value: ')'
 )
 
 type Token struct {
 	Type  TokenType
-	Value rune
+	Value rune // Literal rune for TokLiteral, operator/paren symbol (e.g. '+', '·'), or 0 for TokDot/TokDigit/TokWord
 }
 
 // TODO: Implement Tokenize(pattern string) ([]Token, error)
