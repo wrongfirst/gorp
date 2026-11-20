@@ -83,7 +83,7 @@ function yamlPlugin(): Plugin {
 const DEFAULT_SITE_CONFIG = {
   title: "codebook",
   subtitle: "by wrongfirst",
-  home_page: "https://wrongfirst.github.io",
+  home_page: "https://wrongfirst.dev",
   logo_emoji: "📓",
 };
 

@@ -4,8 +4,15 @@ import { encryptSecret } from '../../crypto';
 import { ChatEndpoint } from '../../types';
 
 let writeQueue: Promise<void> = Promise.resolve();
+let writesSuppressed = false;
+
+export function clearPersistedStorage(name: string): void {
+  writesSuppressed = true;
+  localStorage.removeItem(name);
+}
 
 async function processWrite(name: string, value: string): Promise<void> {
+  if (writesSuppressed) return;
   try {
     const parsed = JSON.parse(value);
     const hasChatSettings = Boolean(parsed?.state?.chatSettings);
@@ -36,12 +43,15 @@ async function processWrite(name: string, value: string): Promise<void> {
         parsed.state.gistSyncSettings = ss;
       }
 
+      if (writesSuppressed) return;
       localStorage.setItem(name, JSON.stringify(parsed));
       return;
     }
 
+    if (writesSuppressed) return;
     localStorage.setItem(name, value);
   } catch {
+    if (writesSuppressed) return;
     try {
       localStorage.setItem(name, value);
     } catch {
@@ -56,6 +66,7 @@ export const syncStateStorage: StateStorage = {
   },
 
   setItem: (name: string, value: string): void => {
+    if (writesSuppressed) return;
     // Chain writes sequentially to prevent out-of-order execution / race conditions
     writeQueue = writeQueue
       .then(() => processWrite(name, value))

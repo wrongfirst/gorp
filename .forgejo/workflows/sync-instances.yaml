@@ -29,6 +29,7 @@ on:
 jobs:
   sync:
     runs-on: nautilus
+    if: github.repository == 'wrongfirst/codebook'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

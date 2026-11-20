@@ -10,7 +10,7 @@ import { syncStateStorage } from './store/storage/encryptedStorage';
 import { decryptStoredSettings, ensureSettingsDecrypted, registerDecryptionStore } from './store/storage/decryptSettings';
 import { SITE_SLUG } from './siteConfig';
 
-const STORAGE_KEY = `${SITE_SLUG}_storage`;
+export const STORAGE_KEY = `${SITE_SLUG}_storage`;
 
 export const store = createStore<AppState>()(
   persist(

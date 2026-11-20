@@ -1,6 +1,7 @@
 //TODO: Are there portions here that can be pushed off to index.html?
 import { elements } from '../core/elements';
-import { store, ensureSettingsDecrypted, ChatSettings, ChatEndpoint, GistSyncSettings } from '../core/store';
+import { store, STORAGE_KEY, ensureSettingsDecrypted, ChatSettings, ChatEndpoint, GistSyncSettings } from '../core/store';
+import { clearPersistedStorage } from '../core/store/storage/encryptedStorage';
 import { updateEditorVimMode } from '../core/editor';
 import { decryptSecret } from '../core/crypto';
 import { ICONS } from './icons';
@@ -10,7 +11,7 @@ import { showPopup } from './popup';
 import { pullFromGist, pushToGist, initiateOAuthLogin, subscribeSyncStatus, getSyncStatus, SyncStateEvent, createAndLinkGist } from '../core/sync/syncManager';
 import { validateToken, extractGistId } from '../core/sync/gistClient';
 import { Effect } from 'effect';
-import { SITE_SLUG } from '../core/siteConfig';
+import { SITE_SLUG, SITE_TITLE } from '../core/siteConfig';
 import { buildManualExportPayload, parseManualImport } from '../core/backup';
 import { fetchAvailableModels } from '../core/chat/client';
 import { escapeHtml } from '../core/markdown';
@@ -850,13 +851,10 @@ function formatBytes(bytes: number, decimals = 1): string {
 function calculateLocalStorageUsage(): { bytes: number; formatted: string } {
     let totalBytes = 0;
     try {
-        for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key) {
-                const val = localStorage.getItem(key) || '';
-                // UTF-16 strings take ~2 bytes per character
-                totalBytes += (key.length + val.length) * 2;
-            }
+        const val = localStorage.getItem(STORAGE_KEY);
+        if (val !== null) {
+            // UTF-16 strings take ~2 bytes per character
+            totalBytes = (STORAGE_KEY.length + val.length) * 2;
         }
     } catch {
         // Handle potential sandbox/quota restrictions
@@ -877,14 +875,14 @@ function updateStorageUsageDisplay() {
 function handleClearLocalStorage() {
     showConfirmDialog({
         title: 'Nuke Local Storage',
-        message: 'Are you sure you want to delete all local storage? This will permanently wipe all your exercise progress, saved code, chat history, credentials, and settings. This action cannot be undone.',
-        confirmText: 'Nuke All Storage',
+        message: `Are you sure you want to delete local storage for ${SITE_TITLE}? This will permanently wipe all your exercise progress, saved code, chat history, credentials, and settings for this course. This action cannot be undone.`,
+        confirmText: 'Nuke Storage',
         onConfirm: () => {
             abortAllStreams();
             try {
                 store.getState().unlinkGist();
             } catch { }
-            localStorage.clear();
+            clearPersistedStorage(STORAGE_KEY);
             window.location.reload();
         },
     });

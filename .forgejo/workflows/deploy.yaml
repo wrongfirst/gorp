@@ -8,7 +8,6 @@ on:
 jobs:
   deploy:
     runs-on: nautilus
-    if: github.event_name == 'workflow_dispatch' || github.repository == 'wrongfirst/codebook'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7

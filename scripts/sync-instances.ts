@@ -328,12 +328,16 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
 
     // 5. Merge upstream/main into current branch
     console.log(`[5/5] Merging upstream/main...`);
+    const syncCommitMsg = options.deploy
+      ? 'chore: sync template updates from codebook'
+      : 'chore: sync template updates from codebook [skip ci]';
     const mergeRes = runGit(tempDir, [
       'merge',
       'upstream/main',
       '--allow-unrelated-histories',
+      '--no-ff',
       '-m',
-      'chore: sync template updates from codebook',
+      syncCommitMsg,
     ]);
 
     let resolvedProtected: string[] = [];
@@ -551,7 +555,9 @@ function printSummaryTable(results: SyncResult[], showDeploy: boolean): void {
 
   let totalsStr = `\nTotals: ${results.length} total | ${successCount} synced | ${upToDateCount} up-to-date | ${conflictCount} conflicts | ${errorCount} errors`;
   if (showDeploy) {
-    const deployCount = results.filter(r => r.deployStatus === 'TRIGGERED' || r.deployStatus === 'DRY-RUN').length;
+    const deployCount = results.filter(
+      r => r.deployStatus?.startsWith('TRIGGERED') || r.deployStatus?.startsWith('DRY-RUN')
+    ).length;
     totalsStr += ` | ${deployCount} deployed/triggered`;
   }
   console.log(`${totalsStr}\n`);
@@ -591,11 +597,19 @@ async function main(): Promise<void> {
     const result = syncInstance(inst, options);
 
     if (options.deploy) {
-      if (result.status === 'SUCCESS' || result.status === 'UP-TO-DATE') {
+      if (result.status === 'UP-TO-DATE') {
         const deployRes = await triggerDeployment(inst, options);
         result.deployStatus = deployRes.status;
         if (deployRes.details && !result.details) {
           result.details = deployRes.details;
+        }
+      } else if (result.status === 'SUCCESS') {
+        if (options.dryRun) {
+          console.log(`  [deploy] (dry-run) Push to main would trigger deployment for ${inst}`);
+          result.deployStatus = 'DRY-RUN (PUSH)';
+        } else {
+          console.log(`  ✓ [deploy] Push to main will trigger deployment for ${inst}`);
+          result.deployStatus = 'TRIGGERED (PUSH)';
         }
       } else {
         result.deployStatus = 'SKIPPED (SYNC FAILED)';
