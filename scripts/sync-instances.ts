@@ -432,6 +432,36 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
   }
 }
 
+function formatFetchError(err: any): string {
+  const parts: string[] = [err?.message || String(err)];
+  const details: string[] = [];
+
+  let current = err?.cause;
+  let depth = 0;
+  while (current && depth < 5) {
+    const meta = [current.code, current.syscall, current.address, current.port].filter(Boolean).join(' ');
+    const msg = current.message || (typeof current === 'string' ? current : '');
+    const subErrors = Array.isArray(current.errors)
+      ? current.errors
+          .map((sub: any) => [sub?.code, sub?.syscall, sub?.address, sub?.port, sub?.message].filter(Boolean).join(' '))
+          .filter(Boolean)
+      : [];
+
+    const entry = [meta, msg, subErrors.length > 0 ? `[${subErrors.join('; ')}]` : ''].filter(Boolean).join(' - ');
+    if (entry) {
+      details.push(entry);
+    }
+    current = current.cause;
+    depth++;
+  }
+
+  if (details.length > 0) {
+    parts.push(`cause: ${details.join(' -> ')}`);
+  }
+
+  return sanitize(parts.join(' | '));
+}
+
 async function triggerDeployment(repo: string, options: CliOptions): Promise<{ status: string; details?: string }> {
   if (options.dryRun) {
     console.log(`  [deploy] (dry-run) Would dispatch deployment workflow for ${repo}`);
@@ -469,8 +499,9 @@ async function triggerDeployment(repo: string, options: CliOptions): Promise<{ s
     console.error(`  ✗ [deploy] Failed to trigger deployment for ${repo} (${res.status}): ${errText}`);
     return { status: 'FAILED', details: `HTTP ${res.status}: ${errText.slice(0, 60)}` };
   } catch (err: any) {
-    console.error(`  ✗ [deploy] Request error triggering deployment for ${repo}: ${err.message}`);
-    return { status: 'FAILED', details: err.message };
+    const formatted = formatFetchError(err);
+    console.error(`  ✗ [deploy] Request error triggering deployment for ${repo} (node ${process.version}): ${formatted}`);
+    return { status: 'FAILED', details: formatted };
   }
 }
 
