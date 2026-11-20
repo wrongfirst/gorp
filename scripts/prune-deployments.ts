@@ -17,6 +17,21 @@ interface CloudflareAuth {
   accountId: string;
 }
 
+interface ResultInfo {
+  page: number;
+  per_page: number;
+  count: number;
+  total_count: number;
+  total_pages: number;
+}
+
+interface CloudflareResponse<T> {
+  success: boolean;
+  errors?: Array<{ code: number; message: string }>;
+  result: T;
+  result_info?: ResultInfo;
+}
+
 // Resolve credentials exactly as `wrangler deploy` does:
 // - account: `account_id` in wrangler.jsonc, then CLOUDFLARE_ACCOUNT_ID
 // - token: `wrangler auth token` (CLOUDFLARE_API_TOKEN, or the active OAuth login/profile, refreshed if expired)
@@ -37,20 +52,36 @@ function getCloudflareAuth(): CloudflareAuth {
   return { token, accountId };
 }
 
-async function cfFetch<T>(auth: CloudflareAuth, endpoint: string, init: RequestInit = {}): Promise<T> {
+async function cfFetch<T>(auth: CloudflareAuth, endpoint: string, init: RequestInit = {}): Promise<CloudflareResponse<T>> {
   const response = await fetch(`${API_BASE}/accounts/${auth.accountId}${endpoint}`, {
     ...init,
     headers: { Authorization: `Bearer ${auth.token}` },
   });
-  const data = (await response.json().catch(() => null)) as
-    | { success: boolean; errors?: Array<{ code: number; message: string }>; result: T }
-    | null;
+  const data = (await response.json().catch(() => null)) as CloudflareResponse<T> | null;
 
   if (!response.ok || !data?.success) {
     const detail = data?.errors?.map(e => `[${e.code}] ${e.message}`).join(', ') || response.statusText;
     throw new Error(`Cloudflare API error (${response.status}): ${detail}`);
   }
-  return data.result;
+  return data;
+}
+
+async function listDeployments(auth: CloudflareAuth, scriptPath: string): Promise<Deployment[]> {
+  const deployments: Deployment[] = [];
+  let page = 1;
+  let totalPages = 1;
+
+  do {
+    const { result, result_info } = await cfFetch<{ deployments?: Deployment[] }>(
+      auth,
+      `${scriptPath}?page=${page}&per_page=100`
+    );
+    deployments.push(...(result.deployments ?? []));
+    totalPages = result_info?.total_pages ?? 1;
+    page++;
+  } while (page <= totalPages);
+
+  return deployments;
 }
 
 export function getWorkerName(): string {
@@ -82,7 +113,7 @@ export async function pruneDeployments(workerName = getWorkerName()): Promise<vo
   const scriptPath = `/workers/scripts/${workerName}/deployments`;
 
   console.log(`[prune] Checking deployments for Worker '${workerName}' (Account: ${auth.accountId})...`);
-  const { deployments = [] } = await cfFetch<{ deployments?: Deployment[] }>(auth, scriptPath);
+  const deployments = await listDeployments(auth, scriptPath);
 
   if (deployments.length <= RETENTION_LIMIT) {
     console.log(`[prune] ${deployments.length} deployment(s) found, within limit of ${RETENTION_LIMIT}. Nothing to prune.`);
@@ -92,6 +123,10 @@ export async function pruneDeployments(workerName = getWorkerName()): Promise<vo
   const toDelete = deployments
     .sort((a, b) => Date.parse(b.created_on) - Date.parse(a.created_on))
     .slice(RETENTION_LIMIT);
+
+  console.log(
+    `[prune] ${deployments.length} deployment(s) found (limit: ${RETENTION_LIMIT}). Pruning ${toDelete.length} old deployment(s)...`
+  );
 
   let failed = 0;
   for (const dep of toDelete) {
