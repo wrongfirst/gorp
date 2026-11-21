@@ -20,7 +20,7 @@ export function initBranding() {
             const img = document.createElement('img');
             img.src = logo_image;
             img.alt = '';
-            img.className = 'h-5 w-auto';
+            img.className = 'h-[var(--brand-logo-size)] w-auto';
             logoEl.appendChild(img);
             logoEl.classList.remove('hidden');
             logoEl.classList.add('flex');

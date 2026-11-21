@@ -1,4 +1,4 @@
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, GutterMarker, gutter, keymap, lineNumbers } from '@codemirror/view';
 import { EditorState, Compartment, Extension } from '@codemirror/state';
 import { indentWithTab } from '@codemirror/commands';
 import { indentRange } from '@codemirror/language';
@@ -25,6 +25,57 @@ let activeLanguageId: string | null = null;
 // Compartments are dynamic slots for extensions swapped dynamically at runtime
 const languageCompartment = new Compartment();
 const vimCompartment = new Compartment();
+const lineNumbersCompartment = new Compartment();
+
+class LineNumberMarker extends GutterMarker {
+    constructor(readonly text: string) {
+        super();
+    }
+    eq(other: GutterMarker): boolean {
+        return other instanceof LineNumberMarker && this.text === other.text;
+    }
+    toDOM(): Node {
+        return document.createTextNode(this.text);
+    }
+}
+
+function maxLineNumber(lines: number): number {
+    let last = 9;
+    while (last < lines) last = last * 10 + 9;
+    return last;
+}
+
+function relativeLineNumbers(): Extension {
+    return gutter({
+        class: 'cm-lineNumbers',
+        renderEmptyElements: false,
+        lineMarker(view, line) {
+            const lineNo = view.state.doc.lineAt(line.from).number;
+            const activeLineNo = view.state.doc.lineAt(view.state.selection.main.head).number;
+            const display = lineNo === activeLineNo ? lineNo : Math.abs(lineNo - activeLineNo);
+            return new LineNumberMarker(String(display));
+        },
+        lineMarkerChange(update) {
+            if (!update.selectionSet && !update.docChanged) return false;
+            const prevLine = update.startState.doc.lineAt(update.startState.selection.main.head).number;
+            const nextLine = update.state.doc.lineAt(update.state.selection.main.head).number;
+            return prevLine !== nextLine || update.startState.doc.lines !== update.state.doc.lines;
+        },
+        initialSpacer(view) {
+            return new LineNumberMarker(String(maxLineNumber(view.state.doc.lines)));
+        },
+        updateSpacer(spacer, update) {
+            const max = String(maxLineNumber(update.view.state.doc.lines));
+            return spacer instanceof LineNumberMarker && max === spacer.text
+                ? spacer
+                : new LineNumberMarker(max);
+        },
+    });
+}
+
+function getLineNumberExtension(relative: boolean): Extension {
+    return relative ? relativeLineNumbers() : lineNumbers();
+}
 
 function updateEditorLanguage(languageExtension?: Extension) {
     if (view) {
@@ -37,7 +88,10 @@ function updateEditorLanguage(languageExtension?: Extension) {
 export function updateEditorVimMode(enabled: boolean) {
     if (view) {
         view.dispatch({
-            effects: vimCompartment.reconfigure(enabled ? vim() : [])
+            effects: [
+                vimCompartment.reconfigure(enabled ? vim() : []),
+                lineNumbersCompartment.reconfigure(getLineNumberExtension(enabled)),
+            ]
         });
     }
 }
@@ -175,9 +229,10 @@ export function loadExerciseCode(
             doc: code,
             extensions: [
                 vimCompartment.of(isVim ? vim() : []),
+                lintGutter(),
+                lineNumbersCompartment.of(getLineNumberExtension(isVim)),
                 ...baseEditorExtensions,
                 autocompletion(),
-                lintGutter(),
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged && !isProgrammaticChange) {
                         scheduleAutoSave();
@@ -234,7 +289,39 @@ export function loadExerciseCode(
                 themeCompartment.of(getTheme(isDark)),
                 EditorView.theme({
                     "&": { height: "100%", backgroundColor: "var(--bg-app)", color: "var(--fg-primary)" },
-                    ".cm-scroller": { overflow: "auto", fontFamily: "var(--font-mono)" },
+                    ".cm-scroller": {
+                        overflow: "auto",
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "0.875rem",
+                        lineHeight: "1.5",
+                    },
+                    ".cm-gutter-lint": {
+                        width: "1rem",
+                    },
+                    ".cm-gutter-lint .cm-gutterElement": {
+                        padding: "0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    },
+                    ".cm-lint-marker": {
+                        width: "0.625rem",
+                        height: "0.625rem",
+                    },
+                    ".cm-lineNumbers .cm-gutterElement": {
+                        fontSize: "0.75rem",
+                        minWidth: "1.75rem",
+                        padding: "0 0.5rem 0 0.125rem",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                    },
+                    ".cm-activeLineGutter": {
+                        color: "var(--fg-primary)",
+                    },
+                    ".cm-line": {
+                        paddingLeft: "4px",
+                    },
                 }),
                 // Adding domEventHandlers here ensures Tab is not overridden by indentWithTab
                 EditorView.domEventHandlers({

@@ -176,9 +176,14 @@ function htmlMetaPlugin(): Plugin {
     transformIndexHtml(html) {
       try {
         const siteConfig = getSiteConfig();
-        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji, home_page } = siteConfig;
+        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji, home_page, project_url } = siteConfig;
         const portalName = derivePortalName(siteConfig);
         const trimmedHomePage = typeof home_page === "string" ? home_page.trim() : "";
+        const projectUrl = (
+          typeof project_url === "string" && project_url.trim()
+            ? project_url.trim()
+            : "https://github.com"
+        ).replace(/\/+$/, "");
 
         const pageTitle = headline || (subtitle ? `${title} | ${subtitle}` : title);
         const pageDescription = description || `Interactive programming exercises in the browser`;
@@ -219,6 +224,18 @@ function htmlMetaPlugin(): Plugin {
           res = res.replace(/(<a id="header-portal-link"[^>]*)\s+href="[^"]*"/s, `$1`);
           res = res.replace(/(<span id="header-breadcrumb-sep"[^>]*class=")/s, `$1hidden `);
         }
+        res = res.replace(
+          /(<a id="footer-repo-link"[^>]*href=")[^"]*(")/s,
+          (_, p1, p2) => `${p1}${escapeHtmlAttr(projectUrl)}${p2}`
+        );
+        res = res.replace(
+          /(<a id="footer-issues-link"[^>]*href=")[^"]*(")/s,
+          (_, p1, p2) => `${p1}${escapeHtmlAttr(`${projectUrl}/issues`)}${p2}`
+        );
+        res = res.replace(
+          /(<span id="build-date"[^>]*>).*?(<\/span>)/s,
+          (_, p1, p2) => `${p1}Last updated on ${escapeHtmlAttr(buildDate)}${p2}`
+        );
         res = res.replace(/<title>.*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
         res = res.replace("</head>", `  <meta property="og:title" content="${escapeHtmlAttr(pageTitle)}">\n</head>`);
         if (pageDescription) {
@@ -258,7 +275,6 @@ export default defineConfig({
     minify: true,
   },
   define: {
-    BUILD_DATE: JSON.stringify(buildDate),
     PYODIDE_VERSION: JSON.stringify(pyodideVersion),
   },
   plugins: [tailwindcss(), rawTextPlugin(), yamlPlugin(), tomlPlugin(), htmlMetaPlugin()],

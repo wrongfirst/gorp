@@ -49,21 +49,21 @@
 
 <body class="bg-bg-app text-fg-primary h-dvh flex flex-col overflow-hidden font-sans selection:bg-brand/30">
 
-  <!-- adaptive site header (2-row on < md mobile, single unified 48px bar on md+) -->
+  <!-- adaptive site header (2-row on < md mobile, single unified bar on md+) -->
   <header id="site-header"
-    class="site-header bg-bg-surface border-b border-border-default z-60 shrink-0 relative grid grid-cols-[1fr_auto] md:flex md:items-center md:h-12">
+    class="site-header bg-bg-surface border-b border-border-default z-60 shrink-0 relative grid grid-cols-[1fr_auto] md:flex md:items-center md:h-[var(--header-height)]">
 
     <!-- branding (Row 1 left on < md; far left on md+) -->
     <div
-      class="order-1 h-11 md:h-full pl-4 sm:pl-8 pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 xl:mr-auto">
+      class="order-1 h-[var(--header-height-mobile)] md:h-full pl-4 sm:pl-8 pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 xl:mr-auto">
       <nav aria-label="Breadcrumb" class="flex items-center gap-2 min-w-0">
         <!-- JN: Portal & title values are injected by vite during build from site.toml -->
         <span id="header-logo"
-          class="w-5 h-5 text-lg leading-none flex items-center justify-center shrink-0"
+          class="w-[var(--brand-logo-size)] h-[var(--brand-logo-size)] text-lg leading-none flex items-center justify-center shrink-0"
           aria-hidden="true"></span>
 
         <a id="header-portal-link" href="#"
-          class="site-brand inline-flex items-center font-bold text-fg-primary tracking-tight text-base leading-tight hover:opacity-80 transition-opacity shrink-0">
+          class="site-brand inline-flex items-center font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight hover:opacity-80 transition-opacity shrink-0">
           <span id="header-portal-name"></span>
         </a>
 
@@ -73,7 +73,7 @@
 
         <div id="header-book-switcher" class="static sm:relative flex items-center min-w-0">
           <button type="button" id="header-book-trigger"
-            class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 -mx-1.5 font-sans font-bold text-fg-primary tracking-tight text-base leading-tight antialiased hover:bg-bg-app/70 transition-colors cursor-pointer min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+            class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 -mx-1.5 font-sans font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight antialiased hover:bg-bg-app/70 transition-colors cursor-pointer min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
             title="Return to first exercise">
             <span id="header-title"
               class="truncate"></span>
@@ -85,7 +85,7 @@
           <div id="course-switcher-popover"
             role="dialog"
             aria-label="Switch course"
-            class="hidden absolute left-4 right-4 top-11 mt-1.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
+            class="hidden absolute left-4 right-4 top-[var(--header-height-mobile)] mt-1.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
           </div>
         </div>
       </nav>
@@ -93,7 +93,7 @@
 
     <!-- global controls (Row 1 right on < md; trailing right after Run on md+) -->
     <div
-      class="order-2 md:order-4 h-11 md:h-full pr-4 sm:pr-8 pl-2 md:pl-2.5 lg:pl-3 border-b border-border-default/45 md:border-b-0 flex items-center justify-end gap-1 shrink-0">
+      class="order-2 md:order-4 h-[var(--header-height-mobile)] md:h-full pr-4 sm:pr-8 pl-2 md:pl-2.5 lg:pl-3 border-b border-border-default/45 md:border-b-0 flex items-center justify-end gap-1 shrink-0">
       <span class="hidden md:block w-px h-4 bg-border-default mr-1" aria-hidden="true"></span>
 
       <button id="shortcuts-btn"
@@ -113,7 +113,7 @@
     </div>
 
     <!-- mobile sidebar toggle (Row 2 left on < md, aligned with header logo) -->
-    <div class="order-3 md:hidden h-11 pl-4 sm:pl-8 flex items-center">
+    <div class="order-3 md:hidden h-[var(--header-height-mobile)] pl-4 sm:pl-8 flex items-center">
       <button type="button" id="sidebar-toggle"
         class="inline-flex items-center justify-center p-1.5 -ml-1.5 rounded text-fg-muted hover:text-fg-primary hover:bg-bg-app transition-colors cursor-pointer"
         title="Toggle Sidebar" aria-label="Toggle exercises sidebar" aria-expanded="false">
@@ -129,7 +129,7 @@
     </div>
 
     <!-- instance controls: status, prev/next, run (Row 2 right on < md; right before global divider on md+) -->
-    <div class="order-5 md:order-3 h-11 md:h-full pr-4 sm:pr-8 md:pr-0 flex items-center justify-end gap-2.5 lg:gap-3 shrink-0">
+    <div class="order-5 md:order-3 h-[var(--header-height-mobile)] md:h-full pr-4 sm:pr-8 md:pr-0 flex items-center justify-end gap-2.5 lg:gap-3 shrink-0">
       <!-- status (lg+ only) -->
       <div class="hidden lg:flex items-center gap-1.5 whitespace-nowrap">
         <div id="status-dot" class="w-2 h-2 rounded-full bg-fg-muted animate-pulse shrink-0"></div>
@@ -184,7 +184,7 @@
             <!-- icon injected via js -->
           </button>
         </div>
-        <div id="sidebar-list" class="flex-1 overflow-y-auto py-2 space-y-1">
+        <div id="sidebar-list" class="flex-1 overflow-y-auto pt-[var(--pane-padding-top)] pb-2 space-y-1">
         </div>
         <div class="h-10 pl-4 sm:pl-8 pr-4 flex items-center shrink-0 select-none">
           <button id="reset-progress-btn"
@@ -212,7 +212,7 @@
         </div>
 
         <!-- unified scroll container (Problem + Rubber Duck stream) -->
-        <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative p-4 sm:px-8 sm:pt-7 pb-12">
+        <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative p-4 sm:px-8 sm:pt-[var(--pane-padding-top)] pb-12">
 
           <!-- problem description -->
           <div id="ex-desc-desktop" class="prose prose-invert prose-sm max-w-none">
@@ -356,7 +356,17 @@
     </div>
 
     <!-- footer (desktop/tablet) -->
-    <footer id="footer" class="hidden md:flex items-center justify-center px-6 py-4 border-t border-border-default/60 bg-bg-surface">
+    <footer id="footer" class="hidden md:flex items-center justify-center px-6 py-4 border-t border-[color:var(--footer-border-color)] bg-bg-surface shrink-0">
+      <!-- JN: Footer links & build date are injected by vite during build -->
+      <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-8">
+        <span class="text-xs text-fg-muted">
+          <a id="footer-repo-link" href="https://github.com" target="_blank" rel="noopener noreferrer">Star on GitHub</a>
+        </span>
+        <span class="text-xs text-fg-muted">
+          <a id="footer-issues-link" href="https://github.com/issues" target="_blank" rel="noopener noreferrer">Report an Error</a>
+        </span>
+        <span id="build-date" class="w-full sm:w-auto text-xs text-fg-muted order-last text-center"></span>
+      </div>
     </footer>
 
     <!-- reset progress modal -->

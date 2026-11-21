@@ -1,0 +1,39 @@
+name: Sync Design Tokens to Homepage
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/tokens.css'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Simulate sync without pushing changes'
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: nautilus
+    if: github.repository == 'wrongfirst/codebook'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 'latest'
+
+      - name: Sync tokens.css to wrongfirst/homepage
+        env:
+          FORGEJO_TOKEN: ${{ secrets.CODEBOOK_SYNC_INSTANCES }}
+        run: |
+          if [ -z "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+            export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
+          fi
+          DRY_RUN_ARG=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            DRY_RUN_ARG="--dry-run"
+          fi
+          npm run sync:tokens -- $DRY_RUN_ARG

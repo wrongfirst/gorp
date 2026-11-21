@@ -1,12 +1,13 @@
 @import "tailwindcss";
+@import "./tokens.css";
 @plugin "@tailwindcss/typography";
 
-@theme {
-  /* fonts */
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+@theme inline {
+  /* fonts (values defined in ./tokens.css) */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
 
-  /* theme variables */
+  /* theme variables (values defined in ./tokens.css) */
   --color-brand: var(--color-brand);
   --color-bg-app: var(--bg-app);
   --color-bg-surface: var(--bg-surface);
@@ -18,19 +19,8 @@
   --color-border-default: var(--border-default);
 }
 
-/* catpuccin colours */
+/* syntax tokens (latte) */
 :root {
-  --color-brand: #fe640b;
-  --bg-app: #eff1f5;
-  --bg-surface: #e5ebea;
-  --bg-subbar: #dce5e4;
-  --bg-editor: #ebf0f0;
-  --bg-output: #ebf0f0;
-  --fg-primary: #4c4f69;
-  --fg-muted: #8c8fa1;
-  --border-default: #ccd0da;
-
-  /* syntax tokens (latte) */
   --tok-keyword: #8839ef;
   --tok-string: #40a02b;
   --tok-number: #fe640b;
@@ -45,16 +35,6 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-brand: #fe640b;
-    --bg-app: #1e1e2e;
-    --bg-surface: #181825;
-    --bg-subbar: #222231;
-    --bg-editor: #161622;
-    --bg-output: #161622;
-    --fg-primary: #cdd6f4;
-    --fg-muted: #7f849c;
-    --border-default: #313244;
-
     /* syntax tokens (mocha) */
     --tok-keyword: #cba6f7;
     --tok-string: #a6e3a1;
@@ -112,6 +92,10 @@ button {
   background-color: var(--bg-editor) !important;
 }
 
+#editor .cm-content {
+  padding: var(--pane-padding-top) 0 1rem;
+}
+
 .cm-editor {
   height: 100%;
 }
@@ -142,19 +126,6 @@ button {
 .cm-activeLine,
 .cm-activeLineGutter {
   background-color: transparent !important;
-}
-
-/* compact gutter spacing */
-.cm-lineNumbers .cm-gutterElement {
-  padding: 0 2px 0 2px;
-}
-
-.cm-gutter-lint {
-  width: 0.8em;
-}
-
-.cm-line {
-  padding-left: 4px !important;
 }
 
 /* run button*/

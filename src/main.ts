@@ -26,7 +26,6 @@ import { initNavigation } from './ui/navigation';
 import { resetEditorText } from './ui/resetEditorText';
 import { setupCopyCodeButton } from './ui/copyCode';
 import { setupFormatCodeButton } from './ui/formatCode';
-import { renderFooter } from './ui/footer';
 import { initShortcuts } from './ui/shortcuts';
 import { initCommandPalette } from './ui/commandPalette';
 import { initResetProgress } from './ui/resetProgress';
@@ -46,7 +45,6 @@ initCommandPalette();
 initSettings();
 initChatPanel();
 initResetProgress();
-renderFooter();
 
 //load speedrun modal only in dev environments
 if (import.meta.env.DEV) {

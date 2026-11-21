@@ -10,6 +10,7 @@
     "serve": "node server.mjs",
     "deploy": "node scripts/deploy.ts",
     "sync:instances": "node scripts/sync-instances.ts",
+    "sync:tokens": "node scripts/sync-tokens.ts",
     "prune:deployments": "node scripts/prune-deployments.ts"
   },
   "dependencies": {

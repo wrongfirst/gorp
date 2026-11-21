@@ -1,0 +1,40 @@
+/* Shared design tokens (Latte / Mocha) */
+:root {
+  /* theme colors (light) */
+  --color-brand: #fe640b;
+  --bg-app: #eff1f5;
+  --bg-surface: #e5ebea;
+  --bg-subbar: #dce5e4;
+  --bg-editor: #ebf0f0;
+  --bg-output: #ebf0f0;
+  --fg-primary: #4c4f69;
+  --fg-muted: #8c8fa1;
+  --border-default: #ccd0da;
+
+  /* shared chrome dimensions & borders */
+  --header-height: 48px;
+  --header-height-mobile: 44px;
+  --pane-padding-top: 1.5rem;
+  --brand-logo-size: 20px;
+  --brand-title-size: 1rem;
+  --footer-border-color: color-mix(in srgb, var(--border-default) 60%, transparent);
+
+  /* fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* theme colors (dark) */
+    --color-brand: #fe640b;
+    --bg-app: #1e1e2e;
+    --bg-surface: #181825;
+    --bg-subbar: #222231;
+    --bg-editor: #161622;
+    --bg-output: #161622;
+    --fg-primary: #cdd6f4;
+    --fg-muted: #7f849c;
+    --border-default: #313244;
+  }
+}

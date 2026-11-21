@@ -100,7 +100,7 @@ export function renderSidebar(
     }
 
     sidebarEl.innerHTML = curriculum.map((chapter, chIdx) => {
-        const chapterHeader = `<div class="px-4 sm:px-8 py-1 pb-0 text-[10px] font-bold text-fg-muted uppercase">${chapter.title}</div>`;
+        const chapterHeader = `<div class="px-4 sm:px-8 pt-1 first:pt-0 pb-0 text-[10px] leading-5 font-bold text-fg-muted uppercase">${chapter.title}</div>`;
 
         const chapterExercises = chapter.exercises.map((e, exIdx) => {
             const isCompleted = completedSlugs.includes(e.id);

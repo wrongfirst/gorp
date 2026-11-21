@@ -1,5 +1,4 @@
 import {
-    lineNumbers,
     highlightActiveLineGutter,
     highlightSpecialChars,
     drawSelection,
@@ -30,7 +29,6 @@ import { lintKeymap } from '@codemirror/lint';
  * Standard CodeMirror extensions for the editor.
  */
 export const baseEditorExtensions: Extension[] = [
-    lineNumbers(),
     highlightActiveLineGutter(),
     highlightSpecialChars(),
     history(),
