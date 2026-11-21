@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand/vanilla';
-import { AppState, ChatSettings, defaultChatSettings, SettingsSlice } from '../../types';
+import { AppState, ChatSettings, LastVisitedInfo, defaultChatSettings, SettingsSlice } from '../../types';
 import { scheduleAutoPush } from '../../sync/syncManager';
 
 /**
@@ -9,9 +9,14 @@ function syncChatSettings(
   current: ChatSettings,
   newSettings: Partial<ChatSettings>
 ): ChatSettings {
+  const baseEndpoints = Array.isArray(newSettings.endpoints)
+    ? newSettings.endpoints.map((ep) => ({ ...ep }))
+    : (current.endpoints || []).map((ep) => ({ ...ep }));
+
   const updated: ChatSettings = {
     ...current,
     ...newSettings,
+    endpoints: baseEndpoints,
   };
 
   // If switching selected endpoint, pull its configuration into active fields
@@ -40,10 +45,20 @@ function syncChatSettings(
 
 export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> = (set, get) => ({
   chatSettings: defaultChatSettings,
+  preferredLanguage: undefined,
+  lastVisited: undefined,
 
   setChatSettings: (newSettings: Partial<ChatSettings>) => {
     const current = get().chatSettings;
     set({ chatSettings: syncChatSettings(current, newSettings) });
     scheduleAutoPush();
+  },
+
+  setPreferredLanguage: (langId: string) => {
+    set({ preferredLanguage: langId });
+  },
+
+  setLastVisited: (info: LastVisitedInfo) => {
+    set({ lastVisited: info });
   },
 });

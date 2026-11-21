@@ -1,12 +1,17 @@
 // src/core/store/slices/exerciseSlice.ts
 import { StateCreator } from 'zustand/vanilla';
-import { exercises } from '../../../exercises/exercise-registry';
+import { exercises, getExerciseDisplayTitle } from '../../../exercises/exercise-registry';
 import { defaultLanguageId } from '../../../languages/language-registry';
-import { AppState, ExerciseSlice } from '../../types';
+import { SITE_SLUG, SITE_TITLE } from '../../siteConfig';
+import { AppState, ExerciseSlice, LastVisitedInfo } from '../../types';
 import { scheduleAutoPush, triggerImmediatePush } from '../../sync/syncManager';
 
+const initialExerciseSlug = exercises[0]?.id || '';
+
 export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> = (set, get) => ({
-  activeLessonSlug: exercises[0]?.id || '',
+  activeLessonSlug: initialExerciseSlug,
+  activeLessonTitle: initialExerciseSlug ? getExerciseDisplayTitle(initialExerciseSlug) : '',
+  exerciseCount: exercises.length,
   currentLanguageId: defaultLanguageId,
   completedSlugs: [],
   userCode: {},
@@ -21,9 +26,46 @@ export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> 
     }
   },
 
-  setCurrent: (slug: string) => set({ activeLessonSlug: slug }),
+  recordLessonVisit: (slug: string) => {
+    const title = getExerciseDisplayTitle(slug);
+    const lastVisited: LastVisitedInfo = {
+      siteSlug: SITE_SLUG,
+      siteTitle: SITE_TITLE,
+      lessonSlug: slug,
+      lessonTitle: title,
+      updatedAt: Date.now(),
+    };
+    set({
+      activeLessonSlug: slug,
+      activeLessonTitle: title,
+      exerciseCount: exercises.length,
+      lastVisited,
+    });
+  },
 
-  setLanguage: (langId: string) => set({ currentLanguageId: langId }),
+  setCurrent: (slug: string) => {
+    const state = get();
+    const title = getExerciseDisplayTitle(slug);
+    if (
+      state.activeLessonSlug === slug &&
+      state.activeLessonTitle === title &&
+      state.exerciseCount === exercises.length &&
+      state.lastVisited?.siteSlug === SITE_SLUG &&
+      state.lastVisited?.lessonSlug === slug &&
+      state.lastVisited?.lessonTitle === title
+    ) {
+      return;
+    }
+    state.recordLessonVisit(slug);
+  },
+
+  setLanguage: (langId: string, options?: { updatePreference?: boolean }) => {
+    if (options?.updatePreference === false) {
+      set({ currentLanguageId: langId });
+    } else {
+      set({ currentLanguageId: langId, preferredLanguage: langId });
+    }
+  },
 
   saveUserCode: (lessonSlug: string, languageId: string, code: string) => {
     const key = `${lessonSlug}:${languageId}`;

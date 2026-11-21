@@ -142,6 +142,34 @@ function tomlPlugin(): Plugin {
   };
 }
 
+function escapeHtmlAttr(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function derivePortalName(siteConfig: Record<string, any>): string {
+  const explicit = typeof siteConfig.portal_name === "string" ? siteConfig.portal_name.trim() : "";
+  if (explicit) return explicit;
+
+  const subtitle = typeof siteConfig.subtitle === "string" ? siteConfig.subtitle.trim() : "";
+  const fromSubtitle = subtitle.replace(/^by\s+/i, "").trim();
+  if (fromSubtitle) return fromSubtitle;
+
+  const homePage = typeof siteConfig.home_page === "string" ? siteConfig.home_page.trim() : "";
+  if (homePage) {
+    try {
+      const parsed = new URL(homePage);
+      if (parsed.hostname) return parsed.hostname.replace(/^www\./, "");
+    } catch {
+      // Relative home_page (e.g. "/") resolves hostname at runtime in branding.ts
+    }
+  }
+  return "";
+}
+
 function htmlMetaPlugin(): Plugin {
   return {
     name: "vite-html-meta",
@@ -149,6 +177,8 @@ function htmlMetaPlugin(): Plugin {
       try {
         const siteConfig = getSiteConfig();
         const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji, home_page } = siteConfig;
+        const portalName = derivePortalName(siteConfig);
+        const trimmedHomePage = typeof home_page === "string" ? home_page.trim() : "";
 
         const pageTitle = headline || (subtitle ? `${title} | ${subtitle}` : title);
         const pageDescription = description || `Interactive programming exercises in the browser`;
@@ -169,26 +199,37 @@ function htmlMetaPlugin(): Plugin {
           ).join(", ");
 
         let res = html;
-        res = res.replace(/(<h1 id="header-title"[^>]*>).*?(<\/h1>)/s, `$1${title}$2`);
-        res = res.replace(/(<span id="header-subtitle-text"[^>]*>).*?(<\/span>)/s, `$1${subtitle}$2`);
-        if (home_page) {
-          res = res.replace(/(<a id="header-subtitle"[^>]*href=")[^"]*(")/s, `$1${home_page}$2`);
+        res = res.replace(/(<span id="header-title"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(title || "")}$2`);
+        if (logo_emoji) {
+          res = res.replace(/(<span id="header-logo"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(logo_emoji)}$2`);
         } else {
-          res = res.replace(/(<a id="header-subtitle"[^>]*)\s+href="[^"]*"\s+target="[^"]*"\s+rel="[^"]*"/s, `$1`);
-          res = res.replace(/<svg id="header-subtitle-icon"[^>]*>.*?<\/svg>/s, "");
+          res = res.replace(
+            /(<span id="header-logo"[^>]*class="[^"]*)\bflex\b([^"]*")/s,
+            `$1hidden$2`
+          );
         }
-        res = res.replace(/(<div [^>]*id="header-logo"[^>]*>).*?(<\/div>)/s, `$1${logo_emoji}$2`);
-        res = res.replace(/<title>.*<\/title>/, `<title>${pageTitle}</title>`);
-        res = res.replace("</head>", `  <meta property="og:title" content="${pageTitle}">\n</head>`);
+        if (trimmedHomePage && portalName) {
+          res = res.replace(/(<a id="header-portal-link"[^>]*href=")[^"]*(")/s, `$1${escapeHtmlAttr(trimmedHomePage)}$2`);
+          res = res.replace(/(<span id="header-portal-name"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(portalName)}$2`);
+        } else {
+          res = res.replace(
+            /(<a id="header-portal-link"[^>]*class="[^"]*)\bsite-brand\s+inline-flex\b([^"]*")/s,
+            `$1hidden$2`
+          );
+          res = res.replace(/(<a id="header-portal-link"[^>]*)\s+href="[^"]*"/s, `$1`);
+          res = res.replace(/(<span id="header-breadcrumb-sep"[^>]*class=")/s, `$1hidden `);
+        }
+        res = res.replace(/<title>.*<\/title>/, `<title>${escapeHtmlAttr(pageTitle)}</title>`);
+        res = res.replace("</head>", `  <meta property="og:title" content="${escapeHtmlAttr(pageTitle)}">\n</head>`);
         if (pageDescription) {
-          res = res.replace("</head>", `  <meta name="description" content="${pageDescription}">\n</head>`);
-          res = res.replace("</head>", `  <meta property="og:description" content="${pageDescription}">\n</head>`);
+          res = res.replace("</head>", `  <meta name="description" content="${escapeHtmlAttr(pageDescription)}">\n</head>`);
+          res = res.replace("</head>", `  <meta property="og:description" content="${escapeHtmlAttr(pageDescription)}">\n</head>`);
         }
         if (pageKeywords) {
-          res = res.replace("</head>", `  <meta name="keywords" content="${pageKeywords}">\n</head>`);
+          res = res.replace("</head>", `  <meta name="keywords" content="${escapeHtmlAttr(pageKeywords)}">\n</head>`);
         }
         if (og_image) {
-          res = res.replace("</head>", `  <meta property="og:image" content="${og_image}">\n</head>`);
+          res = res.replace("</head>", `  <meta property="og:image" content="${escapeHtmlAttr(og_image)}">\n</head>`);
           res = res.replace("</head>", `  <meta name="twitter:card" content="summary_large_image">\n</head>`);
         }
         return res;
@@ -203,6 +244,12 @@ function htmlMetaPlugin(): Plugin {
 export default defineConfig({
   base: "./",
   root: ".",
+  server: {
+    host: true,
+  },
+  preview: {
+    host: true,
+  },
   build: {
     outDir: "dist",
     emptyOutDir: true,

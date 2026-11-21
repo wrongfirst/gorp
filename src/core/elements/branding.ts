@@ -2,13 +2,16 @@ import { byId } from './helpers';
 
 export const brandingElements = {
     branding: {
-        get brandLink() { return byId<HTMLAnchorElement>('header-brand'); },
-        get titleLink() { return byId<HTMLAnchorElement>('header-title-link'); },
+        get header() { return byId<HTMLElement>('site-header'); },
+        get portalLink() { return byId<HTMLAnchorElement>('header-portal-link'); },
+        get portalName() { return byId('header-portal-name'); },
+        get breadcrumbSep() { return byId('header-breadcrumb-sep'); },
+        get bookSwitcher() { return byId('header-book-switcher'); },
+        get bookTrigger() { return byId<HTMLButtonElement>('header-book-trigger'); },
         get logo() { return byId('header-logo'); },
         get title() { return byId('header-title'); },
-        get subtitle() { return byId<HTMLAnchorElement>('header-subtitle'); },
-        get subtitleText() { return byId('header-subtitle-text'); },
-        get subtitleIcon() { return byId('header-subtitle-icon'); },
+        get switcherChevron() { return byId('header-switcher-chevron'); },
+        get switcherPopover() { return byId('course-switcher-popover'); },
     },
 };
 

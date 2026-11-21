@@ -1,5 +1,5 @@
 // src/core/store/backup.ts
-import { exercises } from '../../exercises/exercise-registry';
+import { exercises, getExerciseDisplayTitle } from '../../exercises/exercise-registry';
 import { AppState } from '../types';
 import { sanitizeLessons } from '../backup/modules/lessonsModule';
 import { sanitizeConversations } from '../backup/modules/conversationsModule';
@@ -9,13 +9,16 @@ import { sanitizeSettings } from '../backup/modules/settingsModule';
  * Returns the reset state for user progress while keeping settings intact.
  */
 export function getInitialProgressState(): Partial<AppState> {
+  const firstSlug = exercises[0]?.id || '';
   return {
     completedSlugs: [],
     userCode: {},
     userCodeTimestamps: {},
     chatConversations: {},
     activeConversationId: {},
-    activeLessonSlug: exercises[0]?.id || '',
+    activeLessonSlug: firstSlug,
+    activeLessonTitle: firstSlug ? getExerciseDisplayTitle(firstSlug) : '',
+    exerciseCount: exercises.length,
   };
 }
 

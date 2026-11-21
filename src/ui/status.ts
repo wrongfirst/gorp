@@ -11,6 +11,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0";
+            this.dot.title = message;
         }
     },
 
@@ -21,6 +22,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0";
+            this.dot.title = "Running...";
         }
     },
 
@@ -31,6 +33,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-green-500 shrink-0";
+            this.dot.title = "PASSED";
         }
     },
 
@@ -41,6 +44,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-red-500 shrink-0";
+            this.dot.title = "FAILED";
         }
     },
 
@@ -51,6 +55,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-red-600 shrink-0";
+            this.dot.title = message;
         }
     },
 
@@ -61,6 +66,7 @@ export const status = {
         }
         if (this.dot) {
             this.dot.className = "w-2 h-2 rounded-full bg-green-600 shrink-0";
+            this.dot.title = "Ready";
         }
     }
 };

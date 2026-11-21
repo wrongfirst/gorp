@@ -17,6 +17,7 @@ on:
           - 'wrongfirst/fft'
           - 'wrongfirst/vim-better'
           - 'wrongfirst/gorp'
+          - 'wrongfirst/dioscuri'
       dry_run:
         description: 'Simulate sync without pushing changes'
         type: boolean

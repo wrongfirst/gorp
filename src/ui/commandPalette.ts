@@ -164,13 +164,13 @@ function renderResultsList(): void {
     const isSelected = idx === selectedIndex;
     const highlightedTitle = formatHighlightedTitle(res.item.title, res.positions);
     const rowClass = isSelected
-      ? 'bg-brand/10 text-fg-primary font-medium'
-      : 'hover:bg-bg-app text-fg-primary/85';
+      ? 'border-l-2 border-brand bg-bg-subbar/70 text-fg-primary font-medium'
+      : 'border-l-2 border-transparent hover:bg-bg-subbar/40 text-fg-muted hover:text-fg-primary';
 
     return `
-      <div data-index="${idx}" class="flex items-center justify-between px-3 py-2 cursor-pointer transition-colors text-xs ${rowClass}">
+      <div data-index="${idx}" class="flex items-center justify-between pl-3.5 pr-3 py-2 cursor-pointer transition-colors text-xs ${rowClass}">
         <span class="truncate pr-2">${highlightedTitle}</span>
-        <span class="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 bg-fg-muted/10 text-fg-muted">${res.item.badge}</span>
+        <span class="shrink-0 text-[10px] font-mono uppercase px-1.5 py-0.5 rounded bg-bg-surface/80 text-fg-muted">${res.item.badge}</span>
       </div>
     `;
   }).join('');
@@ -325,7 +325,7 @@ function renderFooterHints(isPreviewFocused = false): void {
   const modKey = isMac ? '⌘K' : 'Ctrl+K';
 
   const kbd = (key: string) =>
-    `<kbd class="bg-fg-muted/10 px-1.5 py-0.5 text-[10px] font-mono text-fg-muted inline-block mr-1">${key}</kbd>`;
+    `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[10px] font-mono text-fg-secondary inline-block mr-1">${key}</kbd>`;
 
   if (isPreviewFocused) {
     const preview = elements.commandPalette.preview;

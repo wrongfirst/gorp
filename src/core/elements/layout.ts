@@ -10,8 +10,14 @@ export const layoutElements = {
     sidebar: {
         get list() { return byId('sidebar-list'); },
         get toggle() { return byId<HTMLButtonElement>('sidebar-toggle'); },
+        get collapseBtn() { return byId<HTMLButtonElement>('sidebar-collapse-btn'); },
+        get expandBtn() { return byId<HTMLButtonElement>('sidebar-expand-btn'); },
+        get backdrop() { return byId('sidebar-backdrop'); },
         get nav() { return byId('sidebar-nav'); },
     },
+
+    // Problem pane chapter header
+    get problemChapterTitle() { return byId('problem-chapter-title'); },
 
     // Problem and editor panels
     get problemAndChatPanel() { return byId('problem-and-chat-panel'); },

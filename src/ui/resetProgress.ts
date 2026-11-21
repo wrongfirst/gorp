@@ -1,6 +1,8 @@
 import { elements } from '../core/elements';
 import { ICONS } from './icons';
 import { store } from '../core/store';
+import { flushPersistedStorage } from '../core/store/storage/encryptedStorage';
+import { SITE_TITLE } from '../core/siteConfig';
 import { abortAllStreams } from './chatPanel';
 import { pushToGist } from '../core/sync/syncManager';
 import { Effect } from 'effect';
@@ -24,18 +26,19 @@ export function initResetProgress() {
 
     elements.resetProgressBtn?.addEventListener('click', () => {
         showConfirmDialog({
-            title: 'Reset Progress',
-            message: 'Are you sure you want to reset all progress? This will delete your saved code and completion status for all exercises. This action cannot be undone.',
-            confirmText: 'Reset All',
+            title: `Reset Progress (${SITE_TITLE})`,
+            message: `Are you sure you want to reset all progress for ${SITE_TITLE}? This will delete your saved code, chat history, and completion status for exercises in this book only. Your shared settings (Vim mode, Rubber Duck, GitHub account) and other books will not be affected. This action cannot be undone.`,
+            confirmText: 'Reset Book Progress',
             onConfirm: async () => {
                 abortAllStreams();
                 store.getState().resetProgress();
-                
+
                 const { gistSyncSettings } = store.getState();
                 if (gistSyncSettings?.enabled && gistSyncSettings?.gistId && gistSyncSettings?.token) {
                     await Effect.runPromise(pushToGist().pipe(Effect.ignoreLogged));
                 }
 
+                await flushPersistedStorage();
                 window.location.reload();
             },
         });

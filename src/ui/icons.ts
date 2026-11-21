@@ -5,20 +5,20 @@ export const ICONS = {
   class="text-green-500">
   <polyline points="20 6 9 17 4 12"></polyline></svg>`,
 
-  LEFT_ARROW: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-  stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  LEFT_ARROW: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
   <path d="m15 18-6-6 6-6" /></svg>`,
 
 
-  RIGHT_ARROW: `<svg width="18" height="18" style="display: block; transform: scale(-1,1)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-  stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  RIGHT_ARROW: `<svg width="16" height="16" style="display: block; transform: scale(-1,1)" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round">
   <path d="m15 18-6-6 6-6" /></svg>`,
 
-  PLAY: `<svg fill="currentColor" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  PLAY: `<svg fill="currentColor" width="12" height="12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M18.54,9,8.88,3.46a3.42,3.42,0,0,0-5.13,3V17.58A3.42,3.42,0,0,0,7.17,21a3.43,3.43,0,0,0,1.71-.46L18.54,15a3.42,3.42,0,0,0,0-5.92Zm-1,4.19L7.88,18.81a1.44,1.44,0,0,1-1.42,0,1.42,1.42,0,0,1-.71-1.23V6.42a1.42,1.42,0,0,1,.71-1.23A1.51,1.51,0,0,1,7.17,5a1.54,1.54,0,0,1,.71.19l9.66,5.58a1.42,1.42,0,0,1,0,2.46Z"/>
   </svg>`,
 
-  STOP: `<svg fill="currentColor" width="16" height="16" viewBox="-1 0 19 19" xmlns="http://www.w3.org/2000/svg"
+  STOP: `<svg fill="currentColor" width="12" height="12" viewBox="-1 0 19 19" xmlns="http://www.w3.org/2000/svg"
     class="cf-icon-svg"><path d="M16.417 9.583A7.917 7.917 0 1 1 8.5 1.666a7.917 7.917 0 0 1 7.917 7.917zm-5.267 6.274a6.766 6.766 0 0 0 1.756-1.084L3.31 5.177a6.81 6.81 0 0 0 7.84 10.68zm3.624-3.624a6.808 6.808 0 0 0-10.68-7.84l9.596 9.596a6.77 6.77 0 0 0 1.084-1.756z"/>
   </svg>`,
 
@@ -41,6 +41,18 @@ export const ICONS = {
                         id="a" />
                 </svg>`,
 
+  PANEL_CLOSE: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect width="18" height="18" x="3" y="3" rx="2"/>
+    <path d="M9 3v18"/>
+    <path d="m16 15-3-3 3-3"/>
+  </svg>`,
+
+  PANEL_OPEN: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect width="18" height="18" x="3" y="3" rx="2"/>
+    <path d="M9 3v18"/>
+    <path d="m14 9 3 3-3 3"/>
+  </svg>`,
+
   WHITE_CHECK: `<svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
   <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>`,
 
@@ -54,17 +66,17 @@ export const ICONS = {
   <circle cx="11" cy="11" r="8"></circle>
   <line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>`,
 
-  KEYBOARD: `<svg fill="currentColor" width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  KEYBOARD: `<svg fill="currentColor" width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <path d="M6.21,13.29a.93.93,0,0,0-.33-.21,1,1,0,0,0-.76,0,.9.9,0,0,0-.54.54,1,1,0,1,0,1.84,0A1,1,0,0,0,6.21,13.29ZM13.5,11h1a1,1,0,0,0,0-2h-1a1,1,0,0,0,0,2Zm-4,0h1a1,1,0,0,0,0-2h-1a1,1,0,0,0,0,2Zm-3-2h-1a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2ZM20,5H4A3,3,0,0,0,1,8v8a3,3,0,0,0,3,3H20a3,3,0,0,0,3-3V8A3,3,0,0,0,20,5Zm1,11a1,1,0,0,1-1,1H4a1,1,0,0,1-1-1V8A1,1,0,0,1,4,7H20a1,1,0,0,1,1,1Zm-6-3H9a1,1,0,0,0,0,2h6a1,1,0,0,0,0-2Zm3.5-4h-1a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm.71,4.29a1,1,0,0,0-.33-.21,1,1,0,0,0-.76,0,.93.93,0,0,0-.33.21,1,1,0,0,0-.21.33A1,1,0,1,0,19.5,14a.84.84,0,0,0-.08-.38A1,1,0,0,0,19.21,13.29Z"/>
   </svg>`,
 
-  SETTINGS: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  SETTINGS: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
     <circle cx="12" cy="12" r="3"></circle>
   </svg>`,
 
-  ROCKET: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  ROCKET: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"></path>
     <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"></path>
@@ -104,6 +116,8 @@ export const ICONS = {
   </svg>`,
 
   CHEVRON_DOWN: `<svg class="w-3 h-3 text-fg-muted pointer-events-none shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" /></svg>`,
+
+  CARET_DOWN: `<svg class="w-3.5 h-3.5 text-fg-muted pointer-events-none shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4.427 7.427l3.396 3.396a.25.25 0 00.354 0l3.396-3.396A.25.25 0 0011.396 7H4.604a.25.25 0 00-.177.427z"/></svg>`,
 
   CHEVRON_RIGHT: `<svg class="w-2.5 h-2.5 text-fg-muted pointer-events-none shrink-0" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clip-rule="evenodd" /></svg>`,
 

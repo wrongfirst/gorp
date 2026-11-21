@@ -11,8 +11,13 @@ subtitle = "by wrongfirst"
 default_language = "typescript"
 languages = ["typescript", "ocaml", "python", "go", "c", "cpp"]
 
-# URLs
+# URLs & Portal Integration
+# `home_page`: Parent portal URL; set to "" to run in standalone mode without the portal breadcrumb prefix
 home_page = "https://wrongfirst.dev"
+# `portal_name`: Optional breadcrumb portal label (defaults to `subtitle` without leading "by ", or `home_page` host)
+# portal_name = "wrongfirst"
+# `directory_url`: Optional book directory manifest URL (defaults to "/directory.json" when `home_page` is same-origin)
+# directory_url = "/directory.json"
 project_url = "https://github.com/jitinnair1/codebook"
 author_url = "https://github.com/jitinnair1"
 

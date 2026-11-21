@@ -1,6 +1,7 @@
 import { AppState } from '../../types';
 import { LessonProgressItem, LessonsPayload } from '../types';
-import { isValidExerciseId, exercises } from '../../../exercises/exercise-registry';
+import { isValidExerciseId, exercises, getExerciseDisplayTitle } from '../../../exercises/exercise-registry';
+import { enabledLanguageIds } from '../../../languages/language-registry';
 
 export function exportLessons(state: AppState): LessonsPayload {
   const lessonMap = new Map<string, { completed: boolean; code: Record<string, string> }>();
@@ -83,12 +84,17 @@ export function sanitizeLessons(raw: unknown, current: AppState): Partial<AppSta
         ? current.activeLessonSlug
         : exercises[0]?.id || '';
 
+  const candidateLang =
+    typeof payload.activeLanguageId === 'string' && payload.activeLanguageId.trim()
+      ? payload.activeLanguageId.trim()
+      : typeof payload.currentLanguageId === 'string' && payload.currentLanguageId.trim()
+        ? payload.currentLanguageId.trim()
+        : '';
+
   const resolvedActiveLang =
-    typeof payload.activeLanguageId === 'string' && payload.activeLanguageId
-      ? payload.activeLanguageId
-      : typeof payload.currentLanguageId === 'string' && payload.currentLanguageId
-        ? payload.currentLanguageId
-        : current.currentLanguageId;
+    candidateLang && (enabledLanguageIds.length === 0 || enabledLanguageIds.includes(candidateLang))
+      ? candidateLang
+      : current.currentLanguageId;
 
   const completedSet = new Set<string>();
   const userCode: Record<string, string> = {};
@@ -153,6 +159,8 @@ export function sanitizeLessons(raw: unknown, current: AppState): Partial<AppSta
 
   return {
     activeLessonSlug: rawActiveLesson,
+    activeLessonTitle: rawActiveLesson ? getExerciseDisplayTitle(rawActiveLesson) : '',
+    exerciseCount: exercises.length,
     currentLanguageId: resolvedActiveLang,
     completedSlugs: Array.from(completedSet),
     userCode,
@@ -188,11 +196,15 @@ export function mergeLessons(local: AppState, remote: LessonsPayload | any): Par
     }
   }
 
+  const resolvedActiveLesson = local.activeLessonSlug || sanitizedRemote.activeLessonSlug || '';
+
   return {
     completedSlugs: mergedCompleted,
     userCode: mergedUserCode,
     userCodeTimestamps: mergedTimestamps,
-    activeLessonSlug: local.activeLessonSlug || sanitizedRemote.activeLessonSlug,
+    activeLessonSlug: resolvedActiveLesson,
+    activeLessonTitle: resolvedActiveLesson ? getExerciseDisplayTitle(resolvedActiveLesson) : '',
+    exerciseCount: exercises.length,
     currentLanguageId: local.currentLanguageId || sanitizedRemote.currentLanguageId,
   };
 }

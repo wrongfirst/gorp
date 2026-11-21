@@ -30,7 +30,7 @@ export function initSpeedrunButton() {
   if (!btn) return;
 
   btn.innerHTML = ICONS.ROCKET;
-  btn.classList.add('md:block');
+  btn.classList.add('md:inline-flex');
 
   btn.addEventListener('click', openSpeedrunModal);
 }
@@ -141,31 +141,31 @@ function updateStatusFilterPills() {
     const filter = btn.dataset.filter as StatusFilter;
     const isActive = activeStatusFilter === filter;
 
-    btn.className = 'speedrun-status-pill px-2.5 py-1 rounded-md font-medium text-xs border transition-all cursor-pointer';
+    btn.className = 'speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs transition-all cursor-pointer';
 
     if (isActive) {
       if (filter === 'all') {
-        btn.classList.add('bg-brand', 'text-white', 'border-brand', 'shadow-xs');
+        btn.classList.add('bg-brand', 'text-white');
       } else if (filter === 'passed') {
-        btn.classList.add('bg-green-500/20', 'text-green-400', 'border-green-500/40', 'shadow-xs');
+        btn.classList.add('bg-green-500/20', 'text-green-400');
       } else if (filter === 'failed') {
-        btn.classList.add('bg-yellow-500/20', 'text-yellow-400', 'border-yellow-500/40', 'shadow-xs');
+        btn.classList.add('bg-yellow-500/20', 'text-yellow-400');
       } else if (filter === 'error') {
-        btn.classList.add('bg-red-500/20', 'text-red-400', 'border-red-500/40', 'shadow-xs');
+        btn.classList.add('bg-red-500/20', 'text-red-400');
       } else if (filter === 'missing_solution') {
-        btn.classList.add('bg-zinc-500/20', 'text-zinc-300', 'border-zinc-500/40', 'shadow-xs');
+        btn.classList.add('bg-bg-subbar', 'text-fg-primary');
       }
     } else {
       if (filter === 'all') {
-        btn.classList.add('bg-bg-surface', 'text-fg-primary', 'border-border-default', 'hover:bg-bg-app');
+        btn.classList.add('bg-bg-editor', 'text-fg-primary', 'hover:bg-bg-subbar');
       } else if (filter === 'passed') {
-        btn.classList.add('bg-bg-surface', 'text-green-500', 'border-border-default', 'hover:bg-green-500/10', 'hover:border-green-500/30');
+        btn.classList.add('bg-bg-editor', 'text-green-500', 'hover:bg-green-500/10');
       } else if (filter === 'failed') {
-        btn.classList.add('bg-bg-surface', 'text-yellow-500', 'border-border-default', 'hover:bg-yellow-500/10', 'hover:border-yellow-500/30');
+        btn.classList.add('bg-bg-editor', 'text-yellow-500', 'hover:bg-yellow-500/10');
       } else if (filter === 'error') {
-        btn.classList.add('bg-bg-surface', 'text-red-500', 'border-border-default', 'hover:bg-red-500/10', 'hover:border-red-500/30');
+        btn.classList.add('bg-bg-editor', 'text-red-500', 'hover:bg-red-500/10');
       } else if (filter === 'missing_solution') {
-        btn.classList.add('bg-bg-surface', 'text-fg-muted', 'border-border-default', 'hover:bg-zinc-500/10', 'hover:border-zinc-500/30');
+        btn.classList.add('bg-bg-editor', 'text-fg-muted', 'hover:bg-bg-subbar');
       }
     }
   });
@@ -457,16 +457,16 @@ function appendResultCard(container: HTMLElement, result: VerificationItemResult
   const isExpanded = expandedCardIds.has(cardId);
 
   const card = document.createElement('div');
-  card.className = 'border border-border-default rounded-lg bg-bg-surface overflow-hidden transition-all text-xs';
+  card.className = 'transition-colors text-xs';
 
   card.innerHTML = `
-    <div class="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-bg-app/50 transition-colors" data-toggle="${cardId}">
+    <div class="px-5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-bg-editor/60 transition-colors" data-toggle="${cardId}">
       <div class="flex items-center gap-3">
         <span class="px-2 py-0.5 font-bold uppercase rounded text-[10px] border ${badge.bg} ${badge.text}">
           ${badge.label}
         </span>
         <span class="font-semibold text-fg-primary">${escapeHtml(titleText)}</span>
-        <span class="font-mono text-fg-muted bg-bg-app px-1.5 py-0.5 rounded text-[11px]">${result.languageId}</span>
+        <span class="font-mono text-fg-muted text-[11px]">${result.languageId}</span>
       </div>
       <div class="flex items-center gap-3">
         <span class="font-mono text-fg-muted">${result.durationMs}ms</span>
@@ -475,13 +475,13 @@ function appendResultCard(container: HTMLElement, result: VerificationItemResult
     </div>
     ${hasLogs
       ? `
-      <div id="${cardId}" class="${isExpanded ? '' : 'hidden '}px-4 py-3 border-t border-border-default bg-bg-app/40 space-y-2 font-mono text-[11px]">
+      <div id="${cardId}" class="${isExpanded ? '' : 'hidden '}px-5 py-3 bg-bg-editor space-y-2 font-mono text-[11px]">
         ${result.error
-        ? `<div><span class="text-red-400 font-bold block mb-1">Error / Failure:</span><pre class="p-2 bg-bg-app rounded border border-border-default overflow-x-auto text-red-300 whitespace-pre-wrap">${escapeHtml(result.error)}</pre></div>`
+        ? `<div><span class="text-red-400 font-bold block mb-1">Error / Failure:</span><pre class="overflow-x-auto text-red-300 whitespace-pre-wrap">${escapeHtml(result.error)}</pre></div>`
         : ''
       }
         ${result.output
-        ? `<div><span class="text-fg-muted block mb-1">Standard Output:</span><pre class="p-2 bg-bg-app rounded border border-border-default overflow-x-auto text-fg-secondary whitespace-pre-wrap">${escapeHtml(result.output)}</pre></div>`
+        ? `<div><span class="text-fg-muted block mb-1">Standard Output:</span><pre class="overflow-x-auto text-fg-secondary whitespace-pre-wrap">${escapeHtml(result.output)}</pre></div>`
         : ''
       }
       </div>

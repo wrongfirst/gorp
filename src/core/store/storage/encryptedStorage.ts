@@ -11,6 +11,16 @@ export function clearPersistedStorage(name: string): void {
   localStorage.removeItem(name);
 }
 
+export function flushPersistedStorage(): Promise<void> {
+  return writeQueue;
+}
+
+async function encryptIfNeeded(secret: string): Promise<string> {
+  if (!secret) return '';
+  if (secret.startsWith('enc:v1:')) return secret;
+  return encryptSecret(secret);
+}
+
 async function processWrite(name: string, value: string): Promise<void> {
   if (writesSuppressed) return;
   try {
@@ -22,13 +32,13 @@ async function processWrite(name: string, value: string): Promise<void> {
       if (hasChatSettings) {
         const cs = { ...parsed.state.chatSettings };
         if (cs.apiKey) {
-          cs.apiKey = await encryptSecret(cs.apiKey);
+          cs.apiKey = await encryptIfNeeded(cs.apiKey);
         }
         if (Array.isArray(cs.endpoints)) {
           cs.endpoints = await Promise.all(
             cs.endpoints.map(async (ep: ChatEndpoint) => ({
               ...ep,
-              apiKey: ep.apiKey ? await encryptSecret(ep.apiKey) : '',
+              apiKey: ep.apiKey ? await encryptIfNeeded(ep.apiKey) : '',
             }))
           );
         }
@@ -38,7 +48,7 @@ async function processWrite(name: string, value: string): Promise<void> {
       if (hasSyncSettings) {
         const ss = { ...parsed.state.gistSyncSettings };
         if (ss.token) {
-          ss.token = await encryptSecret(ss.token);
+          ss.token = await encryptIfNeeded(ss.token);
         }
         parsed.state.gistSyncSettings = ss;
       }

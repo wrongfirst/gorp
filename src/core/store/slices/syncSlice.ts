@@ -21,6 +21,7 @@ export const createSyncSlice: StateCreator<AppState, [], [], SyncSlice> = (set, 
       gistSyncSettings: {
         ...current,
         enabled: false,
+        token: '',
         gistId: '',
         lastSyncedAt: undefined,
       },

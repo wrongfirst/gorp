@@ -121,20 +121,44 @@ export function mergeSettings(local: AppState, remote: SettingsPayload | any): P
   const localChat = local.chatSettings || defaultChatSettings;
   const remoteChat = remote.chatSettings || defaultChatSettings;
 
-  // Preserve local API keys if remote keys are empty/stripped
-  const mergedEndpoints = (remoteChat.endpoints || []).map((remEp: any) => {
-    const matchingLocal = localChat.endpoints?.find((locEp) => locEp.id === remEp.id);
-    return {
-      ...remEp,
-      apiKey: remEp.apiKey || matchingLocal?.apiKey || '',
-    };
-  });
+  const isRemoteChatConfigured = Boolean(
+    remoteChat.enabled ||
+      remoteChat.baseUrl?.trim() ||
+      remoteChat.model?.trim() ||
+      (Array.isArray(remoteChat.endpoints) &&
+        remoteChat.endpoints.some(
+          (ep: any) => ep?.baseUrl?.trim() || ep?.model?.trim() || ep?.name?.trim()
+        ))
+  );
+  const isLocalChatConfigured = Boolean(
+    localChat.enabled ||
+      localChat.baseUrl?.trim() ||
+      localChat.model?.trim() ||
+      (Array.isArray(localChat.endpoints) &&
+        localChat.endpoints.some(
+          (ep) => ep?.baseUrl?.trim() || ep?.model?.trim() || ep?.name?.trim()
+        ))
+  );
 
-  const mergedChatSettings: ChatSettings = {
-    ...remoteChat,
-    apiKey: remoteChat.apiKey || localChat.apiKey || '',
-    endpoints: mergedEndpoints.length > 0 ? mergedEndpoints : localChat.endpoints,
-  };
+  let mergedChatSettings: ChatSettings;
+  if (!isRemoteChatConfigured && isLocalChatConfigured) {
+    mergedChatSettings = localChat;
+  } else {
+    // Preserve local API keys if remote keys are empty/stripped
+    const mergedEndpoints = (remoteChat.endpoints || []).map((remEp: any) => {
+      const matchingLocal = localChat.endpoints?.find((locEp) => locEp.id === remEp.id);
+      return {
+        ...remEp,
+        apiKey: remEp.apiKey || matchingLocal?.apiKey || '',
+      };
+    });
+
+    mergedChatSettings = {
+      ...remoteChat,
+      apiKey: remoteChat.apiKey || localChat.apiKey || '',
+      endpoints: mergedEndpoints.length > 0 ? mergedEndpoints : localChat.endpoints,
+    };
+  }
 
   const localSync = local.gistSyncSettings || defaultGistSyncSettings;
   const remoteSync = remote.gistSyncSettings || defaultGistSyncSettings;
@@ -142,7 +166,7 @@ export function mergeSettings(local: AppState, remote: SettingsPayload | any): P
   const mergedSyncSettings: GistSyncSettings = {
     ...remoteSync,
     token: remoteSync.token || localSync.token || '',
-    gistId: remoteSync.gistId || localSync.gistId || '',
+    gistId: localSync.gistId || remoteSync.gistId || '',
     enabled: typeof remoteSync.enabled === 'boolean' ? remoteSync.enabled : localSync.enabled,
     autoSync: typeof remoteSync.autoSync === 'boolean' ? remoteSync.autoSync : localSync.autoSync,
   };

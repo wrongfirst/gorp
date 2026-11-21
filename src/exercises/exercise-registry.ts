@@ -246,5 +246,12 @@ export function getExerciseDisplayNumber(exerciseId: string): string {
   return '';
 }
 
+export function getExerciseDisplayTitle(exerciseId: string): string {
+  const ex = exercises.find(e => e.id === exerciseId);
+  if (!ex) return '';
+  const displayNum = getExerciseDisplayNumber(ex.id);
+  return displayNum ? `${displayNum} ${ex.title}` : ex.title;
+}
+
 
 

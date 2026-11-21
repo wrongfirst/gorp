@@ -17,6 +17,7 @@ import { ICONS } from './ui/icons';
 import { status } from './ui/status';
 import { showPopup } from './ui/popup';
 import { initBranding } from './ui/branding';
+import { initCourseSwitcher } from './ui/courseSwitcher';
 import { renderSidebar, initSidebarToggle } from './ui/sidebar';
 import { renderProgressBar } from './ui/progressBar';
 import { setupResize } from './ui/resize';
@@ -124,6 +125,12 @@ function render() {
             renderMath(elements.description.desktop);
         }
 
+        //update problem pane chapter header
+        if (elements.problemChapterTitle) {
+            const currentChapter = curriculum.find(c => c.exercises.some(e => e.id === currentEx.id));
+            elements.problemChapterTitle.textContent = currentChapter?.title ?? '';
+        }
+
         //update nav
         if (navActions) navActions.updateNavState(activeLessonSlug);
 
@@ -192,8 +199,7 @@ if (elements.clearOutputBtn) {
 }
 
 //routing
-const navigateHome = (e: MouseEvent) => {
-    e.preventDefault();
+const navigateToFirstExercise = () => {
     const firstExId = exercises[0]?.id;
     if (firstExId) {
         window.location.hash = `#${firstExId}`;
@@ -201,9 +207,8 @@ const navigateHome = (e: MouseEvent) => {
     }
 };
 
-//header anchor links
-elements.branding.brandLink?.addEventListener('click', navigateHome);
-elements.branding.titleLink?.addEventListener('click', navigateHome);
+//header course switcher (falls back to navigating to first exercise when directory.json is unavailable)
+initCourseSwitcher(navigateToFirstExercise);
 
 window.addEventListener('hashchange', () => {
     const id = window.location.hash.slice(1);
@@ -229,10 +234,10 @@ const storedExerciseId = store.getState().activeLessonSlug;
 if (hashId && exercises.some(e => e.id === hashId)) {
     store.getState().setCurrent(hashId);
 } else if (storedExerciseId && exercises.some(e => e.id === storedExerciseId)) {
-    window.location.hash = `#${storedExerciseId}`;
+    history.replaceState(null, '', `#${storedExerciseId}`);
 } else if (exercises.length > 0) {
     store.getState().setCurrent(exercises[0].id);
-    window.location.hash = `#${exercises[0].id}`;
+    history.replaceState(null, '', `#${exercises[0].id}`);
 }
 
 //initial render

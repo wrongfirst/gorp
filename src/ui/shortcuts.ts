@@ -4,6 +4,7 @@ import { store } from '../core/store';
 import { focusEditor, formatEditorCode } from '../core/editor';
 import { focusChatInput } from './chatPanel';
 import { toggleCommandPalette } from './commandPalette';
+import { toggleSidebar } from './sidebar';
 import { showPopup } from './popup';
 import { ICONS } from './icons';
 
@@ -22,6 +23,7 @@ const EDITOR_SHORTCUTS: Shortcut[] = [
 
 const NAVIGATION_SHORTCUTS: Shortcut[] = [
     { action: "Command Palette", keys: ["Cmd/Ctrl", "K"] },
+    { action: "Toggle Sidebar", keys: ["Cmd/Ctrl", "B"] },
     { action: "Run Code", keys: ["Cmd/Ctrl", "Enter"] },
     { action: "Focus Editor", keys: ["Cmd/Ctrl", "Shift", "E"] },
     { action: "Focus Rubber Duck", keys: ["Cmd/Ctrl", "Shift", "D"] },
@@ -72,6 +74,14 @@ export function initShortcuts() {
             e.preventDefault();
             e.stopPropagation();
             toggleCommandPalette();
+            return;
+        }
+
+        // toggle sidebar: Cmd/Ctrl + B
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'B')) {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleSidebar();
             return;
         }
 
@@ -183,19 +193,19 @@ function renderShortcuts() {
 
                 if (k === "or") return `<span class="text-fg-muted text-xs mx-1">or</span>`;
 
-                return `<kbd class="bg-bg-app border border-border-default rounded px-1.5 py-0.5 text-xs font-mono text-fg-muted
+                return `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[11px] font-mono text-fg-secondary
                 min-w-5 text-center inline-block">${label}</kbd>`;
             }).reduce((acc, curr, i) => {
                 if (i === 0) return curr;
                 const prevKey = s.keys[i - 1];
                 const currKey = s.keys[i];
                 if (prevKey === "or" || currKey === "or") return acc + curr;
-                return acc + '<span class="text-fg-muted text-xs mx-1">+</span>' + curr;
+                return acc + '<span class="text-fg-muted text-[11px] mx-1">+</span>' + curr;
             }, "");
 
             return `
-                <div class="flex items-center justify-between py-3 border-b border-border-default last:border-0">
-                    <span class="text-base text-fg-primary">${s.action}</span>
+                <div class="flex items-center justify-between py-2">
+                    <span class="text-[13px] text-fg-primary">${s.action}</span>
                     <div class="flex items-center">
                         ${keysHtml}
                     </div>
@@ -204,9 +214,9 @@ function renderShortcuts() {
         }).join('');
 
         return `
-            <div class="flex flex-col gap-3">
-                <h3 class="text-xs font-bold text-fg-muted uppercase tracking-wider pb-2 border-b border-border-default">${title}</h3>
-                <div class="flex flex-col">
+            <div class="flex flex-col gap-1.5">
+                <h3 class="text-[10px] font-bold text-fg-muted uppercase tracking-wider pb-1.5">${title}</h3>
+                <div class="flex flex-col divide-y divide-border-default/25">
                     ${items}
                 </div>
             </div>
@@ -214,7 +224,7 @@ function renderShortcuts() {
     };
 
     elements.shortcuts.list.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
             ${renderGroup("Editor", EDITOR_SHORTCUTS)}
             ${renderGroup("Navigation", NAVIGATION_SHORTCUTS)}
         </div>

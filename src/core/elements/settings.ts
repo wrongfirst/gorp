@@ -42,6 +42,7 @@ export const settingsElements = {
         get includeKeysCheckbox() { return byId<HTMLInputElement>('backup-include-keys'); },
         get backupStatusMsg() { return byId('backup-status-msg'); },
         get storageUsageDisplay() { return byId('storage-usage-display'); },
+        get clearSharedSettingsCheckbox() { return byId<HTMLInputElement>('clear-shared-settings-checkbox'); },
         get clearStorageBtn() { return byId<HTMLButtonElement>('clear-storage-btn'); },
         get clearStorageIcon() { return byId('clear-storage-icon'); },
     },

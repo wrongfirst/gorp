@@ -1,7 +1,7 @@
 # Data Schema Specification
 
 Specification of data shapes across persistence and transfer paths:
-1. **LocalStorage** (Client state)
+1. **LocalStorage** (Two-key same-origin split: shared `user_settings` + per-instance `${SITE_SLUG}_storage`)
 2. **GitHub Gist** (Cloud sync)
 3. **Export Backups** (File export/import)
 
@@ -9,50 +9,100 @@ Specification of data shapes across persistence and transfer paths:
 
 ## 1. Current Schemas
 
-### 1.1 LocalStorage (`AppState`)
+### 1.1 LocalStorage (Two-Key Same-Origin Architecture)
 
-Key: `${SITE_SLUG}_storage`. Secrets encrypted at rest (`enc:v1:...`).
+Client state is split across two `localStorage` keys on the same origin so preferences, AI credentials, and GitHub authentication are shared across book instances while exercise progress, code, conversations, and per-book Gist pointers remain isolated.
+
+| Key | Scope | Fields | Secrets |
+| :--- | :--- | :--- | :--- |
+| `user_settings` | Shared across all instances on the origin | `version`, `vimMode`, `preferredLanguage?`, `chatSettings`, `gistAuth` (`{ enabled, token, autoSync }`), `lastVisited?` (`{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }`) | `chatSettings.apiKey`, `chatSettings.endpoints[].apiKey`, `gistAuth.token` encrypted at rest (`enc:v1:...`) |
+| `${SITE_SLUG}_storage` | Per-instance (Zustand `persist` envelope `{ state, version }`) | `activeLessonSlug`, `activeLessonTitle?`, `exerciseCount?`, `currentLanguageId`, `completedSlugs`, `userCode`, `userCodeTimestamps`, `chatConversations`, `activeConversationId`, `gistSync` (`{ gistId, lastSyncedAt }`) | None (credentials live exclusively in `user_settings`) |
+
+#### Shared Key: `user_settings`
+
+Stored as a flat JSON object at the origin root.
 
 ```typescript
-export interface AppState {
-  // Lessons
-  activeLessonSlug: string;
-  currentLanguageId: string;
-  completedSlugs: string[];
-  userCode: Record<string, string>;               // "${lessonSlug}:${languageId}" -> code
-  userCodeTimestamps?: Record<string, number>;     // "${lessonSlug}:${languageId}" -> epoch ms
+export interface GistAuthSettings {
+  enabled: boolean;
+  token: string;                                    // Encrypted at rest (enc:v1:...)
+  autoSync: boolean;
+}
+
+export interface LastVisitedInfo {
+  siteSlug: string;
+  siteTitle: string;
+  lessonSlug: string;
+  lessonTitle: string;
+  updatedAt: number;                                // epoch ms
+}
+
+export interface UserSettings {
+  version: number;                                  // Currently 1
   vimMode: boolean;
-
-  // Chat
-  chatConversations: Record<string, ChatConversation[]>; // lessonSlug -> conversations
-  activeConversationId: Record<string, string>;          // lessonSlug -> active conversationId
-
-  // Settings
+  preferredLanguage?: string;                       // Used as fallback on first visit to an instance
   chatSettings: {
     enabled: boolean;
     baseUrl: string;
-    apiKey: string;                               // Encrypted in storage
+    apiKey: string;                                 // Encrypted at rest (enc:v1:...)
     model: string;
     selectedEndpointId: string;
     endpoints: Array<{
       id: string;
       name?: string;
       baseUrl: string;
-      apiKey: string;
+      apiKey: string;                               // Encrypted at rest (enc:v1:...)
       model: string;
     }>;
   };
+  gistAuth: GistAuthSettings;
+  lastVisited?: LastVisitedInfo;
+}
+```
 
-  // Sync
-  gistSyncSettings: {
-    enabled: boolean;
-    token: string;                                // Encrypted in storage
-    gistId: string;
-    autoSync: boolean;
-    lastSyncedAt?: number;
-  };
+#### Per-Instance Key: `${SITE_SLUG}_storage`
+
+Stored inside Zustand `persist`'s `{ state: PersistedInstanceState, version: 0 }` envelope.
+
+```typescript
+export interface LocalGistSyncState {
+  gistId: string;
+  lastSyncedAt?: number;                            // epoch ms
 }
 
+export interface PersistedInstanceState {
+  activeLessonSlug: string;
+  activeLessonTitle?: string;
+  exerciseCount?: number;
+  currentLanguageId: string;
+  completedSlugs: string[];
+  userCode: Record<string, string>;                 // "${lessonSlug}:${languageId}" -> code
+  userCodeTimestamps?: Record<string, number>;      // "${lessonSlug}:${languageId}" -> epoch ms
+  chatConversations: Record<string, ChatConversation[]>; // lessonSlug -> conversations
+  activeConversationId: Record<string, string>;     // lessonSlug -> active conversationId
+  gistSync: LocalGistSyncState;
+}
+```
+
+#### In-Memory Store (`AppState`)
+
+At runtime, Zustand composes `user_settings` and `${SITE_SLUG}_storage` into a single `AppState` view:
+- `gistSyncSettings` combines `user_settings.gistAuth` (`enabled`, `token`, `autoSync`) with `${SITE_SLUG}_storage.state.gistSync` (`gistId`, `lastSyncedAt`).
+- `vimMode`, `chatSettings`, `preferredLanguage`, and `lastVisited` hydrate from and persist to `user_settings`.
+- On first boot of an instance with no saved `currentLanguageId`, `user_settings.preferredLanguage` is selected if present in `enabledLanguageIds`, otherwise `defaultLanguageId` is used.
+
+#### Canary & Version-Skew Invariants
+
+Because book instances deploy independently on the same origin (canary rollouts), `user_settings` must uphold two strict invariants:
+
+1. **Merge-on-write, never clobber:** Every write to `user_settings` executes on a sequential promise queue, re-reads the raw JSON from `localStorage` immediately before writing, and spreads `{ ...existingRaw, ...patch }` (including nested merges for `chatSettings`, `gistAuth`, and `lastVisited`, and preserving higher `version` values). Older instances never strip unknown fields written by newer canary instances.
+2. **Additive-only schema evolution:** Only add optional fields with safe defaults. Never rename or change the type of existing keys in a single rollout step.
+
+#### Legacy Startup Migration
+
+On startup, if `${SITE_SLUG}_storage` contains legacy shared fields (`vimMode`, `chatSettings`, or `gistSyncSettings.{enabled,token,autoSync}`) that are absent from `user_settings`, non-default values are copied into `user_settings` once via merge-on-write without data loss. Per-instance `gistId` and `lastSyncedAt` are read from `gistSync` with fallback to legacy `gistSyncSettings`.
+
+```typescript
 export interface ChatConversation {
   id: string;
   lessonSlug: string;
@@ -77,7 +127,7 @@ export interface ChatConversation {
 
 ### 1.2 GitHub Gist (Cloud Sync)
 
-4 discrete files per Gist:
+4 discrete files per Gist (unchanged; one Gist per book instance discovered via `_${SITE_SLUG}.json`):
 
 #### `_${SITE_SLUG}.json` (Metadata)
 ```json
@@ -170,7 +220,7 @@ export interface ChatConversation {
 
 ### 1.3 Export Backups (`ModularBackupPayload`)
 
-Single JSON file containing all modules:
+Single JSON file containing all modules (restoring splits shared settings into `user_settings` and per-book state into `${SITE_SLUG}_storage`):
 
 ```json
 {
@@ -288,7 +338,8 @@ export interface ModularBackupPayload {
 
 | Channel | Storage Format | Secrets Handling |
 | :--- | :--- | :--- |
-| **LocalStorage** | Unified modules in client state | `apiKey` and `token` encrypted at rest (`enc:v1:...`). |
+| **LocalStorage (`user_settings`)** | Shared flat JSON object (merge-on-write) | `chatSettings.apiKey`, `chatSettings.endpoints[].apiKey`, and `gistAuth.token` encrypted at rest (`enc:v1:...`). |
+| **LocalStorage (`${SITE_SLUG}_storage`)** | Per-instance Zustand `persist` JSON envelope | No secrets stored. |
 | **GitHub Gist** | 4 files (`_${SITE_SLUG}.json`, `lessons.json`, `conversations.json`, `settings.json`) | `apiKey` and `token` stripped (`""`). |
 | **Export File** | Single `ModularBackupPayload` JSON file | Stripped by default; plaintext only on explicit export option (`includeKeys: true`). |
 
@@ -303,13 +354,18 @@ export interface ModularBackupPayload {
 | **Exercise Slug Pointer** | `AppState.currentExerciseId` | `activeLessonSlug` | Standardized to `activeLessonSlug`. |
 | **Language Pointer** | `AppState.currentLanguageId` | `activeLanguageId` | Standardized to `activeLanguageId`. |
 | **Exercise Association** | `ChatConversation.exerciseId` | `lessonSlug` | Standardized to `lessonSlug`. |
-| **Vim Mode** | `AppState.vimMode` | `settings.vimMode` | Stored directly at root of settings (not nested). |
+| **Vim Mode** | `${SITE_SLUG}_storage.state.vimMode` | `user_settings.vimMode` | Shared across instances; migrated from legacy storage on boot. |
+| **Rubber Duck Config** | `${SITE_SLUG}_storage.state.chatSettings` | `user_settings.chatSettings` | Shared across instances with encrypted API keys. |
+| **GitHub Auth vs. Gist Pointer** | `${SITE_SLUG}_storage.state.gistSyncSettings` | `user_settings.gistAuth` + `${SITE_SLUG}_storage.state.gistSync` | Token/auth shared across origin; `gistId`/`lastSyncedAt` isolated per instance. |
 | **User Code Map** | `userCode["slug:lang"]` | `lessons[i].code[lang]` | Nested per-lesson object map. |
 
 ### 4.2 Added / Enhanced Fields
 
 | Field | Location | Rationale |
 | :--- | :--- | :--- |
+| **`preferredLanguage`** | `user_settings.preferredLanguage` | Cross-book default language fallback when visiting an instance for the first time. |
+| **`lastVisited`** | `user_settings.lastVisited` | Tracks latest active `{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }` for homepage "Continue" affordance. |
+| **`activeLessonTitle` & `exerciseCount`** | `${SITE_SLUG}_storage.state` | Cached per-book display metadata for root portal and switcher progress indicators. |
 | **`activeConversationId`** | `ConversationsPayload.activeConversationId` | Retains active conversation tab selection across devices and backup restores. |
 | **`codeTimestamps`** | `LessonProgressItem.codeTimestamps` | Per-language edit timestamps (`{ [langId]: timestamp }`) for conflict-free multi-language 3-way merges. |
 
@@ -319,4 +375,4 @@ export interface ModularBackupPayload {
 | :--- | :--- | :--- |
 | **`completedLanguages`** | `LessonProgressItem` in `backup/types.ts` | Dead field; completions are tracked per exercise. |
 | **`unread`** | `ChatConversation.unread` in `AppState` | Ephemeral session UI badge; excluded from sync and backups. |
-| **Plaintext Secrets** | `apiKey`, `token` | Stripped from Gist sync; encrypted in LocalStorage. |
+| **Plaintext Secrets** | `apiKey`, `token` | Stripped from Gist sync; encrypted in `user_settings`; omitted from `${SITE_SLUG}_storage`. |

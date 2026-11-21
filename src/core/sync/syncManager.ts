@@ -1,7 +1,7 @@
 // src/core/sync/syncManager.ts
-import { Effect, Fiber, Schedule } from 'effect';
+import { Effect, Fiber } from 'effect';
 import { GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_WORKER_URL } from './oauthConfig';
-import { store, ensureSettingsDecrypted } from '../store';
+import { store, ensureSettingsDecrypted, AppState } from '../store';
 import {
   createGist,
   fetchGist,
@@ -98,7 +98,33 @@ function setSyncStatus(status: SyncStatusType, message?: string, lastSyncedAt?: 
 }
 
 /**
+ * Returns true if the current book instance has meaningful progress, saved code, or chat messages
+ * worth creating a new Gist for (prevents creating empty Gists on casual visits).
+ */
+function hasMeaningfulBookProgress(state: AppState): boolean {
+  if (Array.isArray(state.completedSlugs) && state.completedSlugs.length > 0) {
+    return true;
+  }
+  if (
+    state.userCode &&
+    Object.values(state.userCode).some((code) => typeof code === 'string' && code.trim().length > 0)
+  ) {
+    return true;
+  }
+  if (
+    state.chatConversations &&
+    Object.values(state.chatConversations).some(
+      (convs) => Array.isArray(convs) && convs.some((c) => Array.isArray(c.messages) && c.messages.length > 0)
+    )
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/**
  * Pushes the current application state as multi-file backup to GitHub Gist.
+ * Lazily discovers or creates `_${SITE_SLUG}.json` when authenticated without a local `gistId`.
  * Includes CAS (Compare-And-Swap) conflict check: if remote was updated by another device, merges first.
  */
 export function pushToGist(): Effect.Effect<GistActionResult, GistError> {
@@ -113,7 +139,7 @@ export function pushToGist(): Effect.Effect<GistActionResult, GistError> {
     }
 
     const { gistSyncSettings } = store.getState();
-    if (!gistSyncSettings?.enabled || !gistSyncSettings?.token || !gistSyncSettings?.gistId) {
+    if (!gistSyncSettings?.enabled || !gistSyncSettings?.token) {
       return yield* Effect.fail(
         new GistAuthError({ message: 'Gist sync is not configured or enabled.' })
       );
@@ -127,10 +153,33 @@ export function pushToGist(): Effect.Effect<GistActionResult, GistError> {
 
     setSyncStatus('syncing');
 
+    let activeGistId = gistSyncSettings.gistId;
+    if (!activeGistId) {
+      const discovered = yield* findSiteGist(gistSyncSettings.token);
+      if (discovered?.gistId) {
+        activeGistId = discovered.gistId;
+        store.getState().setGistSyncSettings({ gistId: activeGistId });
+      } else {
+        const initialFiles = yield* Effect.promise(() => buildGistFiles(store.getState()));
+        const created = yield* createGist(gistSyncSettings.token, initialFiles);
+        if (created.gistId) {
+          lastPushedPayloadString = JSON.stringify(initialFiles);
+          const now = Date.now();
+          store.getState().setGistSyncSettings({
+            gistId: created.gistId,
+            lastSyncedAt: now,
+          });
+          setSyncStatus('synced', 'Gist created and synced.', now);
+        }
+        return created;
+      }
+    }
+
+    const latestSync = store.getState().gistSyncSettings;
     const pullRes = yield* pullAndMergeIfNeeded(
-      gistSyncSettings.gistId,
-      gistSyncSettings.token,
-      gistSyncSettings.lastSyncedAt
+      activeGistId,
+      latestSync.token,
+      latestSync.lastSyncedAt
     );
 
     const newFiles = yield* Effect.promise(() => buildGistFiles(store.getState()));
@@ -154,7 +203,7 @@ export function pushToGist(): Effect.Effect<GistActionResult, GistError> {
       }
     }
 
-    const res = yield* updateGist(gistSyncSettings.gistId, gistSyncSettings.token, filesToUpdate);
+    const res = yield* updateGist(activeGistId, latestSync.token, filesToUpdate);
 
     lastPushedPayloadString = currentPayloadString;
     const now = Date.now();
@@ -187,15 +236,36 @@ export function pullFromGist(options?: { smartMerge?: boolean }): Effect.Effect<
     }
 
     const { gistSyncSettings } = store.getState();
-    if (!gistSyncSettings?.gistId) {
-      return yield* Effect.fail(
-        new GistConflictError({ message: 'No Gist ID configured.' })
-      );
+    let activeGistId = gistSyncSettings?.gistId || '';
+
+    if (!activeGistId) {
+      if (
+        gistSyncSettings?.enabled &&
+        gistSyncSettings?.token &&
+        !gistSyncSettings.token.startsWith('enc:v1:')
+      ) {
+        setSyncStatus('syncing');
+        const discovered = yield* findSiteGist(gistSyncSettings.token);
+        if (discovered?.gistId) {
+          activeGistId = discovered.gistId;
+          store.getState().setGistSyncSettings({ gistId: activeGistId });
+        } else {
+          return yield* Effect.fail(
+            new GistConflictError({
+              message: 'No cloud backup found for this book yet. Click "Sync Now" to create one.',
+            })
+          );
+        }
+      } else {
+        return yield* Effect.fail(
+          new GistConflictError({ message: 'No Gist ID configured.' })
+        );
+      }
     }
 
     setSyncStatus('syncing');
 
-    const res = yield* fetchGist(gistSyncSettings.gistId, gistSyncSettings.token);
+    const res = yield* fetchGist(activeGistId, gistSyncSettings.token);
     if (!res.files) {
       return yield* Effect.fail(
         new GistParseError({ message: 'Failed to fetch Gist content.' })
@@ -218,7 +288,7 @@ export function pullFromGist(options?: { smartMerge?: boolean }): Effect.Effect<
     store.setState(parsed.data);
 
     const now = Date.now();
-    store.getState().setGistSyncSettings({ lastSyncedAt: now, enabled: true });
+    store.getState().setGistSyncSettings({ gistId: activeGistId, lastSyncedAt: now, enabled: true });
     setSyncStatus('synced', 'Synced successfully.', now);
     return { updatedAt: res.updatedAt };
   });
@@ -273,10 +343,15 @@ export function createAndLinkGist(token: string): Effect.Effect<GistActionResult
 /**
  * Schedules a debounced auto-push if auto-sync is enabled.
  * Uses a cancellable Effect Fiber.
+ * When authenticated without a linked Gist yet, only pushes once meaningful book progress exists.
  */
 export function scheduleAutoPush(delayMs = 5000): void {
-  const { gistSyncSettings } = store.getState();
-  if (!gistSyncSettings?.enabled || !gistSyncSettings?.autoSync || !gistSyncSettings?.token || !gistSyncSettings?.gistId) {
+  const state = store.getState();
+  const { gistSyncSettings } = state;
+  if (!gistSyncSettings?.enabled || !gistSyncSettings?.autoSync || !gistSyncSettings?.token) {
+    return;
+  }
+  if (!gistSyncSettings.gistId && !hasMeaningfulBookProgress(state)) {
     return;
   }
 
@@ -311,10 +386,15 @@ export function triggerImmediatePush(): void {
     Effect.runFork(Fiber.interrupt(autoPushFiber));
     autoPushFiber = null;
   }
-  const { gistSyncSettings } = store.getState();
-  if (gistSyncSettings?.enabled && gistSyncSettings?.token && gistSyncSettings?.gistId) {
-    Effect.runFork(pushToGist().pipe(Effect.ignoreLogged));
+  const state = store.getState();
+  const { gistSyncSettings } = state;
+  if (!gistSyncSettings?.enabled || !gistSyncSettings?.token) {
+    return;
   }
+  if (!gistSyncSettings.gistId && !hasMeaningfulBookProgress(state)) {
+    return;
+  }
+  Effect.runFork(pushToGist().pipe(Effect.ignoreLogged));
 }
 
 /**
@@ -504,32 +584,61 @@ export function initStartupSync(): Effect.Effect<void, never> {
     }
 
     const { gistSyncSettings } = store.getState();
-    if (!gistSyncSettings?.enabled || !gistSyncSettings?.gistId) {
+    if (!gistSyncSettings?.enabled || !gistSyncSettings?.token || gistSyncSettings.token.startsWith('enc:v1:')) {
       return;
     }
 
-    if (!handledAuth) {
-      if (gistSyncSettings.token && gistSyncSettings.lastSyncedAt) {
-        yield* syncSemaphore.withPermits(1)(
-          pullAndMergeIfNeeded(
-            gistSyncSettings.gistId,
-            gistSyncSettings.token,
-            gistSyncSettings.lastSyncedAt
-          )
-        ).pipe(
-          Effect.catchAll((err) => {
-            console.warn('[sync] Startup sync failed:', err);
-            return Effect.void;
-          })
-        );
-      } else {
-        yield* pullFromGist({ smartMerge: true }).pipe(
-          Effect.catchAll((err) => {
-            console.warn('[sync] Startup sync failed:', err);
-            return Effect.void;
-          })
-        );
+    if (handledAuth) {
+      return;
+    }
+
+    if (!gistSyncSettings.gistId) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        setSyncStatus('offline', 'Offline');
+        return;
       }
+
+      // Shared GitHub token is present, but this book instance has no local gistId yet:
+      // silently check for an existing _${SITE_SLUG}.json Gist without creating an empty one.
+      yield* syncSemaphore.withPermits(1)(
+        Effect.gen(function* () {
+          const discovered = yield* findSiteGist(gistSyncSettings.token);
+          if (discovered?.gistId) {
+            store.getState().setGistSyncSettings({ gistId: discovered.gistId });
+            yield* pullAndMergeIfNeeded(discovered.gistId, gistSyncSettings.token, undefined);
+          } else {
+            setSyncStatus('idle');
+          }
+        })
+      ).pipe(
+        Effect.catchAll((err) => {
+          console.warn('[sync] Startup Gist discovery failed:', err);
+          return Effect.void;
+        })
+      );
+      return;
+    }
+
+    if (gistSyncSettings.lastSyncedAt) {
+      yield* syncSemaphore.withPermits(1)(
+        pullAndMergeIfNeeded(
+          gistSyncSettings.gistId,
+          gistSyncSettings.token,
+          gistSyncSettings.lastSyncedAt
+        )
+      ).pipe(
+        Effect.catchAll((err) => {
+          console.warn('[sync] Startup sync failed:', err);
+          return Effect.void;
+        })
+      );
+    } else {
+      yield* pullFromGist({ smartMerge: true }).pipe(
+        Effect.catchAll((err) => {
+          console.warn('[sync] Startup sync failed:', err);
+          return Effect.void;
+        })
+      );
     }
   });
 }
@@ -553,13 +662,13 @@ export function pullAndMergeIfNeeded(
     yield* validateGistSiteMatch(res.files);
 
     const remoteUpdatedAt = res.updatedAt ? new Date(res.updatedAt).getTime() : 0;
-    if (remoteUpdatedAt > (lastSyncedAt || 0)) {
+    if (!lastSyncedAt || remoteUpdatedAt > lastSyncedAt) {
       const currentState = store.getState();
       const parsed = parseAndMergeGistFiles(res.files, currentState, true);
       if (parsed && parsed.data) {
         store.setState(parsed.data);
         const syncNow = Date.now();
-        store.getState().setGistSyncSettings({ lastSyncedAt: syncNow });
+        store.getState().setGistSyncSettings({ gistId, lastSyncedAt: syncNow });
         setSyncStatus('synced', 'Synced with cloud.', syncNow);
         return { merged: true, files: res.files };
       }

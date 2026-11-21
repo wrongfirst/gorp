@@ -111,6 +111,23 @@ export const defaultChatSettings: ChatSettings = {
     ],
 };
 
+export interface GistAuthSettings {
+    enabled: boolean;
+    token: string;
+    autoSync: boolean;
+}
+
+export const defaultGistAuthSettings: GistAuthSettings = {
+    enabled: false,
+    token: '',
+    autoSync: true,
+};
+
+export interface LocalGistSyncState {
+    gistId: string;
+    lastSyncedAt?: number;
+}
+
 export interface GistSyncSettings {
     enabled: boolean;
     token: string;
@@ -126,9 +143,41 @@ export const defaultGistSyncSettings: GistSyncSettings = {
     autoSync: true,
 };
 
+export interface LastVisitedInfo {
+    siteSlug: string;
+    siteTitle: string;
+    lessonSlug: string;
+    lessonTitle: string;
+    updatedAt: number;
+}
+
+export interface UserSettings {
+    version: number;
+    vimMode: boolean;
+    preferredLanguage?: string;
+    chatSettings: ChatSettings;
+    gistAuth: GistAuthSettings;
+    lastVisited?: LastVisitedInfo;
+}
+
+export interface PersistedInstanceState {
+    activeLessonSlug: string;
+    activeLessonTitle?: string;
+    exerciseCount?: number;
+    currentLanguageId: string;
+    completedSlugs: string[];
+    userCode: Record<string, string>;
+    userCodeTimestamps?: Record<string, number>;
+    chatConversations: Record<string, ChatConversation[]>;
+    activeConversationId: Record<string, string>;
+    gistSync: LocalGistSyncState;
+}
+
 // Store Slices & Combined AppState
 export interface ExerciseSlice {
     activeLessonSlug: string;
+    activeLessonTitle: string;
+    exerciseCount: number;
     currentLanguageId: string;
     completedSlugs: string[];
     userCode: Record<string, string>;
@@ -136,7 +185,8 @@ export interface ExerciseSlice {
     vimMode: boolean;
     markComplete: (slug: string) => void;
     setCurrent: (slug: string) => void;
-    setLanguage: (langId: string) => void;
+    recordLessonVisit: (slug: string) => void;
+    setLanguage: (langId: string, options?: { updatePreference?: boolean }) => void;
     saveUserCode: (lessonSlug: string, languageId: string, code: string) => void;
     getUserCode: (lessonSlug: string, languageId: string) => string | undefined;
     setVimMode: (enabled: boolean) => void;
@@ -157,7 +207,11 @@ export interface ChatSlice {
 
 export interface SettingsSlice {
     chatSettings: ChatSettings;
+    preferredLanguage?: string;
+    lastVisited?: LastVisitedInfo;
     setChatSettings: (settings: Partial<ChatSettings>) => void;
+    setPreferredLanguage: (langId: string) => void;
+    setLastVisited: (info: LastVisitedInfo) => void;
 }
 
 export interface SyncSlice {

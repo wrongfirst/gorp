@@ -2,6 +2,7 @@ import { store } from '../core/store';
 import { getEnabledLanguages } from '../languages/language-registry';
 import { Exercise } from '../core/types';
 import { elements } from '../core/elements';
+import { ICONS } from './icons';
 
 export function renderLanguageSelector(container: HTMLElement, currentExercise: Exercise | undefined) {
     if (!container) return;
@@ -38,12 +39,13 @@ export function renderLanguageSelector(container: HTMLElement, currentExercise: 
     });
 
     // Fallback logic: if current selected language is not available in current exercise, switch to first available
+    // without overwriting the user's cross-book preferredLanguage.
     const activeIsAvailable = availableLanguages.find(l => l.id === currentLanguageId && l.isAvailable);
     if (!activeIsAvailable) {
         const fallback = availableLanguages.find(l => l.isAvailable) || availableLanguages[0];
         if (fallback && fallback.id !== currentLanguageId) {
             setTimeout(() => {
-                store.getState().setLanguage(fallback.id);
+                store.getState().setLanguage(fallback.id, { updatePreference: false });
             }, 0);
         }
     }
@@ -57,15 +59,22 @@ export function renderLanguageSelector(container: HTMLElement, currentExercise: 
     }).join('');
 
     container.innerHTML = `
-        <select id="language-select-dropdown" aria-label="Select Language" class="bg-bg-app border border-border-default text-fg-primary text-xs font-semibold px-2 py-0.5 rounded focus:outline-none focus:border-brand cursor-pointer transition-colors">
-            ${optionsHtml}
-        </select>
+        <div class="relative inline-flex items-center group">
+            <select id="language-select-dropdown" aria-label="Select Language"
+                class="appearance-none bg-transparent border-0 text-fg-muted group-hover:text-fg-primary text-xs font-medium pl-1.5 pr-5 py-1 rounded hover:bg-bg-app/50 focus:outline-none focus:ring-0 cursor-pointer transition-colors">
+                ${optionsHtml}
+            </select>
+            <span class="pointer-events-none absolute right-1 flex items-center" aria-hidden="true">
+                ${ICONS.CHEVRON_DOWN}
+            </span>
+        </div>
     `;
 
     const selectEl = container.querySelector('#language-select-dropdown') as HTMLSelectElement;
     if (selectEl) {
         selectEl.addEventListener('change', (e) => {
             const newLang = (e.target as HTMLSelectElement).value;
+            selectEl.blur();
             store.getState().setLanguage(newLang);
         });
     }
