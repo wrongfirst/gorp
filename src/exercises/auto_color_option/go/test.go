@@ -17,3 +17,9 @@ Tests.EqualCheck("FormatWithColorOption Auto piped plain text lines", []string{"
 
 resAutoNoColor := FormatWithColorOption(lines, "error", ColorAuto, true, true)
 Tests.EqualCheck("FormatWithColorOption Auto NO_COLOR plain text lines", []string{"connection error", "network error"}, resAutoNoColor)
+
+resEmptyPat := FormatWithColorOption(lines, "", ColorAlways, true, false)
+Tests.EqualCheck("FormatWithColorOption empty pattern returns all lines plain", lines, resEmptyPat)
+
+resNoMatch := FormatWithColorOption(lines, "missing", ColorAlways, true, false)
+Tests.EqualCheck("FormatWithColorOption no matches returns empty slice", []string{}, resNoMatch)

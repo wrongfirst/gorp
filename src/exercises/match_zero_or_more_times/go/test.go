@@ -13,4 +13,5 @@ Tests.EqualCheck("star on character group", true, matchPattern("abcba", "^[abc]*
 Tests.EqualCheck("star on character group with empty string", true, matchPattern("", "^[abc]*$"))
 Tests.EqualCheck("star combined with plus and anchors", true, matchPattern("ab123", `^[ab]*\d+$`))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
-Tests.EqualCheck("star combined with alternation", true, matchPattern("dogs", "^(cat|dog)*s$"))
+Tests.EqualCheck("star on character range", true, matchPattern("abc123", "^[a-z0-9]*$"))
+Tests.EqualCheck("star on escaped dot", true, matchPattern("a...b", `^a\.*b$`))

@@ -2,17 +2,12 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"unicode"
 )
-
-func _unusedImports() {
-	var _ = bytes.Buffer{}
-}
 
 const (
 	ColorRed   = "\033[31m"
@@ -27,16 +22,16 @@ const (
 	ColorAuto   ColorOption = "auto"
 )
 
-func ParseColorOption(val string) ColorOption {
+func ParseColorOption(val string) (ColorOption, bool) {
 	switch strings.ToLower(val) {
 	case "always":
-		return ColorAlways
+		return ColorAlways, true
 	case "never":
-		return ColorNever
-	case "auto", "":
-		return ColorAuto
+		return ColorNever, true
+	case "auto":
+		return ColorAuto, true
 	default:
-		return ColorAuto
+		return "", false
 	}
 }
 
@@ -326,11 +321,57 @@ func parseBranch(branch string) BranchData {
 	}
 }
 
+func expandAlternation(pattern string) []string {
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			closeIdx := strings.IndexByte(pattern[i+1:], ')')
+			if closeIdx != -1 {
+				closeIdx += i + 1
+				nextOpen := strings.IndexByte(pattern[i+1:closeIdx], '(')
+				if nextOpen == -1 {
+					inner := pattern[i+1 : closeIdx]
+					if strings.Contains(inner, "|") {
+						options := strings.Split(inner, "|")
+						var res []string
+						for _, opt := range options {
+							candidate := pattern[:i] + "(" + opt + ")" + pattern[closeIdx+1:]
+							res = append(res, expandAlternation(candidate)...)
+						}
+						return res
+					}
+				}
+			}
+		}
+	}
+	if strings.Contains(pattern, "|") {
+		var branches []string
+		var cur strings.Builder
+		depth := 0
+		for i := 0; i < len(pattern); i++ {
+			if pattern[i] == '(' {
+				depth++
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == ')' {
+				depth--
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == '|' && depth == 0 {
+				branches = append(branches, cur.String())
+				cur.Reset()
+			} else {
+				cur.WriteByte(pattern[i])
+			}
+		}
+		branches = append(branches, cur.String())
+		return branches
+	}
+	return []string{pattern}
+}
+
 func HighlightMatches(line string, pattern string) (string, bool) {
 	if pattern == "" {
 		return line, false
 	}
-	branches := strings.Split(pattern, "|")
+	branches := expandAlternation(pattern)
 	var parsedBranches []BranchData
 	for _, b := range branches {
 		parsedBranches = append(parsedBranches, parseBranch(b))
@@ -376,7 +417,10 @@ func HighlightMatches(line string, pattern string) (string, bool) {
 }
 
 func matchPattern(line string, pattern string) bool {
-	branches := strings.Split(pattern, "|")
+	if pattern == "" {
+		return true
+	}
+	branches := expandAlternation(pattern)
 	lineRunes := []rune(line)
 	for _, branch := range branches {
 		bd := parseBranch(branch)
@@ -412,6 +456,7 @@ func RunCLI(stdin io.Reader, stdout io.Writer, args []string, isTTY bool, noColo
 	lineNumber := false
 	invertMatch := false
 	colorOpt := ColorAuto
+	hasPattern := false
 	var pattern string
 
 	for _, arg := range args {
@@ -420,15 +465,24 @@ func RunCLI(stdin io.Reader, stdout io.Writer, args []string, isTTY bool, noColo
 		} else if arg == "-v" || arg == "--invert-match" {
 			invertMatch = true
 		} else if strings.HasPrefix(arg, "--color=") {
-			colorOpt = ParseColorOption(strings.TrimPrefix(arg, "--color="))
+			opt, ok := ParseColorOption(strings.TrimPrefix(arg, "--color="))
+			if !ok {
+				return 2
+			}
+			colorOpt = opt
 		} else if arg == "--color" {
 			colorOpt = ColorAlways
-		} else if pattern == "" {
+		} else if strings.HasPrefix(arg, "-") {
+			return 2
+		} else if !hasPattern {
 			pattern = arg
+			hasPattern = true
+		} else {
+			return 2
 		}
 	}
 
-	if pattern == "" {
+	if !hasPattern || pattern == "" {
 		return 2
 	}
 

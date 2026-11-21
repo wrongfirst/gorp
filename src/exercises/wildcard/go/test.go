@@ -14,3 +14,8 @@ Tests.EqualCheck("do not match two chars with optional wildcard .?", false, matc
 Tests.EqualCheck("combine wildcard with classes and anchors", true, matchPattern("item_a_1", `item_._\d`))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("anything", ""))
 Tests.EqualCheck("wildcard does not match newline", false, matchPattern("\n", "^.$"))
+Tests.EqualCheck("escaped dot matches literal dot", true, matchPattern("a.b", `^a\.b$`))
+Tests.EqualCheck("escaped dot does not match arbitrary char", false, matchPattern("axb", `^a\.b$`))
+Tests.EqualCheck("escaped brackets match literally", true, matchPattern("[x]", `^\[[a-z]\]$`))
+Tests.EqualCheck("escaped backslash matches literally", true, matchPattern(`a\b`, `^a\\b$`))
+Tests.EqualCheck("character range still works with wildcard", true, matchPattern("a5!", `^[a-z][0-9].$`))

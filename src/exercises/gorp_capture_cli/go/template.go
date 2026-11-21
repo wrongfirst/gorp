@@ -1,18 +1,11 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
 	"unicode"
 )
-
-func _unusedImports() {
-	var _ = bytes.Buffer{}
-}
 
 type TokenType int
 
@@ -266,9 +259,58 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) (int, boo
 	return pos, false
 }
 
-func matchBranch(lineRunes []rune, branch string) (int, int, bool) {
+func expandAlternation(pattern string) []string {
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			closeIdx := strings.IndexByte(pattern[i+1:], ')')
+			if closeIdx != -1 {
+				closeIdx += i + 1
+				nextOpen := strings.IndexByte(pattern[i+1:closeIdx], '(')
+				if nextOpen == -1 {
+					inner := pattern[i+1 : closeIdx]
+					if strings.Contains(inner, "|") {
+						options := strings.Split(inner, "|")
+						var res []string
+						for _, opt := range options {
+							candidate := pattern[:i] + "(" + opt + ")" + pattern[closeIdx+1:]
+							res = append(res, expandAlternation(candidate)...)
+						}
+						return res
+					}
+				}
+			}
+		}
+	}
+	if strings.Contains(pattern, "|") {
+		var branches []string
+		var cur strings.Builder
+		depth := 0
+		for i := 0; i < len(pattern); i++ {
+			if pattern[i] == '(' {
+				depth++
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == ')' {
+				depth--
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == '|' && depth == 0 {
+				branches = append(branches, cur.String())
+				cur.Reset()
+			} else {
+				cur.WriteByte(pattern[i])
+			}
+		}
+		branches = append(branches, cur.String())
+		return branches
+	}
+	return []string{pattern}
+}
+
+func matchBranch(lineRunes []rune, startPos int, branch string) (int, int, bool) {
 	anchoredStart := strings.HasPrefix(branch, "^")
 	if anchoredStart {
+		if startPos != 0 {
+			return 0, 0, false
+		}
 		branch = branch[1:]
 	}
 	anchoredEnd := strings.HasSuffix(branch, "$")
@@ -291,7 +333,7 @@ func matchBranch(lineRunes []rune, branch string) (int, int, bool) {
 		return 0, 0, false
 	}
 
-	for i := 0; i <= len(lineRunes); i++ {
+	for i := startPos; i <= len(lineRunes); i++ {
 		ctx.captured = make(map[int]string)
 		ctx.groupPos = make(map[int]int)
 		if endPos, ok := matchAt(ctx, i, 0, anchoredEnd); ok {
@@ -305,7 +347,7 @@ func ExtractMatches(line string, pattern string) []string {
 	if pattern == "" {
 		return nil
 	}
-	branches := strings.Split(pattern, "|")
+	branches := expandAlternation(pattern)
 	lineRunes := []rune(line)
 	var matches []string
 
@@ -315,13 +357,10 @@ func ExtractMatches(line string, pattern string) []string {
 		bestEnd := -1
 
 		for _, branch := range branches {
-			ctxRunes := lineRunes[pos:]
-			if s, e, ok := matchBranch(ctxRunes, branch); ok {
-				absStart := pos + s
-				absEnd := pos + e
-				if bestStart == -1 || absStart < bestStart || (absStart == bestStart && absEnd > bestEnd) {
-					bestStart = absStart
-					bestEnd = absEnd
+			if s, e, ok := matchBranch(lineRunes, pos, branch); ok {
+				if bestStart == -1 || s < bestStart || (s == bestStart && e > bestEnd) {
+					bestStart = s
+					bestEnd = e
 				}
 			}
 		}
@@ -337,10 +376,13 @@ func ExtractMatches(line string, pattern string) []string {
 }
 
 func matchPattern(line string, pattern string) bool {
-	branches := strings.Split(pattern, "|")
+	if pattern == "" {
+		return true
+	}
+	branches := expandAlternation(pattern)
 	lineRunes := []rune(line)
 	for _, branch := range branches {
-		if _, _, ok := matchBranch(lineRunes, branch); ok {
+		if _, _, ok := matchBranch(lineRunes, 0, branch); ok {
 			return true
 		}
 	}
@@ -349,11 +391,6 @@ func matchPattern(line string, pattern string) bool {
 
 // RunCLI executes gorp supporting the -o / --only-matching flag.
 func RunCLI(stdin io.Reader, stdout io.Writer, args []string) int {
-	// TODO: Implement RunCLI
-	// 1. Parse args for -o / --only-matching and extract the pattern. Return 2 if pattern is missing.
-	// 2. Scan lines from stdin using bufio.NewScanner.
-	// 3. If -o is enabled, call ExtractMatches(line, pattern) and print each match on its own line.
-	// 4. If -o is not enabled, call matchPattern and print the entire line on match.
-	// 5. Return 0 if matches found, 1 if no matches, 2 on scanner error.
+	// TODO: Implement RunCLI.
 	return 0
 }

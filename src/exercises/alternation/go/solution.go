@@ -1,17 +1,39 @@
 package main
 
 import (
+	"strconv"
 	"strings"
 	"unicode"
 )
 
 type Token struct {
-	pattern    string
-	quantifier rune // 0, '+', or '?'
+	pattern string
+	min     int
+	max     int // -1 indicates unbounded (infinity)
 }
 
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+func matchCharGroup(char rune, group string) bool {
+	i := 0
+	for i < len(group) {
+		if i+2 < len(group) && group[i+1] == '-' {
+			start := rune(group[i])
+			end := rune(group[i+2])
+			if char >= start && char <= end {
+				return true
+			}
+			i += 3
+		} else {
+			if rune(group[i]) == char {
+				return true
+			}
+			i++
+		}
+	}
+	return false
 }
 
 // parsePattern parses a regex pattern string into a slice of Tokens.
@@ -37,12 +59,56 @@ func parsePattern(pattern string) []Token {
 			i++
 		}
 
-		if i < len(pattern) && (pattern[i] == '+' || pattern[i] == '?') {
-			tokens = append(tokens, Token{pattern: tokStr, quantifier: rune(pattern[i])})
-			i++
-		} else {
-			tokens = append(tokens, Token{pattern: tokStr, quantifier: 0})
+		min := 1
+		max := 1
+
+		if i < len(pattern) {
+			if pattern[i] == '+' {
+				min = 1
+				max = -1
+				i++
+			} else if pattern[i] == '*' {
+				min = 0
+				max = -1
+				i++
+			} else if pattern[i] == '?' {
+				min = 0
+				max = 1
+				i++
+			} else if pattern[i] == '{' {
+				closeBrace := strings.IndexByte(pattern[i:], '}')
+				if closeBrace != -1 {
+					braceContent := pattern[i+1 : i+closeBrace]
+					if commaIdx := strings.IndexByte(braceContent, ','); commaIdx != -1 {
+						nStr := braceContent[:commaIdx]
+						mStr := braceContent[commaIdx+1:]
+						if mStr == "" {
+							if n, err := strconv.Atoi(nStr); err == nil {
+								min = n
+								max = -1
+								i += closeBrace + 1
+							}
+						} else {
+							n, err1 := strconv.Atoi(nStr)
+							m, err2 := strconv.Atoi(mStr)
+							if err1 == nil && err2 == nil {
+								min = n
+								max = m
+								i += closeBrace + 1
+							}
+						}
+					} else {
+						if n, err := strconv.Atoi(braceContent); err == nil {
+							min = n
+							max = n
+							i += closeBrace + 1
+						}
+					}
+				}
+			}
 		}
+
+		tokens = append(tokens, Token{pattern: tokStr, min: min, max: max})
 	}
 	return tokens
 }
@@ -58,11 +124,14 @@ func matchToken(char rune, token string) bool {
 	if token == `\w` {
 		return isWordChar(char)
 	}
+	if strings.HasPrefix(token, `\`) && len(token) == 2 {
+		return char == rune(token[1])
+	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		return !strings.ContainsRune(token[2:len(token)-1], char)
+		return !matchCharGroup(char, token[2:len(token)-1])
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
-		return strings.ContainsRune(token[1:len(token)-1], char)
+		return matchCharGroup(char, token[1:len(token)-1])
 	}
 	if len(token) == 1 {
 		return char == rune(token[0])
@@ -70,7 +139,7 @@ func matchToken(char rune, token string) bool {
 	return false
 }
 
-// matchHere checks if the tokens match lineRunes starting at index 0.
+// matchHere checks if tokens match lineRunes starting at index 0.
 func matchHere(lineRunes []rune, tokens []Token, anchoredEnd bool) bool {
 	if len(tokens) == 0 {
 		if anchoredEnd {
@@ -82,35 +151,24 @@ func matchHere(lineRunes []rune, tokens []Token, anchoredEnd bool) bool {
 	curr := tokens[0]
 	rest := tokens[1:]
 
-	if curr.quantifier == '+' {
-		if len(lineRunes) == 0 || !matchToken(lineRunes[0], curr.pattern) {
-			return false
+	k := 0
+	for k < len(lineRunes) && matchToken(lineRunes[k], curr.pattern) {
+		if curr.max != -1 && k == curr.max {
+			break
 		}
-		k := 1
-		for k < len(lineRunes) && matchToken(lineRunes[k], curr.pattern) {
-			k++
-		}
-		for j := k; j >= 1; j-- {
-			if matchHere(lineRunes[j:], rest, anchoredEnd) {
-				return true
-			}
-		}
+		k++
+	}
+
+	if k < curr.min {
 		return false
 	}
 
-	if curr.quantifier == '?' {
-		if len(lineRunes) > 0 && matchToken(lineRunes[0], curr.pattern) {
-			if matchHere(lineRunes[1:], rest, anchoredEnd) {
-				return true
-			}
+	for j := k; j >= curr.min; j-- {
+		if matchHere(lineRunes[j:], rest, anchoredEnd) {
+			return true
 		}
-		return matchHere(lineRunes, rest, anchoredEnd)
 	}
-
-	if len(lineRunes) == 0 || !matchToken(lineRunes[0], curr.pattern) {
-		return false
-	}
-	return matchHere(lineRunes[1:], rest, anchoredEnd)
+	return false
 }
 
 // matchPattern checks if line matches pattern, supporting alternation and grouping.
@@ -186,6 +244,7 @@ func matchPattern(line string, pattern string) bool {
 			}
 		}
 		branches = append(branches, cur.String())
+
 		if len(branches) > 1 {
 			for _, b := range branches {
 				if matchPattern(line, b) {

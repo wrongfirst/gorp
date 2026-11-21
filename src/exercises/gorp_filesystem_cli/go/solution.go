@@ -2,20 +2,13 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
 	"strconv"
 	"strings"
-	"testing/fstest"
 	"unicode"
 )
-
-func _unusedImports() {
-	var _ = bytes.Buffer{}
-	var _ = fstest.MapFS{}
-}
 
 type TokenType int
 
@@ -256,11 +249,57 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) (int, boo
 	return pos, false
 }
 
+func expandAlternation(pattern string) []string {
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			closeIdx := strings.IndexByte(pattern[i+1:], ')')
+			if closeIdx != -1 {
+				closeIdx += i + 1
+				nextOpen := strings.IndexByte(pattern[i+1:closeIdx], '(')
+				if nextOpen == -1 {
+					inner := pattern[i+1 : closeIdx]
+					if strings.Contains(inner, "|") {
+						options := strings.Split(inner, "|")
+						var res []string
+						for _, opt := range options {
+							candidate := pattern[:i] + "(" + opt + ")" + pattern[closeIdx+1:]
+							res = append(res, expandAlternation(candidate)...)
+						}
+						return res
+					}
+				}
+			}
+		}
+	}
+	if strings.Contains(pattern, "|") {
+		var branches []string
+		var cur strings.Builder
+		depth := 0
+		for i := 0; i < len(pattern); i++ {
+			if pattern[i] == '(' {
+				depth++
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == ')' {
+				depth--
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == '|' && depth == 0 {
+				branches = append(branches, cur.String())
+				cur.Reset()
+			} else {
+				cur.WriteByte(pattern[i])
+			}
+		}
+		branches = append(branches, cur.String())
+		return branches
+	}
+	return []string{pattern}
+}
+
 func matchPattern(line string, pattern string) bool {
 	if len(pattern) == 0 {
 		return true
 	}
-	branches := strings.Split(pattern, "|")
+	branches := expandAlternation(pattern)
 	lineRunes := []rune(line)
 
 	for _, branch := range branches {
@@ -344,6 +383,7 @@ func RunCLI(fsys fs.FS, stdout io.Writer, args []string) int {
 	recursive := false
 	lineNumber := false
 	invertMatch := false
+	hasPattern := false
 	var pattern string
 	var targets []string
 
@@ -354,14 +394,17 @@ func RunCLI(fsys fs.FS, stdout io.Writer, args []string) int {
 			lineNumber = true
 		} else if arg == "-v" || arg == "--invert-match" {
 			invertMatch = true
-		} else if pattern == "" {
+		} else if strings.HasPrefix(arg, "-") {
+			return 2
+		} else if !hasPattern {
 			pattern = arg
+			hasPattern = true
 		} else {
 			targets = append(targets, arg)
 		}
 	}
 
-	if pattern == "" || len(targets) == 0 {
+	if !hasPattern || pattern == "" || len(targets) == 0 {
 		return 2
 	}
 

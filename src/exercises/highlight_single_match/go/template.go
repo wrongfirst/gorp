@@ -28,10 +28,6 @@ type Token struct {
 	max     int
 }
 
-func _unusedImports() {
-	var _ = strconv.Itoa
-}
-
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
@@ -256,7 +252,6 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) (int, boo
 
 // highlightSingleMatch highlights the first match of pattern in line using ANSI escape codes.
 func highlightSingleMatch(line string, pattern string) string {
-	// TODO: Find first match span and wrap with ColorRed and ColorReset.
-	// If no match or empty pattern, return line.
+	// TODO: Wrap the first matching span with ColorRed and ColorReset, or return line unchanged.
 	return line
 }

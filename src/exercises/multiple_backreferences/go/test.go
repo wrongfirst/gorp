@@ -14,3 +14,4 @@ Tests.EqualCheck("do not match multiple groups with mismatched alternation", fal
 Tests.EqualCheck("match multiple backreferences in unanchored line", true, matchPattern("prefix foo bar foo bar suffix", `(\w+) (\w+) \1 \2`))
 Tests.EqualCheck("single backreference still works", true, matchPattern("cat and cat", `(cat) and \1`))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
+Tests.EqualCheck("backreference to unmatched group fails", false, matchPattern("cat ", `(cat) \2`))

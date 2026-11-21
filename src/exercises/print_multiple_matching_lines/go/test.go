@@ -15,3 +15,6 @@ Tests.EqualCheck("empty pattern returns all lines", []string{"first", "second", 
 
 res6 := grepLines([]string{"cat and cat", "cat and dog", "dog and dog"}, `^(\w+) and \1$`)
 Tests.EqualCheck("backreference filter matching lines", []string{"cat and cat", "dog and dog"}, res6)
+
+res7 := grepLines([]string{"12", "123", "12345"}, `^\d{3,4}$`)
+Tests.EqualCheck("bounded quantifier filter matching lines", []string{"123"}, res7)

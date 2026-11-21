@@ -12,12 +12,28 @@ type Token struct {
 	max     int // -1 indicates unbounded (infinity)
 }
 
-func _unusedImports() {
-	var _ = strconv.Itoa
-}
-
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+func matchCharGroup(char rune, group string) bool {
+	i := 0
+	for i < len(group) {
+		if i+2 < len(group) && group[i+1] == '-' {
+			start := rune(group[i])
+			end := rune(group[i+2])
+			if char >= start && char <= end {
+				return true
+			}
+			i += 3
+		} else {
+			if rune(group[i]) == char {
+				return true
+			}
+			i++
+		}
+	}
+	return false
 }
 
 // parsePattern parses a regex pattern string into a slice of Tokens.
@@ -64,7 +80,6 @@ func parsePattern(pattern string) []Token {
 				if closeBrace != -1 {
 					braceContent := pattern[i+1 : i+closeBrace]
 					// TODO: Support {n,} in addition to {n}.
-					// If braceContent ends with ',', parse the prefix as n, and set max = -1.
 					if n, err := strconv.Atoi(braceContent); err == nil {
 						min = n
 						max = n
@@ -90,11 +105,14 @@ func matchToken(char rune, token string) bool {
 	if token == `\w` {
 		return isWordChar(char)
 	}
+	if strings.HasPrefix(token, `\`) && len(token) == 2 {
+		return char == rune(token[1])
+	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		return !strings.ContainsRune(token[2:len(token)-1], char)
+		return !matchCharGroup(char, token[2:len(token)-1])
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
-		return strings.ContainsRune(token[1:len(token)-1], char)
+		return matchCharGroup(char, token[1:len(token)-1])
 	}
 	if len(token) == 1 {
 		return char == rune(token[0])
@@ -138,83 +156,6 @@ func matchHere(lineRunes []rune, tokens []Token, anchoredEnd bool) bool {
 func matchPattern(line string, pattern string) bool {
 	if len(pattern) == 0 {
 		return true
-	}
-
-	// 1. Grouped alternation (a|b)
-	openIdx := strings.IndexByte(pattern, '(')
-	if openIdx != -1 {
-		depth := 0
-		closeIdx := -1
-		for i := openIdx; i < len(pattern); i++ {
-			if pattern[i] == '(' {
-				depth++
-			} else if pattern[i] == ')' {
-				depth--
-				if depth == 0 {
-					closeIdx = i
-					break
-				}
-			}
-		}
-		if closeIdx != -1 {
-			inner := pattern[openIdx+1 : closeIdx]
-			var options []string
-			var cur strings.Builder
-			innerDepth := 0
-			for i := 0; i < len(inner); i++ {
-				if inner[i] == '(' {
-					innerDepth++
-					cur.WriteByte(inner[i])
-				} else if inner[i] == ')' {
-					innerDepth--
-					cur.WriteByte(inner[i])
-				} else if inner[i] == '|' && innerDepth == 0 {
-					options = append(options, cur.String())
-					cur.Reset()
-				} else {
-					cur.WriteByte(inner[i])
-				}
-			}
-			options = append(options, cur.String())
-
-			for _, opt := range options {
-				candidate := pattern[:openIdx] + opt + pattern[closeIdx+1:]
-				if matchPattern(line, candidate) {
-					return true
-				}
-			}
-			return false
-		}
-	}
-
-	// 2. Top-level alternation a|b
-	if strings.Contains(pattern, "|") {
-		var branches []string
-		var cur strings.Builder
-		depth := 0
-		for i := 0; i < len(pattern); i++ {
-			if pattern[i] == '(' {
-				depth++
-				cur.WriteByte(pattern[i])
-			} else if pattern[i] == ')' {
-				depth--
-				cur.WriteByte(pattern[i])
-			} else if pattern[i] == '|' && depth == 0 {
-				branches = append(branches, cur.String())
-				cur.Reset()
-			} else {
-				cur.WriteByte(pattern[i])
-			}
-		}
-		branches = append(branches, cur.String())
-		if len(branches) > 1 {
-			for _, b := range branches {
-				if matchPattern(line, b) {
-					return true
-				}
-			}
-			return false
-		}
 	}
 
 	anchoredStart := false

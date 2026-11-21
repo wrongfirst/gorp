@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bufio"
 	"io/fs"
 	"strconv"
 	"strings"
-	"testing/fstest"
 	"unicode"
 )
 
@@ -24,13 +22,6 @@ type Token struct {
 	groupId int
 	min     int
 	max     int
-}
-
-func _unusedImports() {
-	var _ = strconv.Itoa
-	var _ = fstest.MapFS{}
-	var _ = fs.ValidPath
-	var _ = bufio.ScanLines
 }
 
 func isWordChar(r rune) bool {

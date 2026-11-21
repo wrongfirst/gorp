@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"io"
 	"strconv"
 	"strings"
@@ -23,12 +22,6 @@ type Token struct {
 	groupId int
 	min     int
 	max     int
-}
-
-func _unusedImports() {
-	var _ = strconv.Itoa
-	var _ io.Reader
-	var _ *bufio.Scanner
 }
 
 func isWordChar(r rune) bool {
@@ -85,11 +78,47 @@ func parseQuantifier(tokStr string, pattern string, i *int) Token {
 	max := 1
 	if *i < len(pattern) {
 		if pattern[*i] == '+' {
-			min = 1; max = -1; *i++
+			min = 1
+			max = -1
+			*i++
 		} else if pattern[*i] == '*' {
-			min = 0; max = -1; *i++
+			min = 0
+			max = -1
+			*i++
 		} else if pattern[*i] == '?' {
-			min = 0; max = 1; *i++
+			min = 0
+			max = 1
+			*i++
+		} else if pattern[*i] == '{' {
+			closeBrace := strings.IndexByte(pattern[*i:], '}')
+			if closeBrace != -1 {
+				braceContent := pattern[*i+1 : *i+closeBrace]
+				if commaIdx := strings.IndexByte(braceContent, ','); commaIdx != -1 {
+					nStr := braceContent[:commaIdx]
+					mStr := braceContent[commaIdx+1:]
+					if mStr == "" {
+						if n, err := strconv.Atoi(nStr); err == nil {
+							min = n
+							max = -1
+							*i += closeBrace + 1
+						}
+					} else {
+						n, err1 := strconv.Atoi(nStr)
+						m, err2 := strconv.Atoi(mStr)
+						if err1 == nil && err2 == nil {
+							min = n
+							max = m
+							*i += closeBrace + 1
+						}
+					}
+				} else {
+					if n, err := strconv.Atoi(braceContent); err == nil {
+						min = n
+						max = n
+						*i += closeBrace + 1
+					}
+				}
+			}
 		}
 	}
 	return Token{typ: TokChar, pattern: tokStr, min: min, max: max}

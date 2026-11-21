@@ -40,3 +40,28 @@ out.Reset()
 code6 := RunCLI(in6, &out, []string{"-o", `\d+`})
 Tests.EqualCheck("no match code", 1, code6)
 Tests.EqualCheck("no match stdout", "", out.String())
+
+// Test 7: Empty pattern returns 2
+in7 := strings.NewReader("some text\n")
+out.Reset()
+code7 := RunCLI(in7, &out, []string{""})
+Tests.EqualCheck("empty pattern returns 2", 2, code7)
+
+// Test 8: Unrecognized flag returns 2
+in8 := strings.NewReader("some text\n")
+out.Reset()
+code8 := RunCLI(in8, &out, []string{"-z", "text"})
+Tests.EqualCheck("unrecognized flag returns 2", 2, code8)
+
+// Test 9: Extra positional argument returns 2
+in9 := strings.NewReader("some text\n")
+out.Reset()
+code9 := RunCLI(in9, &out, []string{"text", "extra"})
+Tests.EqualCheck("extra positional arg returns 2", 2, code9)
+
+// Test 10: Grouped alternation with -o
+in10 := strings.NewReader("I saw a cat and a dog\n")
+out.Reset()
+code10 := RunCLI(in10, &out, []string{"-o", `a (cat|dog)`})
+Tests.EqualCheck("grouped alternation -o code", 0, code10)
+Tests.EqualCheck("grouped alternation -o stdout", "a cat\na dog\n", out.String())

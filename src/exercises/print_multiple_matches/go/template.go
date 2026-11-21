@@ -23,10 +23,6 @@ type Token struct {
 	max     int
 }
 
-func _unusedImports() {
-	var _ = strconv.Itoa
-}
-
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }

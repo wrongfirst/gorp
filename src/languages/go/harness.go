@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"container/heap"
 	"fmt"
 	"math"
@@ -8,6 +9,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"testing/fstest"
+)
+
+var (
+	_ = bytes.Buffer{}
+	_ = heap.Init
+	_ = math.Abs
+	_ = strconv.Itoa
+	_ = strings.Contains
+	_ = fstest.MapFS{}
 )
 
 type ListNode struct {

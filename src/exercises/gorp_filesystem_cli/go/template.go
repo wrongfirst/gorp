@@ -2,20 +2,12 @@ package main
 
 import (
 	"bufio"
-	"bytes"
-	"fmt"
 	"io"
 	"io/fs"
 	"strconv"
 	"strings"
-	"testing/fstest"
 	"unicode"
 )
-
-func _unusedImports() {
-	var _ = bytes.Buffer{}
-	var _ = fstest.MapFS{}
-}
 
 type TokenType int
 
@@ -256,11 +248,57 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) (int, boo
 	return pos, false
 }
 
+func expandAlternation(pattern string) []string {
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			closeIdx := strings.IndexByte(pattern[i+1:], ')')
+			if closeIdx != -1 {
+				closeIdx += i + 1
+				nextOpen := strings.IndexByte(pattern[i+1:closeIdx], '(')
+				if nextOpen == -1 {
+					inner := pattern[i+1 : closeIdx]
+					if strings.Contains(inner, "|") {
+						options := strings.Split(inner, "|")
+						var res []string
+						for _, opt := range options {
+							candidate := pattern[:i] + "(" + opt + ")" + pattern[closeIdx+1:]
+							res = append(res, expandAlternation(candidate)...)
+						}
+						return res
+					}
+				}
+			}
+		}
+	}
+	if strings.Contains(pattern, "|") {
+		var branches []string
+		var cur strings.Builder
+		depth := 0
+		for i := 0; i < len(pattern); i++ {
+			if pattern[i] == '(' {
+				depth++
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == ')' {
+				depth--
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == '|' && depth == 0 {
+				branches = append(branches, cur.String())
+				cur.Reset()
+			} else {
+				cur.WriteByte(pattern[i])
+			}
+		}
+		branches = append(branches, cur.String())
+		return branches
+	}
+	return []string{pattern}
+}
+
 func matchPattern(line string, pattern string) bool {
 	if len(pattern) == 0 {
 		return true
 	}
-	branches := strings.Split(pattern, "|")
+	branches := expandAlternation(pattern)
 	lineRunes := []rune(line)
 
 	for _, branch := range branches {
@@ -341,17 +379,6 @@ func scanFile(fsys fs.FS, path string, pattern string, invertMatch bool) ([]File
 
 // RunCLI executes filesystem grep across files and directories.
 func RunCLI(fsys fs.FS, stdout io.Writer, args []string) int {
-	// TODO: Implement RunCLI
-	// 1. Parse flags: -r/-R/--recursive, -n/--line-number, -v/--invert-match, pattern, and target paths.
-	// 2. Validate: Return 2 if pattern or target paths are missing.
-	// 3. For each target:
-	//    - If target is a directory and -r is NOT set, return 2.
-	//    - If target is a directory and -r IS set, walk directory with fs.WalkDir, scanning each file.
-	//    - If target is a regular file, scan file with scanFile.
-	// 4. Format each match:
-	//    - Include "<path>:" prefix if len(targets) > 1 or recursive is true.
-	//    - Include "<lineNum>:" prefix if -n is true.
-	//    - Output to stdout.
-	// 5. Return 0 if matches found, 1 if none, 2 on error.
+	// TODO: Implement RunCLI.
 	return 0
 }

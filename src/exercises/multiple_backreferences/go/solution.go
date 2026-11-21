@@ -125,25 +125,20 @@ func parseQuantifier(tokStr string, pattern string, i *int) Token {
 	return Token{typ: TokChar, pattern: tokStr, min: min, max: max}
 }
 
-// parseTokens parses pattern into a slice of Tokens including multiple groups and backreferences.
+// parseTokens parses pattern into a slice of Tokens including multiple sequential groups and backreferences.
 func parseTokens(pattern string) []Token {
 	var tokens []Token
 	groupCounter := 0
-	var groupStack []int
 
 	i := 0
 	for i < len(pattern) {
 		if pattern[i] == '(' {
 			groupCounter++
-			gid := groupCounter
-			groupStack = append(groupStack, gid)
-			tokens = append(tokens, Token{typ: TokGroupStart, groupId: gid, min: 1, max: 1})
+			tokens = append(tokens, Token{typ: TokGroupStart, groupId: groupCounter, min: 1, max: 1})
 			i++
 		} else if pattern[i] == ')' {
-			if len(groupStack) > 0 {
-				gid := groupStack[len(groupStack)-1]
-				groupStack = groupStack[:len(groupStack)-1]
-				tokens = append(tokens, Token{typ: TokGroupEnd, groupId: gid, min: 1, max: 1})
+			if groupCounter > 0 {
+				tokens = append(tokens, Token{typ: TokGroupEnd, groupId: groupCounter, min: 1, max: 1})
 			}
 			i++
 		} else if pattern[i] == '\\' && i+1 < len(pattern) {
@@ -239,7 +234,6 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) bool {
 		return matchAt(ctx, pos+len(capRunes), tokIdx+1, anchoredEnd)
 	}
 
-	// TokChar with quantifiers
 	k := 0
 	for pos+k < len(ctx.lineRunes) && matchTokenChar(ctx.lineRunes[pos+k], tok.pattern) {
 		if tok.max != -1 && k == tok.max {
@@ -290,7 +284,7 @@ func matchPattern(line string, pattern string) bool {
 		}
 	}
 
-	// Top level alternation
+	// Top-level alternation
 	if strings.Contains(pattern, "|") {
 		var branches []string
 		var cur strings.Builder

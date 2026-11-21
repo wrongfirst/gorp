@@ -14,3 +14,5 @@ Tests.EqualCheck("top-level alternation with anchors", true, matchPattern("categ
 Tests.EqualCheck("top-level alternation second anchor", true, matchPattern("hotdog", "^cat|dog$"))
 Tests.EqualCheck("top-level alternation neither matches", false, matchPattern("my cat is cute", "^cat|dog$"))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
+Tests.EqualCheck("alternation with star and bounded quantifiers", true, matchPattern("ab123", `^([a-z]{2}\d{2,4}|x*)$`))
+Tests.EqualCheck("alternation with star zero occurrences", true, matchPattern("", `^(abc|x*)$`))

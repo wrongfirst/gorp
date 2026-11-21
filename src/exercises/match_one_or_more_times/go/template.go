@@ -14,6 +14,27 @@ func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
 
+// matchCharGroup checks if a character matches a character group with ranges/characters.
+func matchCharGroup(char rune, group string) bool {
+	i := 0
+	for i < len(group) {
+		if i+2 < len(group) && group[i+1] == '-' {
+			start := rune(group[i])
+			end := rune(group[i+2])
+			if char >= start && char <= end {
+				return true
+			}
+			i += 3
+		} else {
+			if rune(group[i]) == char {
+				return true
+			}
+			i++
+		}
+	}
+	return false
+}
+
 // parsePattern parses a regex pattern string into a slice of Tokens,
 // capturing the pattern component and whether it is followed by '+'.
 func parsePattern(pattern string) []Token {
@@ -57,10 +78,10 @@ func matchToken(char rune, token string) bool {
 		return isWordChar(char)
 	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		return !strings.ContainsRune(token[2:len(token)-1], char)
+		return !matchCharGroup(char, token[2:len(token)-1])
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
-		return strings.ContainsRune(token[1:len(token)-1], char)
+		return matchCharGroup(char, token[1:len(token)-1])
 	}
 	if len(token) == 1 {
 		return char == rune(token[0])
@@ -82,7 +103,6 @@ func matchHere(lineRunes []rune, tokens []Token, anchoredEnd bool) bool {
 
 	if curr.plus {
 		// TODO: Implement '+' quantifier matching (1 or more occurrences of curr.pattern).
-		// Match at least 1 character, then consume greedily and backtrack if rest does not match.
 		_ = rest
 		return false
 	}

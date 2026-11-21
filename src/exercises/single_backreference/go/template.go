@@ -23,10 +23,6 @@ type Token struct {
 	max     int
 }
 
-func _unusedImports() {
-	var _ = strconv.Itoa
-}
-
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
@@ -63,6 +59,9 @@ func matchTokenChar(char rune, pattern string) bool {
 	if pattern == `\w` {
 		return isWordChar(char)
 	}
+	if strings.HasPrefix(pattern, `\`) && len(pattern) == 2 {
+		return char == rune(pattern[1])
+	}
 	if strings.HasPrefix(pattern, "[^") && strings.HasSuffix(pattern, "]") {
 		return !matchCharGroup(char, pattern[2:len(pattern)-1])
 	}
@@ -75,10 +74,84 @@ func matchTokenChar(char rune, pattern string) bool {
 	return false
 }
 
-// parseTokens parses pattern into a slice of Tokens including groups and backreferences.
+func parseQuantifier(tokStr string, pattern string, i *int) Token {
+	min := 1
+	max := 1
+	if *i < len(pattern) {
+		if pattern[*i] == '+' {
+			min = 1
+			max = -1
+			*i++
+		} else if pattern[*i] == '*' {
+			min = 0
+			max = -1
+			*i++
+		} else if pattern[*i] == '?' {
+			min = 0
+			max = 1
+			*i++
+		} else if pattern[*i] == '{' {
+			closeBrace := strings.IndexByte(pattern[*i:], '}')
+			if closeBrace != -1 {
+				braceContent := pattern[*i+1 : *i+closeBrace]
+				if commaIdx := strings.IndexByte(braceContent, ','); commaIdx != -1 {
+					nStr := braceContent[:commaIdx]
+					mStr := braceContent[commaIdx+1:]
+					if mStr == "" {
+						if n, err := strconv.Atoi(nStr); err == nil {
+							min = n
+							max = -1
+							*i += closeBrace + 1
+						}
+					} else {
+						n, err1 := strconv.Atoi(nStr)
+						m, err2 := strconv.Atoi(mStr)
+						if err1 == nil && err2 == nil {
+							min = n
+							max = m
+							*i += closeBrace + 1
+						}
+					}
+				} else {
+					if n, err := strconv.Atoi(braceContent); err == nil {
+						min = n
+						max = n
+						*i += closeBrace + 1
+					}
+				}
+			}
+		}
+	}
+	return Token{typ: TokChar, pattern: tokStr, min: min, max: max}
+}
+
+// parseTokens parses pattern into a slice of Tokens including capturing group (...) and backreference \1.
 func parseTokens(pattern string) []Token {
 	var tokens []Token
-	// TODO: Support capturing groups (...) and backreference \1.
+	i := 0
+	for i < len(pattern) {
+		// TODO: Emit TokGroupStart/TokGroupEnd for '(' and ')' and TokBackref for '\1'.
+		if pattern[i] == '\\' && i+1 < len(pattern) {
+			tokStr := pattern[i : i+2]
+			i += 2
+			tokens = append(tokens, parseQuantifier(tokStr, pattern, &i))
+		} else if pattern[i] == '[' {
+			closeIdx := strings.IndexByte(pattern[i:], ']')
+			if closeIdx != -1 {
+				tokStr := pattern[i : i+closeIdx+1]
+				i += closeIdx + 1
+				tokens = append(tokens, parseQuantifier(tokStr, pattern, &i))
+			} else {
+				tokStr := string(pattern[i])
+				i++
+				tokens = append(tokens, parseQuantifier(tokStr, pattern, &i))
+			}
+		} else {
+			tokStr := string(pattern[i])
+			i++
+			tokens = append(tokens, parseQuantifier(tokStr, pattern, &i))
+		}
+	}
 	return tokens
 }
 
@@ -92,7 +165,34 @@ type MatchContext struct {
 
 // matchAt checks if tokens match lineRunes starting at index pos.
 func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) bool {
-	// TODO: Implement recursive matching with backtracking for TokGroupStart, TokGroupEnd, and TokBackref.
+	if tokIdx == len(ctx.tokens) {
+		if anchoredEnd {
+			return pos == len(ctx.lineRunes)
+		}
+		return true
+	}
+
+	tok := ctx.tokens[tokIdx]
+
+	// TODO: Handle TokGroupStart, TokGroupEnd, and TokBackref with backtracking.
+
+	k := 0
+	for pos+k < len(ctx.lineRunes) && matchTokenChar(ctx.lineRunes[pos+k], tok.pattern) {
+		if tok.max != -1 && k == tok.max {
+			break
+		}
+		k++
+	}
+
+	if k < tok.min {
+		return false
+	}
+
+	for j := k; j >= tok.min; j-- {
+		if matchAt(ctx, pos+j, tokIdx+1, anchoredEnd) {
+			return true
+		}
+	}
 	return false
 }
 
@@ -102,5 +202,92 @@ func matchPattern(line string, pattern string) bool {
 		return true
 	}
 
+	// Expand innermost parenthesized alternation: e.g. (cat|dog)
+	for i := 0; i < len(pattern); i++ {
+		if pattern[i] == '(' {
+			closeIdx := strings.IndexByte(pattern[i+1:], ')')
+			if closeIdx != -1 {
+				closeIdx += i + 1
+				nextOpen := strings.IndexByte(pattern[i+1:closeIdx], '(')
+				if nextOpen == -1 {
+					inner := pattern[i+1 : closeIdx]
+					if strings.Contains(inner, "|") {
+						options := strings.Split(inner, "|")
+						for _, opt := range options {
+							candidate := pattern[:i] + "(" + opt + ")" + pattern[closeIdx+1:]
+							if matchPattern(line, candidate) {
+								return true
+							}
+						}
+						return false
+					}
+				}
+			}
+		}
+	}
+
+	// Top-level alternation
+	if strings.Contains(pattern, "|") {
+		var branches []string
+		var cur strings.Builder
+		d := 0
+		for i := 0; i < len(pattern); i++ {
+			if pattern[i] == '(' {
+				d++
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == ')' {
+				d--
+				cur.WriteByte(pattern[i])
+			} else if pattern[i] == '|' && d == 0 {
+				branches = append(branches, cur.String())
+				cur.Reset()
+			} else {
+				cur.WriteByte(pattern[i])
+			}
+		}
+		branches = append(branches, cur.String())
+		if len(branches) > 1 {
+			for _, b := range branches {
+				if matchPattern(line, b) {
+					return true
+				}
+			}
+			return false
+		}
+	}
+
+	anchoredStart := false
+	if strings.HasPrefix(pattern, "^") {
+		anchoredStart = true
+		pattern = pattern[1:]
+	}
+
+	anchoredEnd := false
+	if strings.HasSuffix(pattern, "$") {
+		anchoredEnd = true
+		pattern = pattern[:len(pattern)-1]
+	}
+
+	tokens := parseTokens(pattern)
+	lineRunes := []rune(line)
+
+	ctx := &MatchContext{
+		lineRunes: lineRunes,
+		tokens:    tokens,
+		captured:  make(map[int]string),
+		groupPos:  make(map[int]int),
+	}
+
+	if anchoredStart {
+		return matchAt(ctx, 0, 0, anchoredEnd)
+	}
+
+	for i := 0; i <= len(lineRunes); i++ {
+		ctx.captured = make(map[int]string)
+		ctx.groupPos = make(map[int]int)
+		if matchAt(ctx, i, 0, anchoredEnd) {
+			return true
+		}
+	}
 	return false
 }

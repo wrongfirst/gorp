@@ -23,10 +23,6 @@ type Token struct {
 	max     int
 }
 
-func _unusedImports() {
-	var _ = strconv.Itoa
-}
-
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
@@ -252,7 +248,6 @@ func matchAt(ctx *MatchContext, pos int, tokIdx int, anchoredEnd bool) (int, boo
 
 // findSingleMatch returns the first substring in line that matches pattern.
 func findSingleMatch(line string, pattern string) (string, bool) {
-	// TODO: Find the first matching substring in line.
-	// Return (matchedSubstring, true) if found, otherwise ("", false).
+	// TODO: Return the leftmost non-empty matching substring and true, or ("", false).
 	return "", false
 }

@@ -11,6 +11,6 @@ Tests.EqualCheck("do not match 3 characters from group when 2 required", false, 
 Tests.EqualCheck("match exact wildcard characters", true, matchPattern("abcd", "^.{4}$"))
 Tests.EqualCheck("do not match wildcard with wrong count", false, matchPattern("abc", "^.{4}$"))
 Tests.EqualCheck("combine exact quantifier with plus", true, matchPattern("abc 123", `\w+ \d{3}`))
-Tests.EqualCheck("combine exact quantifier with alternation", true, matchPattern("dog", "(cat|dog){1}"))
+Tests.EqualCheck("combine exact quantifier with character range", true, matchPattern("AB9", "^[A-Z0-9]{3}$"))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
 Tests.EqualCheck("exact 1 occurrence behaves as literal", true, matchPattern("cat", "ca{1}t"))

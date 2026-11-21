@@ -21,8 +21,7 @@ func matchPattern(line string, pattern string) bool {
 	}
 
 	if pattern == `\w` {
-		// TODO: Return true if line contains
-		// any alphanumeric character (a-z, A-Z, 0-9) or underscore (_)
+		// TODO: Return true if line contains any Unicode letter, Unicode digit, or '_'.
 		return false
 	}
 

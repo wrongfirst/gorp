@@ -31,3 +31,12 @@ Tests.EqualCheck("is reachable match from split", true, IsReachable(s1, m))
 
 unconnected := NewCharState(99, 'z', nil)
 Tests.EqualCheck("unconnected not reachable", false, IsReachable(s1, unconnected))
+
+// Cyclic graph termination check (Kleene star loop)
+loopBody := NewCharState(10, 'a', nil)
+loopSplit := NewSplitState(11, loopBody, m)
+loopBody.Out = loopSplit
+cyclicStates := CollectStates(loopSplit)
+Tests.EqualCheck("cyclic graph state count terminates cleanly", 3, len(cyclicStates))
+Tests.EqualCheck("cyclic graph reaches match", true, IsReachable(loopSplit, m))
+Tests.EqualCheck("cyclic graph unconnected target terminates cleanly", false, IsReachable(loopSplit, unconnected))

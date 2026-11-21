@@ -51,3 +51,37 @@ out.Reset()
 code8 := RunCLI(mockFS, &out, []string{"zebra", "single.txt"})
 Tests.EqualCheck("no match code", 1, code8)
 Tests.EqualCheck("no match stdout", "", out.String())
+
+// Test 9: -R, --line-number, and -v / --invert-match
+out.Reset()
+code9 := RunCLI(mockFS, &out, []string{"-R", "--line-number", "-v", "hello", "dir"})
+Tests.EqualCheck("-R --line-number -v code", 0, code9)
+Tests.EqualCheck("-R --line-number -v stdout", "dir/sub2.txt:1:no match\n", out.String())
+
+// Test 10: --recursive and --invert-match on single file includes path prefix
+out.Reset()
+code10 := RunCLI(mockFS, &out, []string{"--recursive", "--invert-match", "hello", "single.txt"})
+Tests.EqualCheck("--recursive single file code", 0, code10)
+Tests.EqualCheck("--recursive single file stdout", "single.txt:second line\n", out.String())
+
+// Test 11: Empty pattern with target file returns 2
+out.Reset()
+code11 := RunCLI(mockFS, &out, []string{"", "single.txt"})
+Tests.EqualCheck("empty pattern returns 2", 2, code11)
+
+// Test 12: Unrecognized flag returns 2
+out.Reset()
+code12 := RunCLI(mockFS, &out, []string{"-z", "hello", "single.txt"})
+Tests.EqualCheck("unrecognized flag returns 2", 2, code12)
+
+// Test 13: Multi-target error writes no partial stdout
+out.Reset()
+code13 := RunCLI(mockFS, &out, []string{"hello", "single.txt", "missing.txt"})
+Tests.EqualCheck("multi-target error code", 2, code13)
+Tests.EqualCheck("multi-target error no partial stdout", "", out.String())
+
+// Test 14: Grouped alternation
+out.Reset()
+code14 := RunCLI(mockFS, &out, []string{`(first|third) hello`, "single.txt"})
+Tests.EqualCheck("grouped alternation code", 0, code14)
+Tests.EqualCheck("grouped alternation stdout", "first hello\nthird hello\n", out.String())

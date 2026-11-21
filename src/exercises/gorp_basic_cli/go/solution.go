@@ -2,16 +2,11 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"strings"
 	"unicode"
 )
-
-func _unusedImports() {
-	var _ = bytes.Buffer{}
-}
 
 type Token struct {
 	pattern    string
@@ -20,6 +15,26 @@ type Token struct {
 
 func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
+}
+
+func matchCharGroup(char rune, group string) bool {
+	i := 0
+	for i < len(group) {
+		if i+2 < len(group) && group[i+1] == '-' {
+			start := rune(group[i])
+			end := rune(group[i+2])
+			if char >= start && char <= end {
+				return true
+			}
+			i += 3
+		} else {
+			if rune(group[i]) == char {
+				return true
+			}
+			i++
+		}
+	}
+	return false
 }
 
 func parsePattern(pattern string) []Token {
@@ -64,19 +79,14 @@ func matchToken(char rune, token string) bool {
 	if token == `\w` {
 		return isWordChar(char)
 	}
+	if strings.HasPrefix(token, `\`) && len(token) == 2 {
+		return char == rune(token[1])
+	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		inner := token[2 : len(token)-1]
-		if len(inner) == 3 && inner[1] == '-' {
-			return char < rune(inner[0]) || char > rune(inner[2])
-		}
-		return !strings.ContainsRune(inner, char)
+		return !matchCharGroup(char, token[2:len(token)-1])
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
-		inner := token[1 : len(token)-1]
-		if len(inner) == 3 && inner[1] == '-' {
-			return char >= rune(inner[0]) && char <= rune(inner[2])
-		}
-		return strings.ContainsRune(inner, char)
+		return matchCharGroup(char, token[1:len(token)-1])
 	}
 	if len(token) == 1 {
 		return char == rune(token[0])
@@ -157,7 +167,7 @@ func matchPattern(line string, pattern string) bool {
 
 // RunCLI executes the basic grep command reading from stdin and writing matching lines to stdout.
 func RunCLI(stdin io.Reader, stdout io.Writer, args []string) int {
-	if len(args) == 0 || args[0] == "" {
+	if len(args) != 1 || args[0] == "" || strings.HasPrefix(args[0], "-") {
 		return 2
 	}
 

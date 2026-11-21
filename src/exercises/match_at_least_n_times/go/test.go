@@ -13,4 +13,4 @@ Tests.EqualCheck("do not match shorter line with wildcard at least 3", false, ma
 Tests.EqualCheck("backtrack with at least n quantifier", true, matchPattern("aaa", "a{2,}a"))
 Tests.EqualCheck("exact n quantifier still works", true, matchPattern("caaat", "ca{3}t"))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
-Tests.EqualCheck("combine at least n quantifier with alternation", true, matchPattern("dog", "(cat|dog){1,}"))
+Tests.EqualCheck("combine at least n quantifier with character range", true, matchPattern("xyz", "^[a-z]{2,}$"))

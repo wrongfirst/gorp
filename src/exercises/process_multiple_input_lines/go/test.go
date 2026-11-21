@@ -32,3 +32,6 @@ Tests.EqualCheck("processReader empty reader returns 0 lines", []string{}, empty
 crlfReaderRes, crlfReaderErr := processReader(strings.NewReader("item 1\r\nitem 2\r\n"), "item")
 Tests.EqualCheck("processReader CRLF no error", nil, crlfReaderErr)
 Tests.EqualCheck("processReader CRLF matching lines", []string{"item 1", "item 2"}, crlfReaderRes)
+
+quantRes := processInput("12\n123\n12345", `^\d{3,4}$`)
+Tests.EqualCheck("bounded quantifier matching lines", []string{"123"}, quantRes)

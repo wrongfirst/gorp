@@ -14,3 +14,5 @@ Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", "
 Tests.EqualCheck("lone caret matches any line at start", true, matchPattern("hello", "^"))
 Tests.EqualCheck("lone caret matches empty line", true, matchPattern("", "^"))
 Tests.EqualCheck("anchored pattern does not match empty line when pattern non-empty", false, matchPattern("", "^a"))
+Tests.EqualCheck("match character range anchored at start", true, matchPattern("g9", `^[a-z][0-9]`))
+Tests.EqualCheck("match negated range anchored at start", true, matchPattern("x", `^[^0-9]`))

@@ -14,6 +14,27 @@ func isWordChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_'
 }
 
+// matchCharGroup checks if a character matches a character group with ranges/characters.
+func matchCharGroup(char rune, group string) bool {
+	i := 0
+	for i < len(group) {
+		if i+2 < len(group) && group[i+1] == '-' {
+			start := rune(group[i])
+			end := rune(group[i+2])
+			if char >= start && char <= end {
+				return true
+			}
+			i += 3
+		} else {
+			if rune(group[i]) == char {
+				return true
+			}
+			i++
+		}
+	}
+	return false
+}
+
 // parsePattern parses a regex pattern string into a slice of Tokens,
 // capturing the pattern component and whether it is followed by '+' or '?'.
 func parsePattern(pattern string) []Token {
@@ -50,7 +71,7 @@ func parsePattern(pattern string) []Token {
 
 // matchToken checks if a single character matches a single token pattern.
 func matchToken(char rune, token string) bool {
-	// TODO: Handle wildcard '.' (matches any character except '\n')
+	// TODO: Support wildcard '.' (any character except '\n') and escaped metacharacters (e.g. '\.', '\[', '\\').
 
 	if token == `\d` {
 		return unicode.IsDigit(char)
@@ -59,10 +80,10 @@ func matchToken(char rune, token string) bool {
 		return isWordChar(char)
 	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		return !strings.ContainsRune(token[2:len(token)-1], char)
+		return !matchCharGroup(char, token[2:len(token)-1])
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {
-		return strings.ContainsRune(token[1:len(token)-1], char)
+		return matchCharGroup(char, token[1:len(token)-1])
 	}
 	if len(token) == 1 {
 		return char == rune(token[0])

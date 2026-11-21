@@ -11,10 +11,7 @@ func isWordChar(r rune) bool {
 
 // matchCharGroup checks if a character matches a character group (e.g. "a-z", "0-9", or "abc").
 func matchCharGroup(char rune, group string) bool {
-	// TODO: Support single character ranges [start-end] (e.g. "a-z", "0-9", "A-Z", "a-e").
-	// If group has length 3 and group[1] == '-', check if char is between group[0] and group[2].
-	// Otherwise, check if char is any character in group.
-
+	// TODO: Support single character ranges like "a-z" or "0-9" alongside literal groups.
 	return strings.ContainsRune(group, char)
 }
 

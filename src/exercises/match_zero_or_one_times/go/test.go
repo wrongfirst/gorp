@@ -14,3 +14,5 @@ Tests.EqualCheck("plus still requires at least one occurrence", true, matchPatte
 Tests.EqualCheck("plus still fails on zero occurrences", false, matchPattern("ct", "ca+t"))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
 Tests.EqualCheck("optional character matches empty string", true, matchPattern("", "^a?$"))
+Tests.EqualCheck("match optional character range", true, matchPattern("z9", `^[a-z]?[0-9]$`))
+Tests.EqualCheck("match optional negated character range", true, matchPattern("a", `^[^0-9]?a$`))

@@ -64,9 +64,7 @@ func matchToken(char rune, token string) bool {
 		return isWordChar(char)
 	}
 	if strings.HasPrefix(token, "[^") && strings.HasSuffix(token, "]") {
-		// TODO: Support negated ranges [^...] by delegating to matchCharGroup.
-		// Return true if char does NOT match any range or character in token[2:len(token)-1].
-
+		// TODO: Support negated character ranges [^...].
 		return !strings.ContainsRune(token[2:len(token)-1], char)
 	}
 	if strings.HasPrefix(token, "[") && strings.HasSuffix(token, "]") {

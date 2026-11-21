@@ -14,3 +14,5 @@ Tests.EqualCheck("non-empty string does not match ^$", false, matchPattern("a", 
 Tests.EqualCheck("lone dollar matches any line", true, matchPattern("hello", "$"))
 Tests.EqualCheck("empty line matches lone dollar", true, matchPattern("", "$"))
 Tests.EqualCheck("unanchored pattern still matches anywhere", true, matchPattern("mid dog mid", "dog"))
+Tests.EqualCheck("match character range anchored at end", true, matchPattern("id_z9", `[a-z][0-9]$`))
+Tests.EqualCheck("match negated range anchored at end", true, matchPattern("item_x", `[^0-9]$`))

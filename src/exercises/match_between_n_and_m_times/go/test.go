@@ -14,3 +14,4 @@ Tests.EqualCheck("backtrack with bounded range quantifier", true, matchPattern("
 Tests.EqualCheck("at least n quantifier still works", true, matchPattern("caaaaat", "ca{2,}t"))
 Tests.EqualCheck("exact n quantifier still works", true, matchPattern("caaat", "ca{3}t"))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
+Tests.EqualCheck("match character range between n and m times", true, matchPattern("a9f", "^[a-z0-9]{2,4}$"))

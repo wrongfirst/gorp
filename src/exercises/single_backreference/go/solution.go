@@ -125,31 +125,20 @@ func parseQuantifier(tokStr string, pattern string, i *int) Token {
 	return Token{typ: TokChar, pattern: tokStr, min: min, max: max}
 }
 
-// parseTokens parses pattern into a slice of Tokens including groups and backreferences.
+// parseTokens parses pattern into a slice of Tokens including a capturing group and backreference \1.
 func parseTokens(pattern string) []Token {
 	var tokens []Token
-	groupCounter := 0
-	var groupStack []int
-
 	i := 0
 	for i < len(pattern) {
 		if pattern[i] == '(' {
-			groupCounter++
-			gid := groupCounter
-			groupStack = append(groupStack, gid)
-			tokens = append(tokens, Token{typ: TokGroupStart, groupId: gid, min: 1, max: 1})
+			tokens = append(tokens, Token{typ: TokGroupStart, groupId: 1, min: 1, max: 1})
 			i++
 		} else if pattern[i] == ')' {
-			if len(groupStack) > 0 {
-				gid := groupStack[len(groupStack)-1]
-				groupStack = groupStack[:len(groupStack)-1]
-				tokens = append(tokens, Token{typ: TokGroupEnd, groupId: gid, min: 1, max: 1})
-			}
+			tokens = append(tokens, Token{typ: TokGroupEnd, groupId: 1, min: 1, max: 1})
 			i++
 		} else if pattern[i] == '\\' && i+1 < len(pattern) {
-			if pattern[i+1] >= '1' && pattern[i+1] <= '9' {
-				gid := int(pattern[i+1] - '0')
-				tokens = append(tokens, Token{typ: TokBackref, groupId: gid, min: 1, max: 1})
+			if pattern[i+1] == '1' {
+				tokens = append(tokens, Token{typ: TokBackref, groupId: 1, min: 1, max: 1})
 				i += 2
 			} else {
 				tokStr := pattern[i : i+2]
@@ -290,7 +279,7 @@ func matchPattern(line string, pattern string) bool {
 		}
 	}
 
-	// Top level alternation
+	// Top-level alternation
 	if strings.Contains(pattern, "|") {
 		var branches []string
 		var cur strings.Builder

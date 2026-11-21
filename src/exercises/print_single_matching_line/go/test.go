@@ -29,3 +29,7 @@ Tests.EqualCheck("end anchor match returns true", true, ok7)
 line8, ok8 := grepLine("any text here", "")
 Tests.EqualCheck("empty pattern matches any line and returns it", "any text here", line8)
 Tests.EqualCheck("empty pattern returns true", true, ok8)
+
+line9, ok9 := grepLine("code 1234 ok", `\d{3,4}`)
+Tests.EqualCheck("bounded quantifier match returns line", "code 1234 ok", line9)
+Tests.EqualCheck("bounded quantifier returns true", true, ok9)

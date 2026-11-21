@@ -14,3 +14,5 @@ Tests.EqualCheck("do not match plus with literal if insufficient characters", fa
 Tests.EqualCheck("multiple plus quantifiers in one pattern", true, matchPattern("abc 123", `\w+ \d+`))
 Tests.EqualCheck("empty pattern matches any line", true, matchPattern("hello", ""))
 Tests.EqualCheck("plus does not match empty line", false, matchPattern("", "a+"))
+Tests.EqualCheck("match character range with plus", true, matchPattern("abc123", "^[a-z0-9]+$"))
+Tests.EqualCheck("match negated character range with plus", true, matchPattern("hello", "^[^0-9]+$"))

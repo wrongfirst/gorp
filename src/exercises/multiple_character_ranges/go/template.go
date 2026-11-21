@@ -11,12 +11,7 @@ func isWordChar(r rune) bool {
 
 // matchCharGroup checks if a character matches a character group with multiple ranges/characters.
 func matchCharGroup(char rune, group string) bool {
-	// TODO: Support multiple ranges (e.g. "a-zA-Z", "0-9a-fA-F")
-	// and mixing ranges with individual characters (e.g. "a-z0-9_", "[-a-z]").
-	// Loop through group:
-	// - If group[i+1] == '-', check range group[i]..group[i+2] and advance i by 3.
-	// - Otherwise, check group[i] == char and advance i by 1.
-
+	// TODO: Support multiple ranges and mixed literal characters (e.g. "a-zA-Z0-9_", "[-a-z]").
 	if len(group) == 3 && group[1] == '-' {
 		start := rune(group[0])
 		end := rune(group[2])

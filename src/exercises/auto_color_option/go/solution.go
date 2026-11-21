@@ -350,6 +350,11 @@ func FormatWithColorOption(lines []string, pattern string, option ColorOption, i
 	if len(lines) == 0 {
 		return []string{}
 	}
+	if pattern == "" {
+		result := make([]string, len(lines))
+		copy(result, lines)
+		return result
+	}
 	enableColor := ShouldColor(option, isTTY, noColorSet)
 
 	branches := expandAlternation(pattern)
