@@ -1,7 +1,5 @@
 import './input.css';
 import { store, ensureSettingsDecrypted } from './core/store';
-import { initStartupSync } from './core/sync/syncManager';
-import { Effect } from 'effect';
 import { exercises, curriculum, getExerciseDisplayNumber } from './exercises/exercise-registry';
 import { getExerciseVariant } from './core/types';
 import { loadExerciseCode, setEditorCode, updateEditorTheme, getCode, formatEditorCode } from './core/editor';
@@ -18,7 +16,7 @@ import { status } from './ui/status';
 import { showPopup } from './ui/popup';
 import { initBranding } from './ui/branding';
 import { initCourseSwitcher } from './ui/courseSwitcher';
-import { renderSidebar, initSidebarToggle } from './ui/sidebar';
+import { renderSidebar, initSidebar } from './ui/sidebar';
 import { renderProgressBar } from './ui/progressBar';
 import { setupResize } from './ui/resize';
 import { initTabs } from './ui/tabs';
@@ -27,10 +25,6 @@ import { resetEditorText } from './ui/resetEditorText';
 import { setupCopyCodeButton } from './ui/copyCode';
 import { setupFormatCodeButton } from './ui/formatCode';
 import { initShortcuts } from './ui/shortcuts';
-import { initCommandPalette } from './ui/commandPalette';
-import { initResetProgress } from './ui/resetProgress';
-import { initSettings } from './ui/settings';
-import { initChatPanel } from './ui/chatPanel';
 import { renderLanguageSelector } from './ui/languageSelector';
 import { getLanguageExtension, prefetchInactiveLanguageAssets } from './languages/language-registry';
 import { activeRunner } from './language';
@@ -41,10 +35,35 @@ Object.defineProperty(window, 'fetch', { value: window.fetch, writable: false, c
 //initialisation
 initBranding();
 initShortcuts();
-initCommandPalette();
-initSettings();
-initChatPanel();
-initResetProgress();
+
+//lazy-loaded modals: render visible chrome icons immediately, load modules on first click
+if (elements.settingsBtn) {
+    elements.settingsBtn.innerHTML = ICONS.SETTINGS;
+    let settingsPromise: Promise<typeof import('./ui/settings')> | null = null;
+    elements.settingsBtn.addEventListener('click', () => {
+        if (!settingsPromise) {
+            settingsPromise = import('./ui/settings').catch((err) => {
+                settingsPromise = null;
+                throw err;
+            });
+        }
+        void settingsPromise.then((m) => m.openSettingsModal());
+    });
+}
+
+if (elements.resetProgressBtn) {
+    elements.resetProgressBtn.innerHTML = ICONS.RESET;
+    let resetPromise: Promise<typeof import('./ui/resetProgress')> | null = null;
+    elements.resetProgressBtn.addEventListener('click', () => {
+        if (!resetPromise) {
+            resetPromise = import('./ui/resetProgress').catch((err) => {
+                resetPromise = null;
+                throw err;
+            });
+        }
+        void resetPromise.then((m) => m.openResetProgressDialog());
+    });
+}
 
 //load speedrun modal only in dev environments
 if (import.meta.env.DEV) {
@@ -65,7 +84,7 @@ const navActions = initNavigation(
     switchTab
 );
 
-initSidebarToggle(elements.sidebar.toggle, elements.sidebar.nav);
+initSidebar();
 
 //theme
 window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
@@ -123,6 +142,10 @@ function render() {
             renderMath(elements.description.desktop);
         }
 
+        if (isExerciseChanged && elements.chat.scrollContainer) {
+            elements.chat.scrollContainer.scrollTop = 0;
+        }
+
         //update problem pane chapter header
         if (elements.problemChapterTitle) {
             const currentChapter = curriculum.find(c => c.exercises.some(e => e.id === currentEx.id));
@@ -137,9 +160,7 @@ function render() {
         const languageExtension = getLanguageExtension(currentLanguageId);
 
         //initialize editor with user code (loadExerciseCode automatically saves prior context)
-        loadExerciseCode(activeLessonSlug, currentLanguageId, currentUserCode, languageExtension, () => {
-            showPopup('Saved!');
-        });
+        loadExerciseCode(activeLessonSlug, currentLanguageId, currentUserCode, languageExtension);
 
         //reset output on exercise or language switch
         if (isExerciseChanged || isLanguageChanged) {
@@ -241,10 +262,35 @@ if (hashId && exercises.some(e => e.id === hashId)) {
 //initial render
 render();
 
-//kick off background credential decryption and startup sync (non-blocking)
+//lazy-load Rubber Duck chat panel only when enabled (on startup or when toggled on later)
+let chatPanelLoaded = false;
+let unsubChatBootstrap: (() => void) | null = null;
+const ensureChatPanelLoaded = () => {
+    if (chatPanelLoaded || !store.getState().chatSettings?.enabled) return;
+    chatPanelLoaded = true;
+    void import('./ui/chatPanel')
+        .then((m) => {
+            m.initChatPanel();
+            unsubChatBootstrap?.();
+            unsubChatBootstrap = null;
+        })
+        .catch((err) => {
+            chatPanelLoaded = false;
+            console.warn('[main] Failed to initialize chat panel:', err);
+        });
+};
+unsubChatBootstrap = store.subscribe(ensureChatPanelLoaded);
+ensureChatPanelLoaded();
+
+//kick off background credential decryption and startup sync (non-blocking, lazy-loaded when sync/OAuth is active)
 ensureSettingsDecrypted(store)
     .then(() => {
-        Effect.runFork(initStartupSync());
+        const { gistSyncSettings } = store.getState();
+        const hasOAuthCode = new URLSearchParams(window.location.search).has('code');
+        const hasSyncConfig = Boolean(gistSyncSettings?.enabled && gistSyncSettings?.token);
+        if (hasOAuthCode || hasSyncConfig) {
+            return import('./core/sync/syncManager').then((m) => m.runStartupSync());
+        }
     })
     .catch((err) => {
         console.warn('[main] Startup decryption or sync check failed:', err);

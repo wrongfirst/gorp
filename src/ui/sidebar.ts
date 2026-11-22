@@ -3,23 +3,31 @@ import { Chapter } from '../core/types';
 import { ICONS } from './icons';
 import { store } from '../core/store';
 
-const LG_BREAKPOINT = 1024;
+const lgMediaQuery = window.matchMedia('(min-width: 1024px)');
 
+let isDesktopOpen = true;
+let isDrawerOpen = false;
 let isListenerBound = false;
 
-function isSidebarVisible(sidebarNav: HTMLElement): boolean {
-    if (window.innerWidth >= LG_BREAKPOINT) {
-        return sidebarNav.classList.contains('lg:flex');
-    }
-    return !sidebarNav.classList.contains('hidden');
+function isDesktopViewport(): boolean {
+    return lgMediaQuery.matches;
 }
 
-function syncSidebarControls() {
+function isSidebarOpen(): boolean {
+    return isDesktopViewport() ? isDesktopOpen : isDrawerOpen;
+}
+
+function syncSidebarUI() {
     const sidebarNav = elements.sidebar.nav;
     if (!sidebarNav) return;
 
-    const open = isSidebarVisible(sidebarNav);
-    const isDesktop = window.innerWidth >= LG_BREAKPOINT;
+    const isDesktop = isDesktopViewport();
+    const open = isSidebarOpen();
+
+    sidebarNav.classList.toggle('lg:flex', isDesktopOpen);
+    sidebarNav.classList.toggle('lg:hidden', !isDesktopOpen);
+    sidebarNav.classList.toggle('flex', isDrawerOpen);
+    sidebarNav.classList.toggle('hidden', !isDrawerOpen);
 
     const mobileToggle = elements.sidebar.toggle;
     if (mobileToggle) {
@@ -51,25 +59,18 @@ function syncSidebarControls() {
     }
 }
 
-export function setSidebarOpen(open: boolean) {
-    const sidebarNav = elements.sidebar.nav;
-    if (!sidebarNav) return;
-
-    if (window.innerWidth >= LG_BREAKPOINT) {
-        sidebarNav.classList.toggle('lg:flex', open);
-        sidebarNav.classList.toggle('lg:hidden', !open);
+function setSidebarOpen(open: boolean) {
+    if (isDesktopViewport()) {
+        isDesktopOpen = open;
     } else {
-        sidebarNav.classList.toggle('flex', open);
-        sidebarNav.classList.toggle('hidden', !open);
+        isDrawerOpen = open;
     }
-
-    syncSidebarControls();
+    syncSidebarUI();
 }
 
 export function toggleSidebar() {
-    const sidebarNav = elements.sidebar.nav;
-    if (!sidebarNav) return;
-    setSidebarOpen(!isSidebarVisible(sidebarNav));
+    if (!elements.sidebar.nav) return;
+    setSidebarOpen(!isSidebarOpen());
 }
 
 export function renderSidebar(
@@ -91,8 +92,8 @@ export function renderSidebar(
                 window.location.hash = '#' + exId;
                 store.getState().setCurrent(exId);
 
-                // Auto-close sidebar on mobile/tablet after selecting an exercise
-                if (window.innerWidth < LG_BREAKPOINT) {
+                // Auto-close drawer on mobile/tablet after selecting an exercise
+                if (!isDesktopViewport()) {
                     setSidebarOpen(false);
                 }
             }
@@ -119,15 +120,9 @@ export function renderSidebar(
     }).join('');
 }
 
-export function initSidebarToggle(
-    sidebarToggle: HTMLElement | null,
-    sidebarNav: HTMLElement | null
-) {
+export function initSidebar() {
+    const { nav: sidebarNav, toggle: sidebarToggle, collapseBtn, expandBtn } = elements.sidebar;
     if (!sidebarNav) return;
-
-    const collapseBtn = elements.sidebar.collapseBtn;
-    const expandBtn = elements.sidebar.expandBtn;
-    const backdrop = elements.sidebar.backdrop;
 
     if (collapseBtn) {
         collapseBtn.innerHTML = ICONS.PANEL_CLOSE;
@@ -152,13 +147,9 @@ export function initSidebarToggle(
         });
     }
 
-    if (backdrop) {
-        backdrop.addEventListener('click', () => setSidebarOpen(false));
-    }
-
-    // Close logic when clicking outside on mobile/tablet
+    // Close drawer when clicking outside (including backdrop and header) on mobile/tablet
     document.addEventListener('click', (e) => {
-        if (window.innerWidth >= LG_BREAKPOINT || !isSidebarVisible(sidebarNav)) return;
+        if (isDesktopViewport() || !isDrawerOpen) return;
 
         const target = e.target as HTMLElement;
         const clickedInside = sidebarNav.contains(target);
@@ -172,8 +163,16 @@ export function initSidebarToggle(
         }
     });
 
-    // Keep controls & expand button in sync across lg breakpoint resizes
-    window.addEventListener('resize', syncSidebarControls);
+    // Close mobile/tablet drawer on Escape (unless a modal/popover already handled it)
+    document.addEventListener('keydown', (e) => {
+        if (!e.defaultPrevented && e.key === 'Escape' && !isDesktopViewport() && isDrawerOpen) {
+            e.preventDefault();
+            setSidebarOpen(false);
+        }
+    });
 
-    syncSidebarControls();
+    // Keep controls & expand button in sync when crossing lg breakpoint
+    lgMediaQuery.addEventListener('change', syncSidebarUI);
+
+    syncSidebarUI();
 }

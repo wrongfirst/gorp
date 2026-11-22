@@ -1,22 +1,28 @@
 export function resetEditorText(btn: HTMLButtonElement, originalIcon: string, onConfirm: () => void) {
     let confirmTimeout: ReturnType<typeof setTimeout> | null = null;
 
-    btn.innerHTML = originalIcon;
+    const restore = () => {
+        btn.classList.remove('w-auto', 'px-2');
+        btn.innerHTML = originalIcon;
+    };
+
+    restore();
 
     btn.addEventListener('click', () => {
         if (confirmTimeout) {
             //confirmed
             clearTimeout(confirmTimeout);
             confirmTimeout = null;
-            btn.innerHTML = originalIcon;
+            restore();
             onConfirm();
         } else {
             //first click
-            btn.innerHTML = `<span class="text-xs font-bold tracking-wider">Discard changes? Click to confirm.</span>`;
+            btn.classList.add('w-auto', 'px-2');
+            btn.innerHTML = `<span class="text-xs font-semibold normal-case tracking-normal whitespace-nowrap text-fg-primary">Discard changes? Click to confirm.</span>`;
 
             confirmTimeout = setTimeout(() => {
                 confirmTimeout = null;
-                btn.innerHTML = originalIcon;
+                restore();
             }, 5000);
         }
     });

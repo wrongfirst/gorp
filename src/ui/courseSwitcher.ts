@@ -7,33 +7,24 @@ import { elements } from '../core/elements';
 import { escapeHtml, isSafeUrl } from '../core/markdown';
 import { ICONS } from './icons';
 
-export interface DirectoryItem {
+interface DirectoryItem {
     slug: string;
     name: string;
     url: string;
-    emoji?: string;
     description?: string;
-    languages?: string[];
     exerciseCount?: number;
     hidden?: boolean;
 }
 
-export interface DirectorySection {
+interface DirectorySection {
     title: string;
     hidden?: boolean;
     items: DirectoryItem[];
 }
 
-export interface DirectoryManifest {
+interface DirectoryManifest {
     version: number;
-    title?: string;
-    subtitle?: string;
     sections: DirectorySection[];
-}
-
-interface CachedDirectory {
-    fetchedAt: number;
-    data: DirectoryManifest;
 }
 
 interface BookProgress {
@@ -90,8 +81,7 @@ function readSessionCache(directoryUrl: string): DirectoryManifest | null {
     try {
         const raw = window.sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${directoryUrl}`);
         if (!raw) return null;
-        const parsed = JSON.parse(raw) as Partial<CachedDirectory>;
-        return parseManifest(parsed?.data);
+        return parseManifest(JSON.parse(raw));
     } catch {
         return null;
     }
@@ -99,13 +89,9 @@ function readSessionCache(directoryUrl: string): DirectoryManifest | null {
 
 function writeSessionCache(directoryUrl: string, manifest: DirectoryManifest): void {
     try {
-        const payload: CachedDirectory = {
-            fetchedAt: Date.now(),
-            data: manifest,
-        };
         window.sessionStorage.setItem(
             `${SESSION_CACHE_PREFIX}${directoryUrl}`,
-            JSON.stringify(payload)
+            JSON.stringify(manifest)
         );
     } catch {
         // Ignore storage quota or private-mode errors
@@ -138,7 +124,7 @@ function readBookProgress(item: DirectoryItem): BookProgress | null {
         const raw = window.localStorage.getItem(`${item.slug}_storage`);
         if (!raw) return null;
         const parsed = JSON.parse(raw);
-        const state = parsed && typeof parsed === 'object' ? (parsed.state ?? parsed) : null;
+        const state = parsed && typeof parsed === 'object' ? parsed.state : null;
         if (!state || typeof state !== 'object') return null;
 
         const completed = Array.isArray(state.completedSlugs) ? state.completedSlugs.length : 0;
@@ -243,14 +229,6 @@ function renderPopoverContent(): void {
             ${sectionsHtml}
         </div>
     `;
-
-    // Clicking the currently active book closes the popover without reloading the page
-    popover.querySelectorAll<HTMLAnchorElement>('a[data-active-course="true"]').forEach((link) => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            closePopover(true);
-        });
-    });
 }
 
 function getPopoverLinks(): HTMLAnchorElement[] {
@@ -317,7 +295,7 @@ function openPopover(focusFirstItem = false): void {
     }
 }
 
-export function closePopover(restoreFocus = false): void {
+function closePopover(restoreFocus = false): void {
     if (!isOpen) return;
     const trigger = elements.branding.bookTrigger;
     const chevron = elements.branding.switcherChevron;
@@ -369,6 +347,14 @@ export function initCourseSwitcher(onNavigateFirst: () => void): void {
                 const links = getPopoverLinks();
                 links[0]?.focus();
             }
+        }
+    });
+
+    // Clicking the currently active book closes the popover without reloading the page
+    popover.addEventListener('click', (e) => {
+        if ((e.target as HTMLElement).closest('a[data-active-course="true"]')) {
+            e.preventDefault();
+            closePopover(true);
         }
     });
 

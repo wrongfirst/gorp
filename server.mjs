@@ -3,6 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import url from "node:url";
+import zlib from "node:zlib";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const distDir = path.join(__dirname, "dist");
@@ -104,36 +105,151 @@ const securityHeaders = {
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
 };
 
-function handleRequest(req, res) {
-  let filePath = req.url === "/" ? "/index.html" : req.url;
+const compressibleExts = new Set([
+  ".html",
+  ".css",
+  ".js",
+  ".json",
+  ".svg",
+  ".wasm",
+  ".webmanifest",
+]);
 
-  // Remove query string
-  filePath = filePath.split("?")[0];
+const COMPRESS_MIN_BYTES = 1024;
+const compressedCache = new Map();
+
+function pickEncoding(req, ext, byteLength) {
+  if (byteLength < COMPRESS_MIN_BYTES || !compressibleExts.has(ext)) {
+    return null;
+  }
+  const accept = String(req.headers["accept-encoding"] || "");
+  if (/\bbr\b/i.test(accept)) return "br";
+  if (/\bgzip\b/i.test(accept)) return "gzip";
+  return null;
+}
+
+function compressBuffer(fullPath, mtimeMs, encoding, data, callback) {
+  const cacheKey = `${fullPath}:${encoding}`;
+  const cached = compressedCache.get(cacheKey);
+  if (cached && cached.mtimeMs === mtimeMs) {
+    callback(null, cached.buffer);
+    return;
+  }
+
+  const onDone = (err, buffer) => {
+    if (err) {
+      callback(err);
+      return;
+    }
+    compressedCache.set(cacheKey, { mtimeMs, buffer });
+    callback(null, buffer);
+  };
+
+  if (encoding === "br") {
+    zlib.brotliCompress(
+      data,
+      { params: { [zlib.constants.BROTLI_PARAM_QUALITY]: 4 } },
+      onDone
+    );
+  } else {
+    zlib.gzip(data, { level: 6 }, onDone);
+  }
+}
+
+function getCacheControl(filePath, ext) {
+  if (filePath.startsWith("/assets/")) {
+    return "public, max-age=31536000, immutable";
+  }
+  if (ext === ".html") {
+    return "no-cache";
+  }
+  return "public, max-age=86400";
+}
+
+function handleRequest(req, res) {
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.writeHead(405, { Allow: "GET, HEAD", ...securityHeaders });
+    res.end("Method Not Allowed");
+    return;
+  }
+
+  // Remove query string before resolving default document
+  let filePath = (req.url || "/").split("?")[0];
+  if (filePath === "/") {
+    filePath = "/index.html";
+  }
 
   const ext = path.extname(filePath);
   const contentType = mimeTypes[ext] || "application/octet-stream";
 
-  const fullPath = path.join(distDir, filePath);
+  const fullPath = path.resolve(distDir, `.${filePath}`);
 
   // Prevent directory traversal
-  if (!fullPath.startsWith(distDir)) {
+  if (fullPath !== distDir && !fullPath.startsWith(distDir + path.sep)) {
     res.writeHead(403);
     res.end("Forbidden");
     return;
   }
 
-  fs.readFile(fullPath, (err, data) => {
-    if (err) {
+  fs.stat(fullPath, (statErr, stat) => {
+    if (statErr || !stat.isFile()) {
       res.writeHead(404);
       res.end("Not Found");
       return;
     }
 
-    res.writeHead(200, {
+    const etag = `W/"${stat.size.toString(16)}-${Math.trunc(stat.mtimeMs).toString(16)}"`;
+    const cacheControl = getCacheControl(filePath, ext);
+    const isCompressible = compressibleExts.has(ext);
+    const baseHeaders = {
       "Content-Type": contentType,
+      "Cache-Control": cacheControl,
+      ETag: etag,
+      ...(isCompressible ? { Vary: "Accept-Encoding" } : {}),
       ...securityHeaders,
+    };
+
+    if (req.headers["if-none-match"] === etag) {
+      res.writeHead(304, baseHeaders);
+      res.end();
+      return;
+    }
+
+    fs.readFile(fullPath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end("Not Found");
+        return;
+      }
+
+      const encoding = pickEncoding(req, ext, data.length);
+      if (!encoding) {
+        res.writeHead(200, {
+          ...baseHeaders,
+          "Content-Length": data.length,
+        });
+        res.end(req.method === "HEAD" ? undefined : data);
+        return;
+      }
+
+      compressBuffer(fullPath, stat.mtimeMs, encoding, data, (compErr, compressed) => {
+        if (compErr) {
+          res.writeHead(200, {
+            ...baseHeaders,
+            "Content-Length": data.length,
+          });
+          res.end(req.method === "HEAD" ? undefined : data);
+          return;
+        }
+
+        res.writeHead(200, {
+          ...baseHeaders,
+          "Content-Encoding": encoding,
+          "Content-Length": compressed.length,
+        });
+        res.end(req.method === "HEAD" ? undefined : compressed);
+      });
     });
-    res.end(data);
   });
 }
 

@@ -4,34 +4,36 @@ export function initTabs(
     problemPanel: HTMLElement | null,
     editorOutputPanel: HTMLElement | null
 ) {
-    if (!tabProblem || !tabCode || !problemPanel || !editorOutputPanel) return (t: 'problem' | 'code') => { };
-
-    function switchTab(tab: 'problem' | 'code') {
-        if (tab === 'problem') {
-            problemPanel!.classList.remove('hidden');
-            problemPanel!.classList.add('flex');
-            editorOutputPanel!.classList.add('hidden');
-            editorOutputPanel!.classList.remove('flex');
-
-            tabProblem!.classList.add('text-fg-primary', 'border-brand');
-            tabProblem!.classList.remove('text-fg-muted', 'border-transparent');
-            tabCode!.classList.add('text-fg-muted', 'border-transparent');
-            tabCode!.classList.remove('text-fg-primary', 'border-brand');
-        } else {
-            problemPanel!.classList.add('hidden');
-            problemPanel!.classList.remove('flex');
-            editorOutputPanel!.classList.remove('hidden');
-            editorOutputPanel!.classList.add('flex');
-
-            tabCode!.classList.add('text-fg-primary', 'border-brand');
-            tabCode!.classList.remove('text-fg-muted', 'border-transparent');
-            tabProblem!.classList.add('text-fg-muted', 'border-transparent');
-            tabProblem!.classList.remove('text-fg-primary', 'border-brand');
-        }
+    if (!tabProblem || !tabCode || !problemPanel || !editorOutputPanel) {
+        throw new Error('Required tab elements are missing from the DOM');
     }
 
-    tabProblem.addEventListener('click', () => switchTab('problem'));
-    tabCode.addEventListener('click', () => switchTab('code'));
+    const problemTab = tabProblem;
+    const codeTab = tabCode;
+    const problemPane = problemPanel;
+    const editorPane = editorOutputPanel;
+
+    function switchTab(tab: 'problem' | 'code') {
+        const isProblem = tab === 'problem';
+
+        problemPane.classList.toggle('hidden', !isProblem);
+        problemPane.classList.toggle('flex', isProblem);
+        editorPane.classList.toggle('hidden', isProblem);
+        editorPane.classList.toggle('flex', !isProblem);
+
+        problemTab.classList.toggle('text-fg-primary', isProblem);
+        problemTab.classList.toggle('border-brand', isProblem);
+        problemTab.classList.toggle('text-fg-muted', !isProblem);
+        problemTab.classList.toggle('border-transparent', !isProblem);
+
+        codeTab.classList.toggle('text-fg-primary', !isProblem);
+        codeTab.classList.toggle('border-brand', !isProblem);
+        codeTab.classList.toggle('text-fg-muted', isProblem);
+        codeTab.classList.toggle('border-transparent', isProblem);
+    }
+
+    problemTab.addEventListener('click', () => switchTab('problem'));
+    codeTab.addEventListener('click', () => switchTab('code'));
 
     return switchTab;
 }

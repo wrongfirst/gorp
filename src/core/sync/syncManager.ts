@@ -346,6 +346,7 @@ export function createAndLinkGist(token: string): Effect.Effect<GistActionResult
  * When authenticated without a linked Gist yet, only pushes once meaningful book progress exists.
  */
 export function scheduleAutoPush(delayMs = 5000): void {
+  ensureSyncListeners();
   const state = store.getState();
   const { gistSyncSettings } = state;
   if (!gistSyncSettings?.enabled || !gistSyncSettings?.autoSync || !gistSyncSettings?.token) {
@@ -549,27 +550,31 @@ export function checkAndPullOnFocus(): Effect.Effect<void, never> {
   );
 }
 
+function ensureSyncListeners(): void {
+  if (typeof window !== 'undefined' && !isListenersInitialized) {
+    isListenersInitialized = true;
+    window.addEventListener('online', () => {
+      setSyncStatus('idle');
+      scheduleAutoPush(1000);
+    });
+    window.addEventListener('offline', () => {
+      setSyncStatus('offline', 'Offline');
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        Effect.runFork(checkAndPullOnFocus());
+      }
+    });
+  }
+}
+
 /**
  * Checks for OAuth callbacks and remote Gist updates on startup.
  */
 export function initStartupSync(): Effect.Effect<void, never> {
   return Effect.gen(function* () {
     // Setup network and visibility status listeners (once)
-    if (typeof window !== 'undefined' && !isListenersInitialized) {
-      isListenersInitialized = true;
-      window.addEventListener('online', () => {
-        setSyncStatus('idle');
-        scheduleAutoPush(1000);
-      });
-      window.addEventListener('offline', () => {
-        setSyncStatus('offline', 'Offline');
-      });
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          Effect.runFork(checkAndPullOnFocus());
-        }
-      });
-    }
+    ensureSyncListeners();
 
     // Handle OAuth redirect callback if present
     const handledAuth = yield* handleOAuthCallback().pipe(
@@ -641,6 +646,10 @@ export function initStartupSync(): Effect.Effect<void, never> {
       );
     }
   });
+}
+
+export function runStartupSync(): void {
+  Effect.runFork(initStartupSync());
 }
 
 /**

@@ -8,10 +8,9 @@ import {
 import { elements } from '../core/elements';
 
 export function initBranding() {
-    const { title, subtitle, headline, logo_image, logo_emoji } = siteConfig;
-    const resolvedTitle = title || SITE_TITLE;
+    const { subtitle, headline, logo_image, logo_emoji } = siteConfig;
 
-    document.title = headline || (subtitle ? `${resolvedTitle} | ${subtitle}` : resolvedTitle);
+    document.title = headline || (subtitle ? `${SITE_TITLE} | ${subtitle}` : SITE_TITLE);
 
     const logoEl = elements.branding.logo;
     if (logoEl) {
@@ -36,7 +35,7 @@ export function initBranding() {
     }
 
     if (elements.branding.title) {
-        elements.branding.title.textContent = resolvedTitle;
+        elements.branding.title.textContent = SITE_TITLE;
     }
 
     const portalLink = elements.branding.portalLink;
@@ -52,7 +51,7 @@ export function initBranding() {
                 portalNameEl.textContent = portalName;
             }
             portalLink.classList.remove('hidden');
-            portalLink.classList.add('inline-flex', 'site-brand');
+            portalLink.classList.add('inline-flex');
             sep.classList.remove('hidden');
 
             if (isSameOriginUrl(homePage)) {
@@ -67,7 +66,7 @@ export function initBranding() {
             portalLink.removeAttribute('target');
             portalLink.removeAttribute('rel');
             portalLink.classList.add('hidden');
-            portalLink.classList.remove('inline-flex', 'site-brand');
+            portalLink.classList.remove('inline-flex');
             sep.classList.add('hidden');
         }
     }

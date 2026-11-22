@@ -2,7 +2,6 @@ import { byId } from './helpers';
 
 export const brandingElements = {
     branding: {
-        get header() { return byId<HTMLElement>('site-header'); },
         get portalLink() { return byId<HTMLAnchorElement>('header-portal-link'); },
         get portalName() { return byId('header-portal-name'); },
         get breadcrumbSep() { return byId('header-breadcrumb-sep'); },

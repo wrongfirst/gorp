@@ -1,7 +1,7 @@
 // src/core/store/slices/chatSlice.ts
 import { StateCreator } from 'zustand/vanilla';
 import { AppState, ChatConversation, ChatMessage, ChatSlice } from '../../types';
-import { scheduleAutoPush } from '../../sync/syncManager';
+import { scheduleAutoPush } from '../../sync/syncTriggers';
 import { createUniqueId } from '../../id';
 
 export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, get) => ({
@@ -30,7 +30,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: id,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
     return id;
   },
 
@@ -62,7 +62,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: updatedConvs,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   deleteConversation: (lessonSlug: string, conversationId: string) => {
@@ -89,7 +89,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: nextActiveId,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   getActiveConversation: (lessonSlug: string) => {
@@ -150,7 +150,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: nextActiveId,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   removeChatMessages: (lessonSlug: string, messageIds: string[], conversationId?: string) => {
@@ -176,7 +176,7 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: convs,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   clearChatHistory: (lessonSlug: string, conversationId?: string) => {
@@ -197,6 +197,6 @@ export const createChatSlice: StateCreator<AppState, [], [], ChatSlice> = (set, 
         [lessonSlug]: convs,
       },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 });

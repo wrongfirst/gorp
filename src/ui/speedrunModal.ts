@@ -9,6 +9,7 @@ import { elements } from '../core/elements';
 import { escapeHtml } from '../core/markdown';
 import { downloadJsonFile } from './download';
 import { ICONS } from './icons';
+import { createModal, type ModalController } from './modal';
 
 type StatusFilter = 'all' | 'passed' | 'failed' | 'error' | 'missing_solution';
 type SortOrder = 'default' | 'desc' | 'asc';
@@ -16,7 +17,7 @@ type SortOrder = 'default' | 'desc' | 'asc';
 let isRunning = false;
 let abortRequested = false;
 let selectedLanguage = 'all';
-let isInitialized = false;
+let speedrunModal: ModalController | null = null;
 
 let activeStatusFilter: StatusFilter = 'all';
 let currentSortOrder: SortOrder = 'default';
@@ -36,14 +37,10 @@ export function initSpeedrunButton() {
 }
 
 function initSpeedrunModal() {
-  if (isInitialized) return;
-  isInitialized = true;
+  if (speedrunModal) return;
 
   if (elements.speedrun.headerIcon) {
     elements.speedrun.headerIcon.innerHTML = ICONS.ROCKET;
-  }
-  if (elements.speedrun.closeBtn) {
-    elements.speedrun.closeBtn.innerHTML = ICONS.CLOSE;
   }
   if (elements.speedrun.exportIcon) {
     elements.speedrun.exportIcon.innerHTML = ICONS.DOWNLOAD;
@@ -52,20 +49,10 @@ function initSpeedrunModal() {
     elements.speedrun.sortIcon.innerHTML = ICONS.SORT;
   }
 
-  // Bind close events
-  elements.speedrun.closeBtn?.addEventListener('click', closeSpeedrunModal);
-
-  elements.speedrun.modal?.addEventListener('click', (e) => {
-    if (e.target === elements.speedrun.modal && !isRunning) {
-      closeSpeedrunModal();
-    }
-  });
-
-  // Close on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && elements.speedrun.modal && !elements.speedrun.modal.classList.contains('hidden') && !isRunning) {
-      closeSpeedrunModal();
-    }
+  speedrunModal = createModal({
+    modal: elements.speedrun.modal,
+    closeBtn: elements.speedrun.closeBtn,
+    canClose: () => !isRunning,
   });
 
   // Bind actions
@@ -141,7 +128,7 @@ function updateStatusFilterPills() {
     const filter = btn.dataset.filter as StatusFilter;
     const isActive = activeStatusFilter === filter;
 
-    btn.className = 'speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs transition-all cursor-pointer';
+    btn.className = 'speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs transition-all cursor-pointer';
 
     if (isActive) {
       if (filter === 'all') {
@@ -189,13 +176,13 @@ function updateSortButtonUI() {
 
   if (currentSortOrder === 'desc') {
     sortLabel.textContent = 'Sort: Slowest First (↓)';
-    sortBtn?.classList.add('border-brand', 'text-brand');
+    sortBtn?.classList.add('text-brand');
   } else if (currentSortOrder === 'asc') {
     sortLabel.textContent = 'Sort: Fastest First (↑)';
-    sortBtn?.classList.add('border-brand', 'text-brand');
+    sortBtn?.classList.add('text-brand');
   } else {
     sortLabel.textContent = 'Sort: Default';
-    sortBtn?.classList.remove('border-brand', 'text-brand');
+    sortBtn?.classList.remove('text-brand');
   }
 }
 
@@ -205,17 +192,7 @@ function openSpeedrunModal() {
   updateStatusFilterPills();
   updateSortButtonUI();
   updateExportButton();
-  if (elements.speedrun.modal) {
-    elements.speedrun.modal.classList.remove('hidden');
-    elements.speedrun.modal.classList.add('flex');
-  }
-}
-
-function closeSpeedrunModal() {
-  if (elements.speedrun.modal) {
-    elements.speedrun.modal.classList.add('hidden');
-    elements.speedrun.modal.classList.remove('flex');
-  }
+  speedrunModal?.open();
 }
 
 function getExportableResults(): VerificationItemResult[] {
@@ -349,8 +326,8 @@ async function handleToggleRun() {
   const { startBtn, startBtnText, progressContainer, progressBar, progressStatus, progressCounter, resultsList, stats } = elements.speedrun;
 
   if (startBtn) {
-    startBtn.classList.remove('bg-brand');
-    startBtn.classList.add('bg-red-500');
+    startBtn.classList.remove('btn--primary');
+    startBtn.classList.add('btn--danger');
   }
   if (startBtnText) {
     startBtnText.textContent = 'Abort Run';
@@ -434,8 +411,8 @@ async function handleToggleRun() {
     abortRequested = false;
     updateExportButton();
     if (startBtn) {
-      startBtn.classList.remove('bg-red-500');
-      startBtn.classList.add('bg-brand');
+      startBtn.classList.remove('btn--danger');
+      startBtn.classList.add('btn--primary');
     }
     updateStartButtonText();
   }
@@ -460,7 +437,7 @@ function appendResultCard(container: HTMLElement, result: VerificationItemResult
   card.className = 'transition-colors text-xs';
 
   card.innerHTML = `
-    <div class="px-5 py-2.5 flex items-center justify-between cursor-pointer hover:bg-bg-editor/60 transition-colors" data-toggle="${cardId}">
+    <div class="px-6 py-2.5 flex items-center justify-between cursor-pointer hover:bg-bg-editor/60 transition-colors" data-toggle="${cardId}">
       <div class="flex items-center gap-3">
         <span class="px-2 py-0.5 font-bold uppercase rounded text-[10px] border ${badge.bg} ${badge.text}">
           ${badge.label}
@@ -475,13 +452,13 @@ function appendResultCard(container: HTMLElement, result: VerificationItemResult
     </div>
     ${hasLogs
       ? `
-      <div id="${cardId}" class="${isExpanded ? '' : 'hidden '}px-5 py-3 bg-bg-editor space-y-2 font-mono text-[11px]">
+      <div id="${cardId}" class="${isExpanded ? '' : 'hidden '}px-6 py-3 bg-bg-editor space-y-2 font-mono text-[11px]">
         ${result.error
         ? `<div><span class="text-red-400 font-bold block mb-1">Error / Failure:</span><pre class="overflow-x-auto text-red-300 whitespace-pre-wrap">${escapeHtml(result.error)}</pre></div>`
         : ''
       }
         ${result.output
-        ? `<div><span class="text-fg-muted block mb-1">Standard Output:</span><pre class="overflow-x-auto text-fg-secondary whitespace-pre-wrap">${escapeHtml(result.output)}</pre></div>`
+        ? `<div><span class="text-fg-muted block mb-1">Standard Output:</span><pre class="overflow-x-auto whitespace-pre-wrap">${escapeHtml(result.output)}</pre></div>`
         : ''
       }
       </div>

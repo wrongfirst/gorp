@@ -14,6 +14,7 @@
   /* shared chrome dimensions & borders */
   --header-height: 48px;
   --header-height-mobile: 44px;
+  --footer-height: 32px;
   --pane-padding-top: 1.5rem;
   --brand-logo-size: 20px;
   --brand-title-size: 1rem;

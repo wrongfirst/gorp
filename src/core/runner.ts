@@ -158,10 +158,11 @@ class Orchestrator {
 
         if (running) {
             elements.runBtn.classList.add("run-btn-fill");
-            elements.runBtn.innerHTML = `<span>${ICONS.STOP}</span><span>Run</span>`;
+            elements.runBtn.innerHTML = `<span class="btn-icon-accent">${ICONS.STOP}</span><span>Run</span>`;
         } else {
             elements.runBtn.classList.remove("run-btn-fill");
-            elements.runBtn.innerHTML = `<span>${ICONS.PLAY}</span><span>Run</span>`;
+            const icon = this.isReady ? ICONS.PLAY : ICONS.STOP;
+            elements.runBtn.innerHTML = `<span class="btn-icon-accent">${icon}</span><span>Run</span>`;
         }
     }
 }

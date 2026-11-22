@@ -218,7 +218,7 @@ function htmlMetaPlugin(): Plugin {
           res = res.replace(/(<span id="header-portal-name"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(portalName)}$2`);
         } else {
           res = res.replace(
-            /(<a id="header-portal-link"[^>]*class="[^"]*)\bsite-brand\s+inline-flex\b([^"]*")/s,
+            /(<a id="header-portal-link"[^>]*class="[^"]*)\binline-flex\b([^"]*")/s,
             `$1hidden$2`
           );
           res = res.replace(/(<a id="header-portal-link"[^>]*)\s+href="[^"]*"/s, `$1`);

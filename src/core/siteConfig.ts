@@ -20,7 +20,7 @@ export interface SiteConfig {
     [key: string]: any;
 }
 
-export const siteConfig: SiteConfig = rawSiteConfig || {};
+export const siteConfig: SiteConfig = rawSiteConfig;
 
 export function isSameOriginUrl(url: string): boolean {
     const trimmed = url.trim();
@@ -32,7 +32,7 @@ export function isSameOriginUrl(url: string): boolean {
     }
 }
 
-export function resolvePortalName(
+function resolvePortalName(
     config: Pick<SiteConfig, 'portal_name' | 'subtitle' | 'home_page'>
 ): string {
     const explicit = typeof config.portal_name === 'string' ? config.portal_name.trim() : '';
@@ -58,7 +58,7 @@ export function resolvePortalName(
     return '';
 }
 
-export function resolveDirectoryUrl(
+function resolveDirectoryUrl(
     config: Pick<SiteConfig, 'directory_url' | 'home_page'>
 ): string {
     if (typeof config.directory_url === 'string') {
@@ -78,7 +78,6 @@ export const SITE_SLUG: string =
     SITE_TITLE.toLowerCase()
         .replace(/[^a-z0-9_-]+/g, '-')
         .replace(/^-+|-+$/g, '') || 'codebook';
-export const SITE_SUBTITLE: string = siteConfig.subtitle || '';
 export const SITE_HOME_PAGE: string = siteConfig.home_page || '';
 export const SITE_PORTAL_NAME: string = resolvePortalName(siteConfig);
 export const SITE_DIRECTORY_URL: string = resolveDirectoryUrl(siteConfig);

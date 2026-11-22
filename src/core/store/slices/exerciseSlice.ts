@@ -4,7 +4,7 @@ import { exercises, getExerciseDisplayTitle } from '../../../exercises/exercise-
 import { defaultLanguageId } from '../../../languages/language-registry';
 import { SITE_SLUG, SITE_TITLE } from '../../siteConfig';
 import { AppState, ExerciseSlice, LastVisitedInfo } from '../../types';
-import { scheduleAutoPush, triggerImmediatePush } from '../../sync/syncManager';
+import { scheduleAutoPush, triggerImmediatePush } from '../../sync/syncTriggers';
 
 const initialExerciseSlug = exercises[0]?.id || '';
 
@@ -22,7 +22,7 @@ export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> 
     const { completedSlugs } = get();
     if (!completedSlugs.includes(slug)) {
       set({ completedSlugs: [...completedSlugs, slug] });
-      triggerImmediatePush();
+      triggerImmediatePush(get().gistSyncSettings);
     }
   },
 
@@ -74,7 +74,7 @@ export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> 
       userCode: { ...get().userCode, [key]: code },
       userCodeTimestamps: { ...(get().userCodeTimestamps || {}), [key]: now },
     });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   getUserCode: (lessonSlug: string, languageId: string) => {
@@ -85,6 +85,6 @@ export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> 
 
   setVimMode: (enabled: boolean) => {
     set({ vimMode: enabled });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 });

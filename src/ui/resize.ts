@@ -29,8 +29,9 @@ export function setupResize(
         const newSize = startSize + delta;
 
         if (direction === 'horizontal') {
-            //min width 200px, max width 70% of screen
-            if (newSize > 200 && newSize < window.innerWidth * 0.7) {
+            //min width 240px, max width 75% of workspace container
+            const containerWidth = targetPane.parentElement?.offsetWidth || window.innerWidth;
+            if (newSize > 240 && newSize < containerWidth * 0.75) {
                 targetPane.style.width = `${newSize}px`;
                 targetPane.style.flex = 'none';
             }

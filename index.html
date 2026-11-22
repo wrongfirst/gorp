@@ -30,12 +30,13 @@
 
   <!--//KaTeX -->
   <!-- TODO: Remove these and add katex via npm + import via vite-->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
     integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
     integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8"
     crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
     integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05"
     crossorigin="anonymous"></script>
 
@@ -47,15 +48,15 @@
 
 </head>
 
-<body class="bg-bg-app text-fg-primary h-dvh flex flex-col overflow-hidden font-sans selection:bg-brand/30">
+<body class="h-dvh flex flex-col overflow-hidden font-sans selection:bg-brand/30">
 
   <!-- adaptive site header (2-row on < md mobile, single unified bar on md+) -->
   <header id="site-header"
-    class="site-header bg-bg-surface border-b border-border-default z-60 shrink-0 relative grid grid-cols-[1fr_auto] md:flex md:items-center md:h-[var(--header-height)]">
+    class="bg-bg-surface border-b border-border-default z-60 shrink-0 relative grid grid-cols-[1fr_auto] md:flex md:items-center md:h-[var(--bar-primary-h)]">
 
     <!-- branding (Row 1 left on < md; far left on md+) -->
     <div
-      class="order-1 h-[var(--header-height-mobile)] md:h-full pl-4 sm:pl-8 pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 xl:mr-auto">
+      class="order-1 h-[var(--bar-primary-mobile-h)] md:h-full pl-[var(--gutter-edge)] pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 xl:mr-auto">
       <nav aria-label="Breadcrumb" class="flex items-center gap-2 min-w-0">
         <!-- JN: Portal & title values are injected by vite during build from site.toml -->
         <span id="header-logo"
@@ -63,7 +64,7 @@
           aria-hidden="true"></span>
 
         <a id="header-portal-link" href="#"
-          class="site-brand inline-flex items-center font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight hover:opacity-80 transition-opacity shrink-0">
+          class="inline-flex items-center font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight hover:opacity-80 transition-opacity shrink-0">
           <span id="header-portal-name"></span>
         </a>
 
@@ -73,7 +74,7 @@
 
         <div id="header-book-switcher" class="static sm:relative flex items-center min-w-0">
           <button type="button" id="header-book-trigger"
-            class="inline-flex items-center gap-1 rounded-md px-1.5 py-1 -mx-1.5 font-sans font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight antialiased hover:bg-bg-app/70 transition-colors cursor-pointer min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
+            class="inline-flex items-center gap-1 h-[var(--ctrl-lg)] rounded-md px-2 -mx-2 font-sans font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight hover:bg-bg-app/70 transition-colors cursor-pointer min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
             title="Return to first exercise">
             <span id="header-title"
               class="truncate"></span>
@@ -85,7 +86,7 @@
           <div id="course-switcher-popover"
             role="dialog"
             aria-label="Switch course"
-            class="hidden absolute left-4 right-4 top-[var(--header-height-mobile)] mt-1.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
+            class="hidden absolute left-4 right-4 top-[var(--bar-primary-mobile-h)] mt-1.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
           </div>
         </div>
       </nav>
@@ -93,29 +94,29 @@
 
     <!-- global controls (Row 1 right on < md; trailing right after Run on md+) -->
     <div
-      class="order-2 md:order-4 h-[var(--header-height-mobile)] md:h-full pr-4 sm:pr-8 pl-2 md:pl-2.5 lg:pl-3 border-b border-border-default/45 md:border-b-0 flex items-center justify-end gap-1 shrink-0">
-      <span class="hidden md:block w-px h-4 bg-border-default mr-1" aria-hidden="true"></span>
+      class="order-2 md:order-4 h-[var(--bar-primary-mobile-h)] md:h-full pr-[var(--gutter-edge)] pl-2 md:pl-[var(--gap-group)] border-b border-border-default/45 md:border-b-0 flex items-center justify-end gap-[var(--gap-tight)] shrink-0">
+      <span class="hidden md:block bar-divider bar-divider--lg mr-2" aria-hidden="true"></span>
 
       <button id="shortcuts-btn"
-        class="hidden md:inline-flex items-center justify-center h-7 w-7 text-fg-muted hover:text-fg-primary hover:bg-bg-app rounded transition-colors cursor-pointer"
+        class="hidden md:inline-flex icon-btn icon-btn--lg"
         title="Keyboard Shortcuts">
       </button>
 
       <button id="speedrun-btn"
-        class="hidden items-center justify-center h-7 w-7 text-fg-muted hover:text-fg-primary hover:bg-bg-app rounded transition-colors cursor-pointer"
+        class="hidden icon-btn icon-btn--lg"
         title="Exercise Speedrunner (Dev)">
       </button>
 
       <button id="settings-btn"
-        class="inline-flex items-center justify-center h-7 w-7 -mr-1.5 text-fg-muted hover:text-fg-primary hover:bg-bg-app rounded transition-colors cursor-pointer"
+        class="icon-btn icon-btn--lg edge-right-lg"
         title="Settings">
       </button>
     </div>
 
     <!-- mobile sidebar toggle (Row 2 left on < md, aligned with header logo) -->
-    <div class="order-3 md:hidden h-[var(--header-height-mobile)] pl-4 sm:pl-8 flex items-center">
+    <div class="order-3 md:hidden h-[var(--bar-primary-mobile-h)] pl-[var(--gutter-edge)] flex items-center">
       <button type="button" id="sidebar-toggle"
-        class="inline-flex items-center justify-center p-1.5 -ml-1.5 rounded text-fg-muted hover:text-fg-primary hover:bg-bg-app transition-colors cursor-pointer"
+        class="icon-btn icon-btn--lg edge-left-lg"
         title="Toggle Sidebar" aria-label="Toggle exercises sidebar" aria-expanded="false">
         <!-- icon injected via js -->
       </button>
@@ -129,35 +130,33 @@
     </div>
 
     <!-- instance controls: status, prev/next, run (Row 2 right on < md; right before global divider on md+) -->
-    <div class="order-5 md:order-3 h-[var(--header-height-mobile)] md:h-full pr-4 sm:pr-8 md:pr-0 flex items-center justify-end gap-2.5 lg:gap-3 shrink-0">
+    <div class="order-5 md:order-3 h-[var(--bar-primary-mobile-h)] md:h-full pr-[var(--gutter-edge)] md:pr-0 flex items-center justify-end gap-[var(--gap-group)] shrink-0">
       <!-- status (lg+ only) -->
       <div class="hidden lg:flex items-center gap-1.5 whitespace-nowrap">
         <div id="status-dot" class="w-2 h-2 rounded-full bg-fg-muted animate-pulse shrink-0"></div>
-        <span id="status" class="text-xs font-mono text-fg-muted text-right max-w-24 md:max-w-40 truncate">
+        <span id="status" class="text-xs font-mono text-fg-muted text-right max-w-40 truncate">
           Loading ...
         </span>
       </div>
 
+      <span class="hidden lg:block bar-divider bar-divider--lg" aria-hidden="true"></span>
+
       <!-- nav + run controls -->
-      <div class="flex items-center gap-2 lg:pl-3 lg:border-l border-border-default">
-        <div class="flex items-center gap-0.5">
+      <div class="flex items-center gap-2">
+        <div class="flex items-center gap-[var(--gap-tight)]">
           <button id="nav-prev"
-            class="inline-flex items-center justify-center h-7 w-7 hover:bg-bg-app rounded text-fg-muted hover:text-fg-primary transition-colors disabled:opacity-30 cursor-pointer"
+            class="icon-btn icon-btn--lg"
             title="Previous">
           </button>
           <button id="nav-next"
-            class="inline-flex items-center justify-center h-7 w-7 hover:bg-bg-app rounded text-fg-muted hover:text-fg-primary transition-colors disabled:opacity-30 cursor-pointer"
+            class="icon-btn icon-btn--lg"
             title="Next">
           </button>
         </div>
 
         <button id="run-btn"
-          class="bg-brand hover:opacity-90 text-white h-6 pl-2 pr-2.5 rounded text-xs leading-none font-semibold transition-opacity inline-flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+          class="btn btn--md btn--primary btn--icon"
           disabled>
-          <svg fill="currentColor" width="12" height="12" viewBox="0 0 24 24">
-            <path
-              d="M18.54,9,8.88,3.46a3.42,3.42,0,0,0-5.13,3V17.58A3.42,3.42,0,0,0,7.17,21a3.43,3.43,0,0,0,1.71-.46L18.54,15a3.42,3.42,0,0,0,0-5.92Zm-1,4.19L7.88,18.81a1.44,1.44,0,0,1-1.42,0,1.42,1.42,0,0,1-.71-1.23V6.42a1.42,1.42,0,0,1,.71-1.23A1.51,1.51,0,0,1,7.17,5a1.54,1.54,0,0,1,.71.19l9.66,5.58a1.42,1.42,0,0,1,0,2.46Z" />
-          </svg>
           <span>Run</span>
         </button>
       </div>
@@ -175,176 +174,184 @@
 
       <!-- sidebar -->
       <nav id="sidebar-nav"
-        class="absolute inset-y-0 left-0 z-50 w-64 bg-bg-editor hidden flex-col shadow-xl lg:static lg:flex lg:shadow-none">
+        class="absolute inset-y-0 left-0 z-50 w-64 bg-bg-editor hidden flex-col shadow-xl lg:static lg:flex lg:shadow-none shrink-0">
         <div
-          class="hidden md:flex h-10 pl-4 sm:pl-8 pr-4 items-center select-none shrink-0 bg-bg-subbar">
+          class="hidden md:flex bar-secondary pl-[var(--gutter-edge)] pr-[var(--gutter-dense)] select-none bg-bg-subbar">
           <button type="button" id="sidebar-collapse-btn"
-            class="inline-flex items-center justify-center p-1.5 -ml-1.5 rounded text-fg-muted hover:text-fg-primary hover:bg-bg-app transition-colors cursor-pointer"
+            class="icon-btn icon-btn--md edge-left-md"
             title="Collapse Sidebar (Cmd/Ctrl+B)" aria-label="Collapse sidebar">
             <!-- icon injected via js -->
           </button>
         </div>
         <div id="sidebar-list" class="flex-1 overflow-y-auto pt-[var(--pane-padding-top)] pb-2 space-y-1">
         </div>
-        <div class="h-10 pl-4 sm:pl-8 pr-4 flex items-center shrink-0 select-none">
+        <div class="bar-tertiary pl-[var(--gutter-edge)] pr-[var(--gutter-dense)] justify-end select-none">
           <button id="reset-progress-btn"
-            class="inline-flex items-center justify-center p-1.5 -ml-1.5 rounded text-fg-muted hover:text-fg-primary hover:bg-bg-app transition-colors cursor-pointer"
+            class="icon-btn icon-btn--md edge-right-md"
             title="Reset Progress" aria-label="Reset progress">
-            <!-- trash icon injected via js -->
+            <!-- reset icon injected via js -->
           </button>
         </div>
       </nav>
 
-      <!-- problem + chat unified column -->
-      <div id="problem-and-chat-panel"
-        class="flex flex-col order-1 md:order-0 w-full h-full md:w-1/2 lg:w-5/12 bg-bg-surface min-h-0 min-w-0">
+      <!-- workspace panes (problem + editor split relative to remaining space after sidebar) -->
+      <div id="workspace-panes" class="flex-1 flex flex-col md:flex-row min-w-0 min-h-0 overflow-hidden">
 
-        <!-- problem pane header (md+, continuous 40px rail across panes) -->
-        <div id="problem-pane-header"
-          class="hidden md:flex h-10 pl-8 pr-6 items-center gap-2 bg-bg-subbar select-none shrink-0">
-          <button type="button" id="sidebar-expand-btn"
-            class="hidden items-center justify-center p-1.5 -ml-1.5 rounded text-fg-muted hover:text-fg-primary hover:bg-bg-app transition-colors cursor-pointer"
-            title="Show Exercises (Cmd/Ctrl+B)" aria-label="Show exercises sidebar">
-            <!-- icon injected via js -->
-          </button>
-          <span id="problem-chapter-title"
-            class="text-[10px] font-bold text-fg-muted uppercase tracking-wider truncate"></span>
-        </div>
+        <!-- problem + chat unified column -->
+        <div id="problem-and-chat-panel"
+          class="flex flex-col order-1 md:order-0 w-full h-full md:w-1/2 lg:w-[44%] bg-bg-surface min-h-0 min-w-0">
 
-        <!-- unified scroll container (Problem + Rubber Duck stream) -->
-        <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative p-4 sm:px-8 sm:pt-[var(--pane-padding-top)] pb-12">
-
-          <!-- problem description -->
-          <div id="ex-desc-desktop" class="prose prose-invert prose-sm max-w-none">
+          <!-- problem pane header (md+, continuous 40px secondary rail across panes) -->
+          <div id="problem-pane-header"
+            class="hidden md:flex bar-secondary pl-[var(--gutter-edge)] pr-[var(--gutter-pane)] gap-2 bg-bg-subbar select-none">
+            <button type="button" id="sidebar-expand-btn"
+              class="hidden icon-btn icon-btn--md edge-left-md"
+              title="Show Exercises (Cmd/Ctrl+B)" aria-label="Show exercises sidebar">
+              <!-- icon injected via js -->
+            </button>
+            <span id="problem-chapter-title"
+              class="text-[10px] font-bold text-fg-muted uppercase tracking-wider truncate"></span>
           </div>
 
-          <!-- Rubber Duck chat section in stream -->
-          <div id="chat-section" class="hidden -mx-4 sm:-mx-8 mt-8">
-            <!-- divider line (same thickness as output) -->
-            <div class="h-0.5 bg-border-default select-none"></div>
+          <!-- unified scroll container (Problem + Rubber Duck stream) -->
+          <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative px-[var(--gutter-edge)] pt-4 sm:pt-[var(--pane-padding-top)] pb-12">
 
-            <!-- header like output -->
-            <!-- Minimal Browser-Style Conversation Tabs Bar -->
+            <!-- problem description -->
+            <div id="ex-desc-desktop" class="prose prose-sm max-w-none">
+            </div>
+
+            <!-- Rubber Duck chat section in stream -->
+            <div id="chat-section" class="hidden -mx-4 sm:-mx-8 mt-8">
+              <!-- divider line (same thickness as output) -->
+              <div class="h-0.5 bg-border-default select-none"></div>
+
+              <!-- header like output -->
+              <!-- Minimal Browser-Style Conversation Tabs Bar -->
+              <div
+                class="bar-secondary px-[var(--gutter-dense)] bg-bg-surface justify-between select-none border-b border-border-default gap-2 relative">
+                <span
+                  class="text-[10px] font-bold text-fg-muted uppercase tracking-wider shrink-0 select-none">Rubber
+                  Duck</span>
+
+                <span class="bar-divider bar-divider--md" aria-hidden="true"></span>
+
+                <!-- Tabs strip with dynamic edge fade hints -->
+                <div class="relative flex-1 min-w-0 flex items-center h-full overflow-hidden">
+                  <div id="chat-tabs-container"
+                    class="flex items-center gap-[var(--gap-tight)] overflow-x-auto no-scrollbar w-full py-1">
+                    <!-- Dynamic conversation tabs injected via JS -->
+                  </div>
+                  <!-- Left scroll hint gradient -->
+                  <div id="chat-tabs-fade-left"
+                    class="chat-tabs-fade-left pointer-events-none absolute left-0 top-0 bottom-0 w-6 transition-opacity duration-150 opacity-0 z-10">
+                  </div>
+                  <!-- Right scroll hint gradient -->
+                  <div id="chat-tabs-fade-right"
+                    class="chat-tabs-fade-right pointer-events-none absolute right-0 top-0 bottom-0 w-6 transition-opacity duration-150 opacity-0 z-10">
+                  </div>
+                </div>
+
+                <span class="bar-divider bar-divider--md" aria-hidden="true"></span>
+
+                <div class="flex items-center gap-[var(--gap-tight)] shrink-0">
+                  <button type="button" id="new-chat-tab-btn"
+                    class="hidden icon-btn icon-btn--md"
+                    title="New conversation">
+                  </button>
+                  <button id="clear-chat-btn"
+                    class="icon-btn icon-btn--md edge-right-md"
+                    title="Clear Chat Messages">
+                  </button>
+                </div>
+              </div>
+
+              <!-- Chat Messages Stream -->
+              <div id="chat-messages" class="px-[var(--gutter-edge)] pt-6 space-y-4 text-xs">
+                <div class="text-xs text-fg-muted leading-relaxed space-y-1 select-none">
+                  <p>Ask for hints, error explanations, or architectural guidance without
+                    spoiling the solution.</p>
+                  <p class="text-[11px] text-fg-muted">Click a suggestion below or type a question to get started.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pinned bottom input container (shown when Rubber Duck enabled) -->
+          <div id="chat-input-container" class="hidden flex-col shrink-0 bg-bg-surface">
+            <!-- Quick Start -->
+            <div id="chat-quick-chips"
+              class="px-[var(--gutter-dense)] py-1.5 border-t border-border-default/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface">
+              <!-- suggestion injected via js -->
+            </div>
+
+            <!-- Chat Input Area (Flush & Unboxed) -->
+            <div class="border-t border-border-default bg-bg-app px-[var(--gutter-dense)] py-2 flex items-end gap-2 shrink-0">
+              <textarea id="chat-input" rows="1" placeholder="Ask Rubber Duck... (Enter to send)"
+                class="flex-1 bg-transparent text-xs text-fg-primary placeholder:text-fg-muted outline-none resize-none max-h-24 min-h-6 py-1 leading-normal font-sans"></textarea>
+              <button id="chat-send-btn"
+                class="icon-btn icon-btn--md icon-btn--filled bg-brand"
+                title="Send Message" disabled>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- horizontal resize handle (invisible until hover/drag, generous hit target) -->
+        <div id="drag-h-desktop"
+          class="hidden md:block relative w-0.5 -mx-px bg-transparent hover:bg-brand cursor-col-resize z-20 transition-colors select-none shrink-0 after:content-[''] after:absolute after:inset-y-0 after:-inset-x-1">
+        </div>
+
+        <!-- editor + output panel -->
+        <div id="editor-and-output-panel"
+          class="hidden md:flex flex-col order-2 md:order-0 w-full h-full md:flex-1 md:h-auto bg-bg-editor min-h-0 min-w-0">
+
+          <!-- editor -->
+          <div class="flex flex-col h-[60%] md:h-auto md:flex-1 relative min-h-0">
             <div
-              class="h-9 px-2 bg-bg-surface flex items-center justify-between select-none border-b border-border-default gap-1.5 relative">
-              <span
-                class="text-[10px] font-bold text-fg-muted uppercase tracking-wider px-2 shrink-0 select-none border-r border-border-default/60 pr-2.5 mr-0.5">Rubber
-                Duck</span>
-
-              <!-- Tabs strip with dynamic edge fade hints -->
-              <div class="relative flex-1 min-w-0 flex items-center h-full overflow-hidden">
-                <div id="chat-tabs-container"
-                  class="flex items-center gap-1 overflow-x-auto no-scrollbar w-full py-1">
-                  <!-- Dynamic conversation tabs injected via JS -->
-                </div>
-                <!-- Left scroll hint gradient -->
-                <div id="chat-tabs-fade-left"
-                  class="chat-tabs-fade-left pointer-events-none absolute left-0 top-0 bottom-0 w-6 transition-opacity duration-150 opacity-0 z-10">
-                </div>
-                <!-- Right scroll hint gradient -->
-                <div id="chat-tabs-fade-right"
-                  class="chat-tabs-fade-right pointer-events-none absolute right-0 top-0 bottom-0 w-6 transition-opacity duration-150 opacity-0 z-10">
-                </div>
+              class="bar-secondary pl-[var(--gutter-dense)] pr-[var(--gutter-edge)] bg-bg-subbar text-[10px] uppercase font-bold text-fg-muted tracking-wider justify-between select-none">
+              <div class="flex items-center gap-2">
+                <span id="editor-title" class="hidden">Editor</span>
+                <div id="language-selector-container" class="-ml-2 normal-case tracking-normal flex items-center empty:hidden"></div>
               </div>
-
-              <div class="flex items-center gap-1 shrink-0 pl-1 border-l border-border-default/60 ml-0.5">
-                <button type="button" id="new-chat-tab-btn"
-                  class="hidden p-1 hover:bg-bg-app rounded text-fg-muted hover:text-fg-primary transition-colors cursor-pointer shrink-0"
-                  title="New conversation">
+              <div class="flex items-center gap-[var(--gap-tight)]">
+                <button id="format-code-btn" class="icon-btn icon-btn--md" title="Format code (Cmd/Ctrl+Shift+F)">
                 </button>
-                <button id="clear-chat-btn"
-                  class="p-1 hover:bg-bg-app rounded text-fg-muted hover:text-fg-primary transition-colors cursor-pointer shrink-0"
-                  title="Clear Chat Messages">
+                <button id="copy-code-btn" class="icon-btn icon-btn--md" title="Copy code">
+                </button>
+                <button id="reset-btn" class="icon-btn icon-btn--md edge-right-md" title="Reset">
                 </button>
               </div>
             </div>
 
-            <!-- Chat Messages Stream -->
-            <div id="chat-messages" class="px-4 sm:px-8 pt-6 space-y-4 text-xs">
-              <div class="text-xs text-fg-muted leading-relaxed space-y-1 select-none">
-                <p class="text-fg-secondary">Ask for hints, error explanations, or architectural guidance without
-                  spoiling the solution.</p>
-                <p class="text-[11px] text-fg-muted">Click a suggestion below or type a question to get started.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Pinned bottom input container (shown when Rubber Duck enabled) -->
-        <div id="chat-input-container" class="hidden flex-col shrink-0 bg-bg-surface">
-          <!-- Quick Start -->
-          <div id="chat-quick-chips"
-            class="px-3 py-1 border-t border-border-default/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface">
-            <!-- suggestion injected via js -->
-          </div>
-
-          <!-- Chat Input Area (Flush & Unboxed) -->
-          <div class="border-t border-border-default bg-bg-app px-3 py-1.5 flex items-end gap-2 shrink-0">
-            <textarea id="chat-input" rows="1" placeholder="Ask Rubber Duck... (Enter to send)"
-              class="flex-1 bg-transparent text-xs text-fg-primary placeholder:text-fg-muted outline-none resize-none max-h-24 min-h-5 py-0.5 leading-normal font-sans"></textarea>
-            <button id="chat-send-btn"
-              class="p-1 rounded bg-brand text-white hover:opacity-90 transition-opacity disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer shrink-0"
-              title="Send Message" disabled>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- horizontal resize handle (invisible until hover/drag, generous hit target) -->
-      <div id="drag-h-desktop"
-        class="hidden md:block relative w-0.5 -mx-px bg-transparent hover:bg-brand cursor-col-resize z-20 transition-colors select-none shrink-0 after:content-[''] after:absolute after:inset-y-0 after:-inset-x-1">
-      </div>
-
-      <!-- editor + output panel -->
-      <div id="editor-and-output-panel"
-        class="hidden md:flex flex-col order-2 md:order-0 w-full h-full md:flex-1 md:h-auto bg-bg-editor min-h-0 min-w-0">
-
-        <!-- editor -->
-        <div class="flex flex-col h-[60%] md:h-auto md:flex-1 relative min-h-0">
-          <div
-            class="h-9 md:h-10 pl-4 pr-4 sm:pr-8 bg-bg-subbar text-[10px] uppercase font-bold text-fg-muted tracking-wider flex items-center justify-between select-none shrink-0">
-            <div class="flex items-center gap-2">
-              <span id="editor-title" class="hidden">Editor</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <button id="format-code-btn" class="hover:cursor-pointer hover:text-fg-primary transition-colors flex items-center" title="Format code (Cmd/Ctrl+Shift+F)">
-              </button>
-              <button id="copy-code-btn" class="hover:cursor-pointer hover:text-fg-primary transition-colors flex items-center" title="Copy code">
-              </button>
-              <div id="language-selector-container" class="normal-case tracking-normal flex items-center"></div>
-              <button id="reset-btn" class="hover:cursor-pointer hover:text-fg-primary transition-colors flex items-center" title="Reset">
-              </button>
+            <div class="flex-1 relative min-h-0" id="editor-wrapper">
+              <div id="editor" class="w-full h-full outline-none"></div>
             </div>
           </div>
 
-          <div class="flex-1 relative min-h-0" id="editor-wrapper">
-            <div id="editor" class="w-full h-full outline-none"></div>
+          <!-- vertical resize handle (invisible until hover/drag, generous hit target) -->
+          <div id="drag-v-output"
+            class="hidden md:block relative h-0.5 -my-px bg-transparent hover:bg-brand cursor-row-resize z-20 transition-colors select-none shrink-0 after:content-[''] after:absolute after:inset-x-0 after:-inset-y-1">
           </div>
-        </div>
 
-        <!-- vertical resize handle (invisible until hover/drag, generous hit target) -->
-        <div id="drag-v-output"
-          class="hidden md:block relative h-0.5 -my-px bg-transparent hover:bg-brand cursor-row-resize z-20 transition-colors select-none shrink-0 after:content-[''] after:absolute after:inset-x-0 after:-inset-y-1">
-        </div>
-
-        <!-- output -->
-        <div id="pane-output"
-          class="h-[40%] md:h-48 bg-bg-output flex flex-col shrink-0 min-h-0">
-          <div
-            class="h-9 md:h-10 pl-4 pr-4 sm:pr-8 bg-bg-subbar text-[10px] font-bold text-fg-muted uppercase tracking-wider flex items-center justify-between select-none shrink-0">
-            <span>Output</span>
-            <button id="clear-output-btn" class="hover:cursor-pointer" title="Clear Output">
-            </button>
-          </div>
-          <div id="output-content"
-            class="flex-1 p-4 font-mono text-xs overflow-auto text-fg-primary whitespace-pre-wrap selection:bg-bg-surface">
+          <!-- output -->
+          <div id="pane-output"
+            class="h-[40%] md:h-[clamp(160px,24vh,280px)] bg-bg-output flex flex-col shrink-0 min-h-0">
+            <div
+              class="bar-secondary pl-[var(--gutter-dense)] pr-[var(--gutter-edge)] bg-bg-subbar text-[10px] font-bold text-fg-muted uppercase tracking-wider justify-between select-none">
+              <span>Output</span>
+              <button id="clear-output-btn" class="icon-btn icon-btn--md edge-right-md" title="Clear Output">
+              </button>
+            </div>
+            <div id="output-content"
+              class="flex-1 pl-[var(--gutter-dense)] pr-[var(--gutter-edge)] py-4 font-mono text-xs overflow-auto text-fg-primary whitespace-pre-wrap selection:bg-bg-surface">
+            </div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- mobile only bottom tab bar -->
-    <div class="flex h-12 md:hidden border-t border-border-default bg-bg-surface shrink-0 z-50">
+    <div class="flex h-[var(--bar-primary-mobile-h)] md:hidden border-t border-border-default bg-bg-surface shrink-0 z-50">
       <button id="tab-problem"
         class="flex-1 h-full flex items-center justify-center text-xs font-bold text-fg-primary border-t-2 border-brand transition-colors cursor-pointer">
         Problem
@@ -356,7 +363,7 @@
     </div>
 
     <!-- footer (desktop/tablet) -->
-    <footer id="footer" class="hidden md:flex items-center justify-center px-6 py-4 border-t border-[color:var(--footer-border-color)] bg-bg-surface shrink-0">
+    <footer id="footer" class="hidden md:flex bar-tertiary justify-center px-[var(--gutter-edge)] border-t border-[color:var(--footer-border-color)] bg-bg-surface">
       <!-- JN: Footer links & build date are injected by vite during build -->
       <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-8">
         <span class="text-xs text-fg-muted">
@@ -374,26 +381,26 @@
       class="hidden fixed inset-0 z-110 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-sm relative flex flex-col overflow-hidden">
-        <div class="h-11 px-5 modal-header flex items-center justify-between shrink-0">
+        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
           <h2 id="reset-progress-title" class="text-sm font-bold text-red-500 flex items-center gap-2 tracking-tight">
             Reset Progress
           </h2>
           <button id="close-reset-progress-btn"
-            class="inline-flex items-center justify-center h-7 w-7 -mr-1.5 text-fg-muted hover:text-fg-primary transition-colors rounded hover:bg-bg-editor cursor-pointer">
+            class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
           </button>
         </div>
-        <div class="px-5 pt-4 pb-5 flex flex-col gap-5">
+        <div class="px-[var(--gutter-pane)] pt-4 pb-6 flex flex-col gap-6">
           <p id="reset-progress-desc" class="text-xs leading-relaxed text-fg-muted">
             Are you sure you want to reset all progress? This will delete your saved code and completion status for all
             exercises. This action cannot be undone.
           </p>
           <div class="flex justify-end gap-2">
             <button id="cancel-reset-progress-btn"
-              class="h-7 px-3 text-xs font-semibold text-fg-secondary hover:text-fg-primary bg-bg-subbar hover:bg-bg-editor rounded transition-colors cursor-pointer">
+              class="btn btn--md btn--secondary">
               Cancel
             </button>
             <button id="confirm-reset-progress-btn"
-              class="h-7 px-3 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded transition-colors cursor-pointer">
+              class="btn btn--md btn--danger">
               Reset All
             </button>
           </div>
@@ -407,15 +414,15 @@
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-4xl h-[560px] max-h-[85vh] flex flex-col overflow-hidden text-fg-primary">
         <!-- Top Search Bar -->
-        <div class="flex items-center modal-header shrink-0">
-          <div id="command-palette-search-icon" class="pl-4 pr-2 text-fg-muted flex items-center justify-center">
+        <div class="bar-secondary px-[var(--gutter-dense)] modal-header gap-2">
+          <div id="command-palette-search-icon" class="text-fg-muted flex items-center justify-center text-base shrink-0">
             <!-- search icon injected via js -->
           </div>
           <input id="command-palette-input" type="text" autocomplete="off" spellcheck="false"
             placeholder="Search cheatsheets (e.g. 'comprehension', 'python', 'ts')..."
-            class="flex-1 bg-transparent py-3 text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none" />
+            class="flex-1 bg-transparent h-full text-sm text-fg-primary placeholder:text-fg-muted focus:outline-none" />
           <button id="close-command-palette-btn" tabindex="-1"
-            class="mr-3 inline-flex items-center justify-center h-7 w-7 text-fg-muted hover:text-fg-primary transition-colors rounded hover:bg-bg-editor cursor-pointer"
+            class="icon-btn icon-btn--md icon-btn--modal edge-right-md"
             title="Close (Esc)">
             <!-- close icon injected via js -->
           </button>
@@ -435,7 +442,7 @@
 
         <!-- Dynamic Keybinding Footer -->
         <div id="command-palette-footer"
-          class="h-9 px-4 modal-footer flex items-center justify-between text-[11px] text-fg-muted font-mono select-none shrink-0">
+          class="bar-tertiary px-[var(--gutter-dense)] modal-footer justify-between text-[11px] text-fg-muted font-mono select-none">
           <!-- shortcuts hint injected via js -->
         </div>
       </div>
@@ -446,14 +453,14 @@
       class="hidden fixed inset-0 z-100 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-2xl relative flex flex-col overflow-hidden">
-        <div class="h-11 px-5 modal-header flex items-center justify-between shrink-0">
+        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
           <h2 class="text-sm font-bold text-fg-primary tracking-tight">Keyboard Shortcuts</h2>
           <button id="close-shortcuts-btn"
-            class="inline-flex items-center justify-center h-7 w-7 -mr-1.5 text-fg-muted hover:text-fg-primary transition-colors rounded hover:bg-bg-editor cursor-pointer">
+            class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
             <!-- close icon injected via js -->
           </button>
         </div>
-        <div id="shortcuts-list" class="p-6">
+        <div id="shortcuts-list" class="p-[var(--gutter-pane)]">
           <!-- content injected via js -->
         </div>
       </div>
@@ -464,14 +471,14 @@
       class="hidden fixed inset-0 z-100 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-md md:max-w-3xl lg:max-w-4xl relative flex flex-col max-h-[88vh] overflow-hidden">
-        <div class="h-11 px-6 modal-header flex items-center justify-between shrink-0">
+        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
           <h2 class="text-sm font-bold text-fg-primary tracking-tight">Settings</h2>
           <button id="close-settings-btn"
-            class="inline-flex items-center justify-center h-7 w-7 -mr-1.5 text-fg-muted hover:text-fg-primary transition-colors rounded hover:bg-bg-editor cursor-pointer">
+            class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
             <!-- close icon injected via js -->
           </button>
         </div>
-        <div id="settings-content" class="p-6 overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6 items-start">
+        <div id="settings-content" class="p-[var(--gutter-pane)] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-[var(--gap-section)] items-start">
           <!-- Left Column: Editor & AI Assistant -->
           <div class="flex flex-col space-y-6">
             <!-- Vim Mode -->
@@ -483,7 +490,7 @@
               <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
                 <input type="checkbox" id="vim-mode-toggle" class="sr-only peer">
                 <div
-                  class="w-10 h-5.5 bg-bg-subbar ring-1 ring-border-default peer-checked:ring-brand peer-focus:outline-none peer-focus-visible:ring-brand rounded-full peer peer-checked:after:translate-x-4.5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all transition-colors peer-checked:bg-brand">
+                  class="w-10 h-5 bg-bg-subbar ring-1 ring-border-default peer-checked:ring-brand peer-focus:outline-none peer-focus-visible:ring-brand rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all transition-colors peer-checked:bg-brand">
                 </div>
               </label>
             </div>
@@ -499,7 +506,7 @@
                 <label class="relative inline-flex items-center cursor-pointer select-none shrink-0">
                   <input type="checkbox" id="chat-mode-toggle" class="sr-only peer">
                   <div
-                    class="w-10 h-5.5 bg-bg-subbar ring-1 ring-border-default peer-checked:ring-brand peer-focus:outline-none peer-focus-visible:ring-brand rounded-full peer peer-checked:after:translate-x-4.5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4.5 after:w-4.5 after:transition-all transition-colors peer-checked:bg-brand">
+                    class="w-10 h-5 bg-bg-subbar ring-1 ring-border-default peer-checked:ring-brand peer-focus:outline-none peer-focus-visible:ring-brand rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all transition-colors peer-checked:bg-brand">
                   </div>
                 </label>
               </div>
@@ -562,7 +569,8 @@
                 </ul>
 
                 <button type="button" id="gist-oauth-login-btn"
-                  class="w-full h-8 px-4 text-xs font-semibold text-white bg-brand hover:opacity-90 rounded transition-opacity cursor-pointer inline-flex items-center justify-center gap-2">
+                  class="btn btn--md btn--primary btn--icon self-start">
+                  <span id="gist-oauth-login-icon" class="btn-icon-accent"></span>
                   <span>Sign in with GitHub</span>
                 </button>
 
@@ -586,11 +594,11 @@
                       class="text-[10px] text-brand hover:underline cursor-pointer">Generate new PAT ↗</a>
                   </div>
                   <input type="text" id="gist-manual-token" placeholder="ghp_..."
-                    class="w-full px-2.5 py-1.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono" />
+                    class="w-full h-[var(--ctrl-md)] px-2.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono" />
                   <input type="text" id="gist-manual-id" placeholder="Gist ID (leave blank to create new)"
-                    class="w-full px-2.5 py-1.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono" />
+                    class="w-full h-[var(--ctrl-md)] px-2.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono" />
                   <button type="button" id="gist-manual-connect-btn"
-                    class="w-full sm:w-auto self-start h-7 px-3 text-xs font-semibold text-fg-primary bg-bg-subbar hover:bg-bg-editor rounded transition-colors cursor-pointer inline-flex items-center justify-center gap-2">
+                    class="btn btn--md btn--secondary w-full sm:w-auto self-start font-semibold">
                     Connect Manually
                   </button>
                 </div>
@@ -614,24 +622,23 @@
                 <!-- Action buttons -->
                 <div class="flex flex-wrap items-center gap-2">
                   <button type="button" id="gist-sync-now-btn"
-                    class="h-7 px-3 text-xs font-semibold text-white bg-brand hover:opacity-90 rounded transition-opacity cursor-pointer inline-flex items-center gap-1.5">
+                    class="btn btn--md btn--primary">
                     <span id="gist-sync-now-text">Sync Now</span>
                   </button>
                   <button type="button" id="gist-pull-btn"
-                    class="h-7 px-3 text-xs font-medium text-fg-primary bg-bg-subbar hover:bg-bg-editor rounded transition-colors cursor-pointer inline-flex items-center gap-1.5"
+                    class="btn btn--md btn--secondary"
                     title="Pull latest data from Gist and merge with local">
                     <span>Pull</span>
                   </button>
                   <button type="button" id="gist-unlink-btn"
-                    class="h-7 px-3 text-xs font-medium text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer inline-flex items-center gap-1 ml-auto"
+                    class="btn btn--md btn--ghost-danger ml-auto"
                     title="Disconnect and sign out of GitHub Gist sync">
                     <span>Disconnect</span>
                   </button>
                 </div>
 
                 <!-- Auto-sync toggle checkbox -->
-                <label id="gist-autosync-wrapper"
-                  class="flex items-center gap-2 text-xs text-fg-secondary cursor-pointer select-none">
+                <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
                   <input type="checkbox" id="gist-autosync-toggle"
                     class="rounded border-border-default text-brand focus:ring-0 focus:outline-none cursor-pointer">
                   <span>Auto-sync changes on save, completion, and settings change</span>
@@ -651,7 +658,7 @@
               </div>
 
               <!-- Include API keys toggle -->
-              <label class="flex items-center gap-2 text-xs text-fg-secondary cursor-pointer select-none">
+              <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
                 <input type="checkbox" id="backup-include-keys"
                   class="rounded border-border-default text-brand focus:ring-0 focus:outline-none cursor-pointer">
                 <span>Include API keys in export <span class="text-[10px] text-fg-muted">(disabled by
@@ -661,12 +668,12 @@
               <!-- Export / Import Action Buttons -->
               <div class="flex items-center gap-2 pt-0.5">
                 <button type="button" id="export-backup-btn"
-                  class="h-7 px-3 text-xs font-medium text-fg-primary bg-bg-subbar hover:bg-bg-editor rounded transition-colors cursor-pointer inline-flex items-center gap-1.5">
+                  class="btn btn--md btn--secondary btn--icon">
                   <span id="export-backup-icon" class="flex items-center justify-center"></span>
                   <span>Export Backup</span>
                 </button>
                 <button type="button" id="import-backup-btn"
-                  class="h-7 px-3 text-xs font-medium text-fg-primary bg-bg-subbar hover:bg-bg-editor rounded transition-colors cursor-pointer inline-flex items-center gap-1.5">
+                  class="btn btn--md btn--secondary btn--icon">
                   <span id="import-backup-icon" class="flex items-center justify-center"></span>
                   <span>Import Backup</span>
                 </button>
@@ -691,7 +698,7 @@
               </div>
 
               <!-- Optional shared settings opt-in -->
-              <label class="flex items-center gap-2 text-xs text-fg-secondary cursor-pointer select-none">
+              <label class="flex items-center gap-2 text-xs cursor-pointer select-none">
                 <input type="checkbox" id="clear-shared-settings-checkbox"
                   class="rounded border-border-default text-brand focus:ring-0 focus:outline-none cursor-pointer">
                 <span>Also clear shared settings <span class="text-[10px] text-fg-muted">(Vim mode, Rubber Duck, GitHub sign-in across all books)</span></span>
@@ -700,7 +707,7 @@
               <!-- Nuke Storage Action -->
               <div class="flex items-center gap-2 pt-0.5">
                 <button type="button" id="clear-storage-btn"
-                  class="h-7 px-3 text-xs font-medium text-red-400 hover:text-white hover:bg-red-500 bg-red-500/10 rounded transition-colors cursor-pointer inline-flex items-center gap-1.5">
+                  class="btn btn--md btn--danger-soft btn--icon">
                   <span id="clear-storage-icon" class="flex items-center justify-center"></span>
                   <span>Nuke Local Storage</span>
                 </button>
@@ -717,9 +724,9 @@
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-3xl h-[85vh] max-h-[85vh] flex flex-col overflow-hidden text-fg-primary">
         <!-- Header -->
-        <div class="px-5 py-3.5 modal-header flex items-center justify-between shrink-0">
+        <div class="px-[var(--gutter-pane)] py-3 modal-header flex items-center justify-between shrink-0">
           <div class="flex items-center gap-3">
-            <div id="speedrun-header-icon" class="p-1.5 rounded-md bg-brand/12 text-brand">
+            <div id="speedrun-header-icon" class="w-[var(--ctrl-md)] h-[var(--ctrl-md)] flex items-center justify-center rounded-md bg-brand/12 text-brand text-base shrink-0">
               <!-- icon injected via js -->
             </div>
             <div>
@@ -733,7 +740,7 @@
             </div>
           </div>
           <button id="close-speedrun-btn"
-            class="inline-flex items-center justify-center h-7 w-7 -mr-1.5 text-fg-muted hover:text-fg-primary transition-colors rounded hover:bg-bg-editor cursor-pointer"
+            class="icon-btn icon-btn--md icon-btn--modal edge-right-md"
             title="Close">
             <!-- close icon injected via js -->
           </button>
@@ -741,24 +748,24 @@
 
         <!-- Controls and Filters -->
         <div
-          class="px-5 py-2.5 bg-bg-subbar/25 flex flex-wrap items-center justify-between gap-3 shrink-0">
+          class="px-[var(--gutter-pane)] py-2 bg-bg-subbar/25 flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div class="flex items-center gap-2">
             <span class="text-[10px] font-bold text-fg-muted uppercase tracking-wider">Target</span>
             <select id="speedrun-lang-select"
-              class="bg-bg-editor text-xs font-medium text-fg-primary rounded px-2.5 py-1 focus:outline-none focus:ring-0 cursor-pointer">
+              class="h-[var(--ctrl-md)] bg-bg-editor text-xs font-medium text-fg-primary rounded px-2.5 focus:outline-none focus:ring-0 cursor-pointer">
               <option value="all">All Languages</option>
             </select>
           </div>
 
           <div class="flex items-center gap-2">
             <button id="speedrun-export-btn"
-              class="hidden h-7 px-3 text-xs font-medium text-fg-secondary hover:text-fg-primary bg-bg-editor hover:bg-bg-surface rounded transition-colors cursor-pointer items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              class="hidden btn btn--md btn--secondary btn--icon"
               title="Export results as JSON">
               <span id="speedrun-export-icon" class="flex items-center justify-center"></span>
               <span id="speedrun-export-text">Export (JSON)</span>
             </button>
             <button id="speedrun-start-btn"
-              class="h-7 px-3 text-xs font-semibold text-white bg-brand hover:opacity-90 rounded transition-opacity cursor-pointer inline-flex items-center gap-1.5">
+              class="btn btn--md btn--primary">
               <span id="speedrun-start-btn-text">Start Speedrun</span>
             </button>
           </div>
@@ -766,8 +773,8 @@
 
         <!-- Progress Section -->
         <div id="speedrun-progress-container"
-          class="hidden px-5 py-3 bg-bg-surface shrink-0 space-y-2.5">
-          <div class="flex items-center justify-between text-xs text-fg-secondary font-medium">
+          class="hidden px-[var(--gutter-pane)] py-3 bg-bg-surface shrink-0 space-y-2.5">
+          <div class="flex items-center justify-between text-xs font-medium">
             <span id="speedrun-progress-status">Ready</span>
             <span id="speedrun-progress-counter" class="font-mono text-[11px]">0 / 0</span>
           </div>
@@ -778,23 +785,23 @@
             <!-- Clickable Filter Badges -->
             <div id="speedrun-status-filters" class="flex items-center gap-1.5 flex-wrap">
               <button data-filter="all" id="filter-all"
-                class="speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs bg-brand text-white transition-all cursor-pointer">
+                class="speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs bg-brand text-white transition-all cursor-pointer">
                 All: <span id="stat-all" class="font-bold ml-0.5">0</span>
               </button>
               <button data-filter="passed" id="filter-passed"
-                class="speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs bg-bg-editor text-green-500 hover:bg-green-500/10 transition-all cursor-pointer">
+                class="speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs bg-bg-editor text-green-500 hover:bg-green-500/10 transition-all cursor-pointer">
                 Passed: <span id="stat-passed" class="font-bold ml-0.5">0</span>
               </button>
               <button data-filter="failed" id="filter-failed"
-                class="speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs bg-bg-editor text-yellow-500 hover:bg-yellow-500/10 transition-all cursor-pointer">
+                class="speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs bg-bg-editor text-yellow-500 hover:bg-yellow-500/10 transition-all cursor-pointer">
                 Failed: <span id="stat-failed" class="font-bold ml-0.5">0</span>
               </button>
               <button data-filter="error" id="filter-errors"
-                class="speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs bg-bg-editor text-red-500 hover:bg-red-500/10 transition-all cursor-pointer">
+                class="speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs bg-bg-editor text-red-500 hover:bg-red-500/10 transition-all cursor-pointer">
                 Errors: <span id="stat-errors" class="font-bold ml-0.5">0</span>
               </button>
               <button data-filter="missing_solution" id="filter-missing"
-                class="speedrun-status-pill px-2.5 py-1 rounded font-medium text-xs bg-bg-editor text-fg-muted hover:bg-bg-subbar transition-all cursor-pointer">
+                class="speedrun-status-pill h-[var(--ctrl-sm)] px-2.5 inline-flex items-center rounded font-medium text-xs bg-bg-editor text-fg-muted hover:bg-bg-subbar transition-all cursor-pointer">
                 Missing: <span id="stat-missing" class="font-bold ml-0.5">0</span>
               </button>
             </div>
@@ -802,7 +809,7 @@
             <!-- Sort and Total Time -->
             <div class="flex items-center gap-3 ml-auto">
               <button id="speedrun-sort-btn"
-                class="flex items-center gap-1.5 px-2.5 py-1 rounded text-[11px] font-medium bg-bg-editor text-fg-muted hover:text-fg-primary hover:bg-bg-subbar transition-colors cursor-pointer"
+                class="btn btn--sm btn--secondary btn--icon text-[11px] text-fg-muted hover:text-fg-primary"
                 title="Sort tests by execution duration">
                 <span id="speedrun-sort-icon" class="flex items-center justify-center"></span>
                 <span id="speedrun-sort-label">Sort: Default</span>

@@ -2,11 +2,24 @@ import { runner } from '../core/runner';
 import { elements } from '../core/elements';
 import { store } from '../core/store';
 import { focusEditor, formatEditorCode } from '../core/editor';
-import { focusChatInput } from './chatPanel';
-import { toggleCommandPalette } from './commandPalette';
 import { toggleSidebar } from './sidebar';
 import { showPopup } from './popup';
 import { ICONS } from './icons';
+import { createModal, type ModalController } from './modal';
+
+let shortcutsModal: ModalController | null = null;
+
+let commandPaletteModulePromise: Promise<typeof import('./commandPalette')> | null = null;
+
+function loadCommandPalette(): Promise<typeof import('./commandPalette')> {
+    if (!commandPaletteModulePromise) {
+        commandPaletteModulePromise = import('./commandPalette').catch((err) => {
+            commandPaletteModulePromise = null;
+            throw err;
+        });
+    }
+    return commandPaletteModulePromise;
+}
 
 interface Shortcut {
     action: string;
@@ -36,35 +49,15 @@ export function initShortcuts() {
     if (elements.shortcutsBtn) {
         elements.shortcutsBtn.innerHTML = ICONS.KEYBOARD;
     }
-    if (elements.shortcuts.closeBtn) {
-        elements.shortcuts.closeBtn.innerHTML = ICONS.CLOSE;
-    }
 
     renderShortcuts();
 
-    elements.shortcutsBtn?.addEventListener('click', openModal);
-    elements.shortcuts.closeBtn?.addEventListener('click', closeModal);
-
-    //close on click outside (only if both mousedown and click originated directly on the backdrop)
-    let isMouseDownOnBackdrop = false;
-
-    elements.shortcuts.modal?.addEventListener('mousedown', (e) => {
-        isMouseDownOnBackdrop = (e.target === elements.shortcuts.modal);
+    shortcutsModal = createModal({
+        modal: elements.shortcuts.modal,
+        closeBtn: elements.shortcuts.closeBtn,
     });
 
-    elements.shortcuts.modal?.addEventListener('click', (e) => {
-        if (isMouseDownOnBackdrop && e.target === elements.shortcuts.modal) {
-            closeModal();
-        }
-        isMouseDownOnBackdrop = false;
-    });
-
-    //close on esc
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && elements.shortcuts.modal && !elements.shortcuts.modal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
+    elements.shortcutsBtn?.addEventListener('click', () => shortcutsModal?.open());
 
     //shortcut logic
     document.addEventListener('keydown', (e) => {
@@ -73,7 +66,7 @@ export function initShortcuts() {
         if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
             e.preventDefault();
             e.stopPropagation();
-            toggleCommandPalette();
+            void loadCommandPalette().then((m) => m.toggleCommandPalette());
             return;
         }
 
@@ -109,7 +102,10 @@ export function initShortcuts() {
             e.stopPropagation();
             const cs = store.getState().chatSettings;
             if (cs?.enabled) {
-                focusChatInput();
+                void import('./chatPanel').then((m) => {
+                    m.initChatPanel();
+                    m.focusChatInput();
+                });
             }
             return;
         }
@@ -147,11 +143,7 @@ export function initShortcuts() {
         if (e.key === 'F1') {
             e.preventDefault();
             e.stopPropagation();
-            if (elements.shortcuts.modal?.classList.contains('hidden')) {
-                openModal();
-            } else {
-                closeModal();
-            }
+            shortcutsModal?.toggle();
             return;
         }
 
@@ -168,11 +160,7 @@ export function initShortcuts() {
             if (e.key === '?') {
                 e.preventDefault();
                 e.stopPropagation();
-                if (elements.shortcuts.modal?.classList.contains('hidden')) {
-                    openModal();
-                } else {
-                    closeModal();
-                }
+                shortcutsModal?.toggle();
                 return;
             }
         }
@@ -193,7 +181,7 @@ function renderShortcuts() {
 
                 if (k === "or") return `<span class="text-fg-muted text-xs mx-1">or</span>`;
 
-                return `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[11px] font-mono text-fg-secondary
+                return `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[11px] font-mono
                 min-w-5 text-center inline-block">${label}</kbd>`;
             }).reduce((acc, curr, i) => {
                 if (i === 0) return curr;
@@ -229,14 +217,4 @@ function renderShortcuts() {
             ${renderGroup("Navigation", NAVIGATION_SHORTCUTS)}
         </div>
     `;
-}
-
-function openModal() {
-    elements.shortcuts.modal?.classList.remove('hidden');
-    elements.shortcuts.modal?.classList.add('flex');
-}
-
-function closeModal() {
-    elements.shortcuts.modal?.classList.add('hidden');
-    elements.shortcuts.modal?.classList.remove('flex');
 }

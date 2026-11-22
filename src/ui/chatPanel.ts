@@ -68,7 +68,11 @@ let lastRenderedConversationId: string | null = null;
 let lastRenderedChatMessages: ChatMessage[] | null = null;
 let lastRenderedConvs: ChatConversation[] | null = null;
 
+let isChatPanelInitialized = false;
+
 export function initChatPanel() {
+  if (isChatPanelInitialized) return;
+  isChatPanelInitialized = true;
   // Populate static icons
   if (elements.chat.clearBtn) {
     elements.chat.clearBtn.innerHTML = ICONS.TRASH;
@@ -273,7 +277,7 @@ function renderConversationTabs() {
         class="chat-tab-item ${baseClasses} ${activeClasses}"
         title="${escapeHtml(title)} (${conv.languageId})">
         ${showDot ? `<span class="w-1.5 h-1.5 rounded-full bg-brand shrink-0 ${isStreaming || isRenaming ? 'animate-pulse' : ''}" title="${dotTooltip}"></span>` : ''}
-        <span class="truncate max-w-20 sm:max-w-27.5">${escapeHtml(title)}</span>
+        <span class="truncate max-w-20 sm:max-w-28">${escapeHtml(title)}</span>
         <button type="button"
           data-close-conv-id="${conv.id}"
           class="chat-tab-close-btn opacity-60 hover:opacity-100 hover:text-red-400 p-0.5 rounded transition-all ml-0.5 cursor-pointer"
@@ -358,7 +362,7 @@ function renderQuickChips(chips: QuickStart[] = DEFAULT_QUICK_CHIPS) {
   container.innerHTML = chips.map(chip => `
     <button type="button"
       data-chip-id="${chip.id}"
-      class="ai-quick-chip px-2 py-0.5 text-[10px] font-medium rounded bg-bg-app hover:bg-border-default text-fg-secondary hover:text-fg-primary transition-colors whitespace-nowrap cursor-pointer shrink-0">
+      class="ai-quick-chip px-2 py-0.5 text-[10px] font-medium rounded bg-bg-app hover:bg-border-default hover:text-fg-primary transition-colors whitespace-nowrap cursor-pointer shrink-0">
       ${escapeHtml(chip.label)}
     </button>
   `).join('');
@@ -396,7 +400,7 @@ function handleQuickChipClick(chip: QuickStart) {
 
 const DEFAULT_EMPTY_STATE_HTML = `
   <div class="text-xs text-fg-muted leading-relaxed space-y-1 select-none">
-    <p class="text-fg-secondary">Ask for hints, error explanations, or architectural guidance without spoiling the solution.</p>
+    <p>Ask for hints, error explanations, or architectural guidance without spoiling the solution.</p>
     <p class="text-[11px] text-fg-muted">Click a suggestion below or type a question to get started.</p>
   </div>
 `;
@@ -462,7 +466,7 @@ function renderChatMessages() {
             <span>•</span>
             <span>${timeStr}</span>
           </div>
-          <div class="text-xs text-fg-primary leading-relaxed prose prose-invert prose-sm max-w-none">
+          <div class="text-xs text-fg-primary leading-relaxed prose prose-sm max-w-none">
             ${parsedHtml}
           </div>
         </div>
@@ -490,7 +494,7 @@ function showStreamingPlaceholder(statusText: string = 'Connecting...') {
       <span>•</span>
       <span id="chat-streaming-status" class="text-brand animate-pulse">${escapeHtml(statusText)}</span>
     </div>
-    <div id="chat-streaming-bubble" class="text-xs text-fg-primary leading-relaxed prose prose-invert prose-sm max-w-none">
+    <div id="chat-streaming-bubble" class="text-xs text-fg-primary leading-relaxed prose prose-sm max-w-none">
     </div>
   `;
   container.appendChild(bubbleWrapper);

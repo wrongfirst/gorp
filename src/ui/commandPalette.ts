@@ -1,7 +1,7 @@
 import { elements } from '../core/elements';
-import { store } from '../core/store';
 import { focusEditor } from '../core/editor';
 import { ICONS } from './icons';
+import { createModal, closeAllModals, type ModalController } from './modal';
 import { getActiveLanguageId } from '../language';
 import { getAllCheatsheets } from '../core/cheatsheets/loader';
 import { searchCheatsheets, formatHighlightedTitle } from '../core/cheatsheets/search';
@@ -10,49 +10,45 @@ import { renderMath } from '../core/math';
 import { escapeHtml } from '../core/markdown';
 import type { CheatsheetSearchResult } from '../core/cheatsheets/types';
 
-let isOpen = false;
+let paletteModal: ModalController | null = null;
 let selectedIndex = 0;
 let currentResults: CheatsheetSearchResult[] = [];
-let isMouseDownOnBackdrop = false;
-let previouslyFocusedElement: HTMLElement | null = null;
 let lastPreviewedId: string | null = null;
 
-export function initCommandPalette(): void {
+function initCommandPalette(): void {
+  if (paletteModal) return;
   const el = elements.commandPalette;
   if (!el.modal) return;
 
   if (el.searchIcon) {
     el.searchIcon.innerHTML = ICONS.SEARCH;
   }
-  if (el.closeBtn) {
-    el.closeBtn.innerHTML = ICONS.CLOSE;
-  }
+
+  paletteModal = createModal({
+    modal: el.modal,
+    closeBtn: el.closeBtn,
+    restoreFocus: true,
+    fallbackFocus: focusEditor,
+  });
 
   // Eagerly populate cheatsheet cache
   getAllCheatsheets();
 
-  el.closeBtn?.addEventListener('click', closeCommandPalette);
-
-  el.modal.addEventListener('mousedown', (e) => {
-    isMouseDownOnBackdrop = (e.target === el.modal);
-  });
-
-  el.modal.addEventListener('click', (e) => {
-    if (isMouseDownOnBackdrop && e.target === el.modal) {
-      closeCommandPalette();
-    }
-    isMouseDownOnBackdrop = false;
-  });
-
   el.modal.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
-      return;
     }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      closeCommandPalette();
+  });
+
+  el.results?.addEventListener('click', (e) => {
+    const row = (e.target as HTMLElement).closest<HTMLElement>('div[data-index]');
+    if (!row) return;
+    const idx = Number(row.getAttribute('data-index'));
+    if (!isNaN(idx)) {
+      selectedIndex = idx;
+      renderResultsList();
+      renderPreview();
+      scrollToSelectedRow();
     }
   });
 
@@ -67,19 +63,12 @@ export function initCommandPalette(): void {
   el.preview?.addEventListener('focus', () => renderFooterHints(true));
 }
 
-export function openCommandPalette(): void {
+function openCommandPalette(): void {
+  initCommandPalette();
   const el = elements.commandPalette;
-  if (!el.modal) return;
+  if (!el.modal || !paletteModal) return;
 
-  previouslyFocusedElement = document.activeElement as HTMLElement | null;
-
-  // Dismiss other active modals
-  elements.shortcuts.modal?.classList.add('hidden');
-  elements.shortcuts.modal?.classList.remove('flex');
-  elements.settings.modal?.classList.add('hidden');
-  elements.settings.modal?.classList.remove('flex');
-  elements.speedrun.modal?.classList.add('hidden');
-  elements.speedrun.modal?.classList.remove('flex');
+  closeAllModals(paletteModal);
 
   // Re-evaluate search to keep results current, preserving selected item
   const previousId = currentResults[selectedIndex]?.item.id;
@@ -93,9 +82,7 @@ export function openCommandPalette(): void {
     }
   }
 
-  el.modal.classList.remove('hidden');
-  el.modal.classList.add('flex');
-  isOpen = true;
+  paletteModal.open();
 
   renderFooterHints(false);
   setTimeout(() => {
@@ -108,24 +95,12 @@ export function openCommandPalette(): void {
   }, 20);
 }
 
-export function closeCommandPalette(): void {
-  const el = elements.commandPalette;
-  if (!el.modal || !isOpen) return;
-
-  el.modal.classList.add('hidden');
-  el.modal.classList.remove('flex');
-  isOpen = false;
-
-  if (previouslyFocusedElement && typeof previouslyFocusedElement.focus === 'function' && document.body.contains(previouslyFocusedElement)) {
-    previouslyFocusedElement.focus();
-  } else {
-    focusEditor();
-  }
-  previouslyFocusedElement = null;
+function closeCommandPalette(): void {
+  paletteModal?.close();
 }
 
 export function toggleCommandPalette(): void {
-  if (isOpen) {
+  if (paletteModal?.isOpen()) {
     closeCommandPalette();
   } else {
     openCommandPalette();
@@ -174,18 +149,6 @@ function renderResultsList(): void {
       </div>
     `;
   }).join('');
-
-  container.querySelectorAll('div[data-index]').forEach(row => {
-    row.addEventListener('click', () => {
-      const idx = Number(row.getAttribute('data-index'));
-      if (!isNaN(idx)) {
-        selectedIndex = idx;
-        renderResultsList();
-        renderPreview();
-        scrollToSelectedRow();
-      }
-    });
-  });
 
   scrollToSelectedRow();
 }
@@ -325,7 +288,7 @@ function renderFooterHints(isPreviewFocused = false): void {
   const modKey = isMac ? '⌘K' : 'Ctrl+K';
 
   const kbd = (key: string) =>
-    `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[10px] font-mono text-fg-secondary inline-block mr-1">${key}</kbd>`;
+    `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[10px] font-mono inline-block mr-1">${key}</kbd>`;
 
   if (isPreviewFocused) {
     const preview = elements.commandPalette.preview;

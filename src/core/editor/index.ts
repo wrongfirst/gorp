@@ -4,7 +4,6 @@ import { indentWithTab } from '@codemirror/commands';
 import { indentRange } from '@codemirror/language';
 import { autocompletion, acceptCompletion } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
-import { vim } from '@replit/codemirror-vim';
 import { themeCompartment, getTheme } from '../../ui/theme';
 import { showPopup } from '../../ui/popup';
 import { store } from '../store';
@@ -17,7 +16,6 @@ let view: EditorView | null = null;
 let tabCount = 0;
 let lastTabTime = 0;
 let autoSaveTimeout: ReturnType<typeof setTimeout> | null = null;
-let onSaveCallback: (() => void) | undefined;
 let isProgrammaticChange = false;
 let activeExerciseId: string | null = null;
 let activeLanguageId: string | null = null;
@@ -85,15 +83,61 @@ function updateEditorLanguage(languageExtension?: Extension) {
     }
 }
 
+let vimExtensionFactory: (() => Extension) | null = null;
+let vimLoadPromise: Promise<(() => Extension) | null> | null = null;
+let vimModeSeq = 0;
+
+function loadVimExtension(): Promise<(() => Extension) | null> {
+    if (vimExtensionFactory) return Promise.resolve(vimExtensionFactory);
+    if (!vimLoadPromise) {
+        vimLoadPromise = import('@replit/codemirror-vim')
+            .then((mod) => {
+                vimExtensionFactory = mod.vim;
+                return vimExtensionFactory;
+            })
+            .catch((err) => {
+                vimLoadPromise = null;
+                console.warn('[Editor] Failed to load Vim extension:', err);
+                return null;
+            });
+    }
+    return vimLoadPromise;
+}
+
 export function updateEditorVimMode(enabled: boolean) {
-    if (view) {
+    if (!view) return;
+    const seq = ++vimModeSeq;
+
+    if (!enabled) {
         view.dispatch({
             effects: [
-                vimCompartment.reconfigure(enabled ? vim() : []),
-                lineNumbersCompartment.reconfigure(getLineNumberExtension(enabled)),
+                vimCompartment.reconfigure([]),
+                lineNumbersCompartment.reconfigure(getLineNumberExtension(false)),
             ]
         });
+        return;
     }
+
+    if (vimExtensionFactory) {
+        view.dispatch({
+            effects: [
+                vimCompartment.reconfigure(vimExtensionFactory()),
+                lineNumbersCompartment.reconfigure(getLineNumberExtension(true)),
+            ]
+        });
+        return;
+    }
+
+    view.dispatch({
+        effects: lineNumbersCompartment.reconfigure(getLineNumberExtension(true)),
+    });
+
+    void loadVimExtension().then((factory) => {
+        if (!factory || !view || seq !== vimModeSeq || !store.getState().vimMode) return;
+        view.dispatch({
+            effects: vimCompartment.reconfigure(factory()),
+        });
+    });
 }
 
 export function updateEditorTheme(isDark: boolean) {
@@ -199,11 +243,8 @@ export function loadExerciseCode(
     exerciseId: string,
     languageId: string,
     code: string,
-    languageExtension?: Extension,
-    onSave?: () => void
+    languageExtension?: Extension
 ) {
-    onSaveCallback = onSave;
-
     // Flush any pending unsaved changes from the previous exercise/language context
     if (autoSaveTimeout && activeExerciseId && activeLanguageId && (activeExerciseId !== exerciseId || activeLanguageId !== languageId)) {
         const prevEx = activeExerciseId;
@@ -228,7 +269,7 @@ export function loadExerciseCode(
         const state = EditorState.create({
             doc: code,
             extensions: [
-                vimCompartment.of(isVim ? vim() : []),
+                vimCompartment.of(isVim && vimExtensionFactory ? vimExtensionFactory() : []),
                 lintGutter(),
                 lineNumbersCompartment.of(getLineNumberExtension(isVim)),
                 ...baseEditorExtensions,
@@ -264,11 +305,7 @@ export function loadExerciseCode(
                         key: "Mod-s",
                         run: () => {
                             flushAutoSave();
-                            if (onSaveCallback) {
-                                onSaveCallback();
-                            } else {
-                                showPopup('Saved!');
-                            }
+                            showPopup('Saved!');
                             return true;
                         },
                         preventDefault: true
@@ -288,7 +325,7 @@ export function loadExerciseCode(
                 languageCompartment.of(languageExtension || []),
                 themeCompartment.of(getTheme(isDark)),
                 EditorView.theme({
-                    "&": { height: "100%", backgroundColor: "var(--bg-app)", color: "var(--fg-primary)" },
+                    "&": { height: "100%", backgroundColor: "var(--bg-editor)", color: "var(--fg-primary)" },
                     ".cm-scroller": {
                         overflow: "auto",
                         fontFamily: "var(--font-mono)",
@@ -341,6 +378,10 @@ export function loadExerciseCode(
             state,
             parent: editorEl
         });
+
+        if (isVim && !vimExtensionFactory) {
+            updateEditorVimMode(true);
+        }
     } else {
         updateEditorLanguage(languageExtension);
         updateEditorVimMode(store.getState().vimMode);

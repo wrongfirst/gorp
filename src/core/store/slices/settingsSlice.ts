@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand/vanilla';
 import { AppState, ChatSettings, LastVisitedInfo, defaultChatSettings, SettingsSlice } from '../../types';
-import { scheduleAutoPush } from '../../sync/syncManager';
+import { scheduleAutoPush } from '../../sync/syncTriggers';
 
 /**
  * Pure helper function to synchronize chat settings and active endpoint fields.
@@ -51,7 +51,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   setChatSettings: (newSettings: Partial<ChatSettings>) => {
     const current = get().chatSettings;
     set({ chatSettings: syncChatSettings(current, newSettings) });
-    scheduleAutoPush();
+    scheduleAutoPush(get().gistSyncSettings);
   },
 
   setPreferredLanguage: (langId: string) => {

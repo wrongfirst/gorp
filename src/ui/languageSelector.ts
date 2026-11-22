@@ -42,7 +42,7 @@ export function renderLanguageSelector(container: HTMLElement, currentExercise: 
     // without overwriting the user's cross-book preferredLanguage.
     const activeIsAvailable = availableLanguages.find(l => l.id === currentLanguageId && l.isAvailable);
     if (!activeIsAvailable) {
-        const fallback = availableLanguages.find(l => l.isAvailable) || availableLanguages[0];
+        const fallback = availableLanguages.find(l => l.isAvailable);
         if (fallback && fallback.id !== currentLanguageId) {
             setTimeout(() => {
                 store.getState().setLanguage(fallback.id, { updatePreference: false });
@@ -61,10 +61,10 @@ export function renderLanguageSelector(container: HTMLElement, currentExercise: 
     container.innerHTML = `
         <div class="relative inline-flex items-center group">
             <select id="language-select-dropdown" aria-label="Select Language"
-                class="appearance-none bg-transparent border-0 text-fg-muted group-hover:text-fg-primary text-xs font-medium pl-1.5 pr-5 py-1 rounded hover:bg-bg-app/50 focus:outline-none focus:ring-0 cursor-pointer transition-colors">
+                class="appearance-none bg-transparent border-0 h-[var(--ctrl-md)] text-fg-muted group-hover:text-fg-primary text-xs font-medium pl-2 pr-6 rounded hover:bg-bg-app/50 focus:outline-none focus:ring-0 cursor-pointer transition-colors">
                 ${optionsHtml}
             </select>
-            <span class="pointer-events-none absolute right-1 flex items-center" aria-hidden="true">
+            <span class="pointer-events-none absolute right-1.5 flex items-center" aria-hidden="true">
                 ${ICONS.CHEVRON_DOWN}
             </span>
         </div>

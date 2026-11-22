@@ -45,7 +45,7 @@ export function renderProgressBar(
     let currentIndex = exercises.findIndex(e => e.id === activeLessonSlug);
     if (currentIndex === -1) currentIndex = 0;
 
-    const MAX_TOTAL_VISIBLE = typeof window !== 'undefined' && window.innerWidth < 1024 ? 5 : 7;
+    const MAX_TOTAL_VISIBLE = 7;
     const midCount = MAX_TOTAL_VISIBLE - 2;
     const half = Math.floor(midCount / 2);
 
@@ -96,7 +96,7 @@ export function renderProgressBar(
             circleClass = "w-6 h-6 rounded-full border-2 border-brand bg-bg-surface text-brand font-mono tabular-nums text-xs font-bold flex items-center justify-center";
             content = `${i + 1}`;
             if (isCompleted) {
-                circleClass = "w-6 h-6 rounded-full border-2 border-fg-primary bg-brand text-white font-bold flex items-center justify-center";
+                circleClass = "w-5 h-5 rounded-full bg-brand text-white ring-[3px] ring-brand/35 font-bold flex items-center justify-center";
                 content = ICONS.WHITE_CHECK;
             }
         }
@@ -116,14 +116,14 @@ export function renderProgressBar(
                 const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
 
                 lineHtml = `
-                    <div class="progress-shift-gap w-5 sm:w-7 h-7 flex items-center justify-center cursor-pointer shrink-0 group/dash" data-target-exercise-id="${targetJumpEx.id}" title="${isLeftGap ? 'Previous exercises' : 'Next exercises'}">
+                    <div class="progress-shift-gap w-7 h-7 flex items-center justify-center cursor-pointer shrink-0 group/dash" data-target-exercise-id="${targetJumpEx.id}" title="${isLeftGap ? 'Previous exercises' : 'Next exercises'}">
                         <div class="w-full h-0 border-t-2 border-dashed ${colorClass} group-hover/dash:border-brand transition-colors"></div>
                     </div>
                 `;
             } else {
                 const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
                 lineHtml = `
-                    <div class="w-5 sm:w-7 h-7 flex items-center justify-center shrink-0">
+                    <div class="w-7 h-7 flex items-center justify-center shrink-0">
                         <div class="w-full h-0 border-t-2 border-solid ${colorClass}"></div>
                     </div>
                 `;

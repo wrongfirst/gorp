@@ -16,19 +16,20 @@ import { buildManualExportPayload, parseManualImport } from '../core/backup';
 import { fetchAvailableModels } from '../core/chat/client';
 import { escapeHtml } from '../core/markdown';
 import { downloadJsonFile } from './download';
+import { createModal, type ModalController } from './modal';
 
 let cachedModels: string[] = [];
 let isFetchingModels = false;
 let modelFetchError: string | null = null;
 let isDetailsExpanded = false;
 let isManualGistExpanded = false;
+let settingsModal: ModalController | null = null;
 
-export function initSettings() {
-    if (elements.settingsBtn) {
-        elements.settingsBtn.innerHTML = ICONS.SETTINGS;
-    }
-    if (elements.settings.closeBtn) {
-        elements.settings.closeBtn.innerHTML = ICONS.CLOSE;
+function initSettings() {
+    if (settingsModal) return;
+
+    if (elements.settings.gistOAuthLoginIcon) {
+        elements.settings.gistOAuthLoginIcon.innerHTML = ICONS.GITHUB;
     }
     if (elements.settings.exportBackupIcon) {
         elements.settings.exportBackupIcon.innerHTML = ICONS.DOWNLOAD;
@@ -43,6 +44,11 @@ export function initSettings() {
         elements.settings.gistManualChevron.innerHTML = ICONS.CHEVRON_RIGHT;
     }
 
+    settingsModal = createModal({
+        modal: elements.settings.modal,
+        closeBtn: elements.settings.closeBtn,
+    });
+
     // Subscribe to reactive sync status updates
     subscribeSyncStatus((event) => {
         updateSyncStatusUI(event);
@@ -56,37 +62,12 @@ export function initSettings() {
 
     // Re-sync whenever store hydrates or updates in background
     store.subscribe(() => {
-        const modal = elements.settings.modal;
-        if (modal && !modal.classList.contains('hidden')) {
+        if (settingsModal?.isOpen()) {
             const activeEl = document.activeElement;
             const isEditing = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
             if (!isEditing) {
                 syncSettingsUI();
             }
-        }
-    });
-
-    elements.settingsBtn?.addEventListener('click', openModal);
-    elements.settings.closeBtn?.addEventListener('click', closeModal);
-
-    // close on click outside (only if both mousedown and click originated directly on the backdrop)
-    let isMouseDownOnBackdrop = false;
-
-    elements.settings.modal?.addEventListener('mousedown', (e) => {
-        isMouseDownOnBackdrop = (e.target === elements.settings.modal);
-    });
-
-    elements.settings.modal?.addEventListener('click', (e) => {
-        if (isMouseDownOnBackdrop && e.target === elements.settings.modal) {
-            closeModal();
-        }
-        isMouseDownOnBackdrop = false;
-    });
-
-    // close on escape key
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && elements.settings.modal && !elements.settings.modal.classList.contains('hidden')) {
-            closeModal();
         }
     });
 }
@@ -173,26 +154,18 @@ function bindStaticListeners() {
         const checked = (e.target as HTMLInputElement).checked;
         store.getState().setGistSyncSettings({ autoSync: checked });
     });
+
+    // Close endpoint combobox menu when clicking outside (registered once)
+    document.addEventListener('click', (e) => {
+        const wrapper = document.getElementById('chat-endpoint-combobox-wrapper');
+        if (!wrapper || wrapper.contains(e.target as Node)) return;
+        document.getElementById('chat-endpoint-combobox-menu')?.classList.add('hidden');
+        document.getElementById('combobox-arrow')?.classList.remove('rotate-180');
+    });
 }
 
 function syncSettingsUI() {
-    const isVimEnabled = store.getState().vimMode;
-    const chatSettings = store.getState().chatSettings || {
-        enabled: false,
-        baseUrl: '',
-        apiKey: '',
-        model: '',
-        selectedEndpointId: 'default-endpoint',
-        endpoints: [
-            {
-                id: 'default-endpoint',
-                name: 'Endpoint 1',
-                baseUrl: '',
-                apiKey: '',
-                model: '',
-            }
-        ]
-    };
+    const { vimMode: isVimEnabled, chatSettings, gistSyncSettings } = store.getState();
 
     if (elements.settings.vimToggle) {
         elements.settings.vimToggle.checked = isVimEnabled;
@@ -210,12 +183,6 @@ function syncSettingsUI() {
     renderKeyContainer(chatSettings);
     renderModelSelector(chatSettings);
 
-    const gistSyncSettings = store.getState().gistSyncSettings || {
-        enabled: false,
-        token: '',
-        gistId: '',
-        autoSync: true,
-    };
     renderGistSection(gistSyncSettings);
 
     updateStorageUsageDisplay();
@@ -300,7 +267,7 @@ function renderEndpointSelector(chatSettings: ChatSettings) {
                 <!-- Base URL -->
                 <div class="flex flex-col space-y-1">
                     <div class="flex items-center justify-between">
-                        <label for="chat-base-url" class="text-[10px] font-medium text-fg-secondary">
+                        <label for="chat-base-url" class="text-[10px] font-medium">
                             Base URL
                         </label>
                         <span class="text-[9px] text-fg-muted font-normal">OpenAI-compatible</span>
@@ -317,7 +284,7 @@ function renderEndpointSelector(chatSettings: ChatSettings) {
                 <!-- API Key -->
                 <div class="flex flex-col space-y-1">
                     <div class="flex items-center justify-between">
-                        <label class="text-[10px] font-medium text-fg-secondary">
+                        <label class="text-[10px] font-medium">
                             API Key
                         </label>
                         <span class="text-[9px] text-fg-muted font-normal">Optional for local servers</span>
@@ -365,7 +332,6 @@ function addNewEndpoint() {
 }
 
 function attachEndpointListeners() {
-    const wrapper = document.getElementById('chat-endpoint-combobox-wrapper');
     const input = document.getElementById('chat-endpoint-combobox-input') as HTMLInputElement | null;
     const toggleBtn = document.getElementById('chat-endpoint-combobox-toggle') as HTMLButtonElement | null;
     const menu = document.getElementById('chat-endpoint-combobox-menu') as HTMLElement | null;
@@ -426,14 +392,6 @@ function attachEndpointListeners() {
         closeMenu();
         addNewEndpoint();
     });
-
-    // Close combobox menu when clicking outside
-    const handleOutsideClick = (e: MouseEvent) => {
-        if (wrapper && !wrapper.contains(e.target as Node)) {
-            closeMenu();
-        }
-    };
-    document.addEventListener('click', handleOutsideClick);
 
     // Live typing in the combobox input renames the active endpoint
     input?.addEventListener('input', () => {
@@ -745,23 +703,22 @@ async function triggerModelFetch() {
     }
 }
 
+export function openSettingsModal() {
+    initSettings();
+    openModal();
+}
+
 function openModal() {
     const cs = store.getState().chatSettings;
     if (cs.enabled && !cs.baseUrl) {
         isDetailsExpanded = true;
     }
     syncSettingsUI();
-    elements.settings.modal?.classList.remove('hidden');
-    elements.settings.modal?.classList.add('flex');
+    settingsModal?.open();
 
     if (cs.baseUrl && cachedModels.length === 0 && !isFetchingModels) {
         triggerModelFetch();
     }
-}
-
-function closeModal() {
-    elements.settings.modal?.classList.add('hidden');
-    elements.settings.modal?.classList.remove('flex');
 }
 
 function formatMaskedKey(key: string): string {
