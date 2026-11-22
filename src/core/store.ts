@@ -18,6 +18,7 @@ import { sanitizeConversations } from './backup/modules/conversationsModule';
 import { syncStateStorage } from './store/storage/encryptedStorage';
 import {
   USER_SETTINGS_KEY,
+  clearLastCompletedForSite,
   isUserSettingsPersistSuppressed,
   migrateLegacySettingsToUserSettings,
   writeUserSettingsPatch,
@@ -91,7 +92,12 @@ export const store = createStore<AppState>()(
       ...createSyncSlice(set, get, api),
 
       resetProgress: () => {
-        set(getInitialProgressState());
+        const shouldClearLastCompleted = get().lastCompleted?.siteSlug === SITE_SLUG;
+        set({
+          ...getInitialProgressState(),
+          ...(shouldClearLastCompleted ? { lastCompleted: undefined } : {}),
+        });
+        clearLastCompletedForSite(SITE_SLUG);
       },
 
       restoreBackup: (backupState) => {
@@ -156,6 +162,7 @@ export const store = createStore<AppState>()(
           chatSettings: shared.chatSettings || currentState.chatSettings || defaultChatSettings,
           preferredLanguage: shared.preferredLanguage,
           lastVisited: shared.lastVisited,
+          lastCompleted: shared.lastCompleted,
           gistSyncSettings,
         };
       },
@@ -199,6 +206,10 @@ store.subscribe((state, prevState) => {
 
   if (state.lastVisited !== prevState.lastVisited && state.lastVisited) {
     patch.lastVisited = state.lastVisited;
+  }
+
+  if (state.lastCompleted !== prevState.lastCompleted && state.lastCompleted) {
+    patch.lastCompleted = state.lastCompleted;
   }
 
   if (Object.keys(patch).length > 0) {

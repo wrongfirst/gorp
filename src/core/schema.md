@@ -15,7 +15,7 @@ Client state is split across two `localStorage` keys on the same origin so prefe
 
 | Key | Scope | Fields | Secrets |
 | :--- | :--- | :--- | :--- |
-| `user_settings` | Shared across all instances on the origin | `version`, `vimMode`, `preferredLanguage?`, `chatSettings`, `gistAuth` (`{ enabled, token, autoSync }`), `lastVisited?` (`{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }`) | `chatSettings.apiKey`, `chatSettings.endpoints[].apiKey`, `gistAuth.token` encrypted at rest (`enc:v1:...`) |
+| `user_settings` | Shared across all instances on the origin | `version`, `vimMode`, `preferredLanguage?`, `chatSettings`, `gistAuth` (`{ enabled, token, autoSync }`), `lastVisited?` (`{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }`), `lastCompleted?` (`{ siteSlug, siteTitle, lessonSlug, lessonTitle, nextLessonSlug, nextLessonTitle, completedAt }`) | `chatSettings.apiKey`, `chatSettings.endpoints[].apiKey`, `gistAuth.token` encrypted at rest (`enc:v1:...`) |
 | `${SITE_SLUG}_storage` | Per-instance (Zustand `persist` envelope `{ state, version }`) | `activeLessonSlug`, `activeLessonTitle?`, `exerciseCount?`, `currentLanguageId`, `completedSlugs`, `userCode`, `userCodeTimestamps`, `chatConversations`, `activeConversationId`, `gistSync` (`{ gistId, lastSyncedAt }`) | None (credentials live exclusively in `user_settings`) |
 
 #### Shared Key: `user_settings`
@@ -35,6 +35,16 @@ export interface LastVisitedInfo {
   lessonSlug: string;
   lessonTitle: string;
   updatedAt: number;                                // epoch ms
+}
+
+export interface LastCompletedInfo {
+  siteSlug: string;
+  siteTitle: string;
+  lessonSlug: string;
+  lessonTitle: string;
+  nextLessonSlug: string | null;                    // null when all exercises in the book are completed
+  nextLessonTitle: string | null;                   // null when all exercises in the book are completed
+  completedAt: number;                              // epoch ms
 }
 
 export interface UserSettings {
@@ -57,6 +67,7 @@ export interface UserSettings {
   };
   gistAuth: GistAuthSettings;
   lastVisited?: LastVisitedInfo;
+  lastCompleted?: LastCompletedInfo;
 }
 ```
 
@@ -88,14 +99,14 @@ export interface PersistedInstanceState {
 
 At runtime, Zustand composes `user_settings` and `${SITE_SLUG}_storage` into a single `AppState` view:
 - `gistSyncSettings` combines `user_settings.gistAuth` (`enabled`, `token`, `autoSync`) with `${SITE_SLUG}_storage.state.gistSync` (`gistId`, `lastSyncedAt`).
-- `vimMode`, `chatSettings`, `preferredLanguage`, and `lastVisited` hydrate from and persist to `user_settings`.
+- `vimMode`, `chatSettings`, `preferredLanguage`, `lastVisited`, and `lastCompleted` hydrate from and persist to `user_settings`.
 - On first boot of an instance with no saved `currentLanguageId`, `user_settings.preferredLanguage` is selected if present in `enabledLanguageIds`, otherwise `defaultLanguageId` is used.
 
 #### Canary & Version-Skew Invariants
 
 Because book instances deploy independently on the same origin (canary rollouts), `user_settings` must uphold two strict invariants:
 
-1. **Merge-on-write, never clobber:** Every write to `user_settings` executes on a sequential promise queue, re-reads the raw JSON from `localStorage` immediately before writing, and spreads `{ ...existingRaw, ...patch }` (including nested merges for `chatSettings`, `gistAuth`, and `lastVisited`, and preserving higher `version` values). Older instances never strip unknown fields written by newer canary instances.
+1. **Merge-on-write, never clobber:** Every write to `user_settings` executes on a sequential promise queue, re-reads the raw JSON from `localStorage` immediately before writing, and spreads `{ ...existingRaw, ...patch }` (including nested merges for `chatSettings`, `gistAuth`, and `lastVisited`, full replacement of `lastCompleted` when written so `null` next-lesson fields cleanly overwrite previous values, and preserving higher `version` values). Older instances never strip unknown fields written by newer canary instances.
 2. **Additive-only schema evolution:** Only add optional fields with safe defaults. Never rename or change the type of existing keys in a single rollout step.
 
 #### Legacy Startup Migration
@@ -364,7 +375,8 @@ export interface ModularBackupPayload {
 | Field | Location | Rationale |
 | :--- | :--- | :--- |
 | **`preferredLanguage`** | `user_settings.preferredLanguage` | Cross-book default language fallback when visiting an instance for the first time. |
-| **`lastVisited`** | `user_settings.lastVisited` | Tracks latest active `{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }` for homepage "Continue" affordance. |
+| **`lastVisited`** | `user_settings.lastVisited` | Tracks latest active `{ siteSlug, siteTitle, lessonSlug, lessonTitle, updatedAt }` across instances. |
+| **`lastCompleted`** | `user_settings.lastCompleted` | Tracks latest completed lesson and next uncompleted lesson (`{ siteSlug, siteTitle, lessonSlug, lessonTitle, nextLessonSlug, nextLessonTitle, completedAt }`; `nextLessonSlug`/`nextLessonTitle` are `null` when all exercises in the book are completed) for the homepage "Continue" banner. Cleared when resetting progress for the matching `siteSlug`. |
 | **`activeLessonTitle` & `exerciseCount`** | `${SITE_SLUG}_storage.state` | Cached per-book display metadata for root portal and switcher progress indicators. |
 | **`activeConversationId`** | `ConversationsPayload.activeConversationId` | Retains active conversation tab selection across devices and backup restores. |
 | **`codeTimestamps`** | `LessonProgressItem.codeTimestamps` | Per-language edit timestamps (`{ [langId]: timestamp }`) for conflict-free multi-language 3-way merges. |

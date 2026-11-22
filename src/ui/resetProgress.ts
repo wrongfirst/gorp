@@ -1,6 +1,7 @@
 import { elements } from '../core/elements';
 import { store } from '../core/store';
 import { flushPersistedStorage } from '../core/store/storage/encryptedStorage';
+import { flushUserSettingsStorage } from '../core/store/storage/userSettingsStorage';
 import { SITE_TITLE } from '../core/siteConfig';
 import { abortAllStreams } from './chatPanel';
 import { pushToGist } from '../core/sync/syncManager';
@@ -53,7 +54,7 @@ export function openResetProgressDialog() {
                 await Effect.runPromise(pushToGist().pipe(Effect.ignoreLogged));
             }
 
-            await flushPersistedStorage();
+            await Promise.all([flushPersistedStorage(), flushUserSettingsStorage()]);
             window.location.reload();
         },
     });

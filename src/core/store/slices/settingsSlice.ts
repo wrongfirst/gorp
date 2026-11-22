@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand/vanilla';
-import { AppState, ChatSettings, LastVisitedInfo, defaultChatSettings, SettingsSlice } from '../../types';
+import { AppState, ChatSettings, LastCompletedInfo, LastVisitedInfo, defaultChatSettings, SettingsSlice } from '../../types';
 import { scheduleAutoPush } from '../../sync/syncTriggers';
 
 /**
@@ -47,6 +47,7 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
   chatSettings: defaultChatSettings,
   preferredLanguage: undefined,
   lastVisited: undefined,
+  lastCompleted: undefined,
 
   setChatSettings: (newSettings: Partial<ChatSettings>) => {
     const current = get().chatSettings;
@@ -60,5 +61,9 @@ export const createSettingsSlice: StateCreator<AppState, [], [], SettingsSlice> 
 
   setLastVisited: (info: LastVisitedInfo) => {
     set({ lastVisited: info });
+  },
+
+  setLastCompleted: (info: LastCompletedInfo) => {
+    set({ lastCompleted: info });
   },
 });

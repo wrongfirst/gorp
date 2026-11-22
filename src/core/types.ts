@@ -151,6 +151,16 @@ export interface LastVisitedInfo {
     updatedAt: number;
 }
 
+export interface LastCompletedInfo {
+    siteSlug: string;
+    siteTitle: string;
+    lessonSlug: string;
+    lessonTitle: string;
+    nextLessonSlug: string | null;
+    nextLessonTitle: string | null;
+    completedAt: number;
+}
+
 export interface UserSettings {
     version: number;
     vimMode: boolean;
@@ -158,6 +168,7 @@ export interface UserSettings {
     chatSettings: ChatSettings;
     gistAuth: GistAuthSettings;
     lastVisited?: LastVisitedInfo;
+    lastCompleted?: LastCompletedInfo;
 }
 
 export interface PersistedInstanceState {
@@ -209,9 +220,11 @@ export interface SettingsSlice {
     chatSettings: ChatSettings;
     preferredLanguage?: string;
     lastVisited?: LastVisitedInfo;
+    lastCompleted?: LastCompletedInfo;
     setChatSettings: (settings: Partial<ChatSettings>) => void;
     setPreferredLanguage: (langId: string) => void;
     setLastVisited: (info: LastVisitedInfo) => void;
+    setLastCompleted: (info: LastCompletedInfo) => void;
 }
 
 export interface SyncSlice {

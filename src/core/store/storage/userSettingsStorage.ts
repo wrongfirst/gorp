@@ -4,6 +4,7 @@ import {
   ChatEndpoint,
   ChatSettings,
   GistAuthSettings,
+  LastCompletedInfo,
   LastVisitedInfo,
   UserSettings,
   defaultChatSettings,
@@ -78,6 +79,30 @@ function sanitizeLastVisitedFromRaw(raw: unknown): LastVisitedInfo | undefined {
   };
 }
 
+function sanitizeLastCompletedFromRaw(raw: unknown): LastCompletedInfo | undefined {
+  if (!isPlainObject(raw)) return undefined;
+  if (typeof raw.siteSlug !== 'string' || !raw.siteSlug.trim()) return undefined;
+  return {
+    siteSlug: raw.siteSlug.trim(),
+    siteTitle:
+      typeof raw.siteTitle === 'string' && raw.siteTitle.trim()
+        ? raw.siteTitle.trim()
+        : raw.siteSlug.trim(),
+    lessonSlug: typeof raw.lessonSlug === 'string' ? raw.lessonSlug.trim() : '',
+    lessonTitle: typeof raw.lessonTitle === 'string' ? raw.lessonTitle.trim() : '',
+    nextLessonSlug:
+      typeof raw.nextLessonSlug === 'string' && raw.nextLessonSlug.trim()
+        ? raw.nextLessonSlug.trim()
+        : null,
+    nextLessonTitle:
+      typeof raw.nextLessonTitle === 'string' && raw.nextLessonTitle.trim()
+        ? raw.nextLessonTitle.trim()
+        : null,
+    completedAt:
+      typeof raw.completedAt === 'number' && Number.isFinite(raw.completedAt) ? raw.completedAt : 0,
+  };
+}
+
 function hasMeaningfulChatConfig(cs: ChatSettings): boolean {
   if (cs.enabled || cs.baseUrl.trim() || cs.apiKey.trim() || cs.model.trim()) {
     return true;
@@ -119,6 +144,13 @@ function clonePatch(patch: Partial<UserSettings>): Partial<UserSettings> {
   }
   if (patch.lastVisited) {
     cloned.lastVisited = { ...patch.lastVisited };
+  }
+  if (patch.lastCompleted) {
+    cloned.lastCompleted = {
+      ...patch.lastCompleted,
+      nextLessonSlug: patch.lastCompleted.nextLessonSlug ?? null,
+      nextLessonTitle: patch.lastCompleted.nextLessonTitle ?? null,
+    };
   }
   return cloned;
 }
@@ -175,6 +207,10 @@ export function readUserSettings(): Partial<UserSettings> {
   const lastVisited = sanitizeLastVisitedFromRaw(raw.lastVisited);
   if (lastVisited) {
     result.lastVisited = lastVisited;
+  }
+  const lastCompleted = sanitizeLastCompletedFromRaw(raw.lastCompleted);
+  if (lastCompleted) {
+    result.lastCompleted = lastCompleted;
   }
 
   return result;
@@ -242,6 +278,21 @@ async function processUserSettingsPatch(patch: Partial<UserSettings>): Promise<v
       merged.lastVisited = {
         ...existingRaw.lastVisited,
         ...encryptedPatch.lastVisited,
+      };
+    }
+
+    if (isPlainObject(encryptedPatch.lastCompleted)) {
+      const nextCompleted = encryptedPatch.lastCompleted;
+      merged.lastCompleted = {
+        ...nextCompleted,
+        nextLessonSlug:
+          typeof nextCompleted.nextLessonSlug === 'string' && nextCompleted.nextLessonSlug.trim()
+            ? nextCompleted.nextLessonSlug.trim()
+            : null,
+        nextLessonTitle:
+          typeof nextCompleted.nextLessonTitle === 'string' && nextCompleted.nextLessonTitle.trim()
+            ? nextCompleted.nextLessonTitle.trim()
+            : null,
       };
     }
 
@@ -316,6 +367,38 @@ export function migrateLegacySettingsToUserSettings(
   }
 
   return currentSettings;
+}
+
+/**
+ * Queues a merge-on-write removal of `user_settings.lastCompleted` when it belongs
+ * to the given `siteSlug`, leaving other books' completion pointers and all other
+ * shared settings intact.
+ */
+export function clearLastCompletedForSite(siteSlug: string): void {
+  if (userSettingsWritesSuppressed || !siteSlug.trim()) return;
+  const targetSlug = siteSlug.trim();
+
+  userSettingsWriteQueue = userSettingsWriteQueue
+    .then(() => {
+      if (userSettingsWritesSuppressed || typeof localStorage === 'undefined') return;
+      try {
+        const existingRaw = readRawUserSettings();
+        if (
+          !isPlainObject(existingRaw.lastCompleted) ||
+          existingRaw.lastCompleted.siteSlug !== targetSlug
+        ) {
+          return;
+        }
+        const merged: Record<string, unknown> = { ...existingRaw };
+        delete merged.lastCompleted;
+        localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(merged));
+      } catch (err) {
+        console.warn('[user_settings] Failed to clear lastCompleted:', err);
+      }
+    })
+    .catch((err) => {
+      console.warn('[user_settings] Error during queued clear:', err);
+    });
 }
 
 /**

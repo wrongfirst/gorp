@@ -3,10 +3,28 @@ import { StateCreator } from 'zustand/vanilla';
 import { exercises, getExerciseDisplayTitle } from '../../../exercises/exercise-registry';
 import { defaultLanguageId } from '../../../languages/language-registry';
 import { SITE_SLUG, SITE_TITLE } from '../../siteConfig';
-import { AppState, ExerciseSlice, LastVisitedInfo } from '../../types';
+import { AppState, Exercise, ExerciseSlice, LastCompletedInfo, LastVisitedInfo } from '../../types';
 import { scheduleAutoPush, triggerImmediatePush } from '../../sync/syncTriggers';
 
 const initialExerciseSlug = exercises[0]?.id || '';
+
+function findNextUncompletedExercise(
+  completedSlug: string,
+  completedSlugs: string[]
+): Exercise | undefined {
+  const completedSet = new Set(completedSlugs);
+  const currentIndex = exercises.findIndex((ex) => ex.id === completedSlug);
+
+  if (currentIndex >= 0) {
+    for (let i = currentIndex + 1; i < exercises.length; i++) {
+      if (!completedSet.has(exercises[i].id)) {
+        return exercises[i];
+      }
+    }
+  }
+
+  return exercises.find((ex) => !completedSet.has(ex.id));
+}
 
 export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> = (set, get) => ({
   activeLessonSlug: initialExerciseSlug,
@@ -20,8 +38,24 @@ export const createExerciseSlice: StateCreator<AppState, [], [], ExerciseSlice> 
 
   markComplete: (slug: string) => {
     const { completedSlugs } = get();
-    if (!completedSlugs.includes(slug)) {
-      set({ completedSlugs: [...completedSlugs, slug] });
+    const alreadyCompleted = completedSlugs.includes(slug);
+    const nextCompletedSlugs = alreadyCompleted ? completedSlugs : [...completedSlugs, slug];
+    const nextExercise = findNextUncompletedExercise(slug, nextCompletedSlugs);
+
+    const lastCompleted: LastCompletedInfo = {
+      siteSlug: SITE_SLUG,
+      siteTitle: SITE_TITLE,
+      lessonSlug: slug,
+      lessonTitle: getExerciseDisplayTitle(slug),
+      nextLessonSlug: nextExercise ? nextExercise.id : null,
+      nextLessonTitle: nextExercise ? getExerciseDisplayTitle(nextExercise.id) : null,
+      completedAt: Date.now(),
+    };
+
+    if (alreadyCompleted) {
+      set({ lastCompleted });
+    } else {
+      set({ completedSlugs: nextCompletedSlugs, lastCompleted });
       triggerImmediatePush(get().gistSyncSettings);
     }
   },
