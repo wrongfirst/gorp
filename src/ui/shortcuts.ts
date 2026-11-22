@@ -6,20 +6,14 @@ import { toggleSidebar } from './sidebar';
 import { showPopup } from './popup';
 import { ICONS } from './icons';
 import { createModal, type ModalController } from './modal';
+import { createLazyLoader } from './lazy';
+
+export const IS_MAC = navigator.platform.toUpperCase().includes('MAC');
 
 let shortcutsModal: ModalController | null = null;
 
-let commandPaletteModulePromise: Promise<typeof import('./commandPalette')> | null = null;
-
-function loadCommandPalette(): Promise<typeof import('./commandPalette')> {
-    if (!commandPaletteModulePromise) {
-        commandPaletteModulePromise = import('./commandPalette').catch((err) => {
-            commandPaletteModulePromise = null;
-            throw err;
-        });
-    }
-    return commandPaletteModulePromise;
-}
+const loadCommandPalette = createLazyLoader(() => import('./commandPalette'));
+const loadChatPanel = createLazyLoader(() => import('./chatPanel'));
 
 interface Shortcut {
     action: string;
@@ -102,7 +96,7 @@ export function initShortcuts() {
             e.stopPropagation();
             const cs = store.getState().chatSettings;
             if (cs?.enabled) {
-                void import('./chatPanel').then((m) => {
+                void loadChatPanel().then((m) => {
                     m.initChatPanel();
                     m.focusChatInput();
                 });
@@ -170,13 +164,11 @@ export function initShortcuts() {
 function renderShortcuts() {
     if (!elements.shortcuts.list) return;
 
-    const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-
     const renderGroup = (title: string, shortcuts: Shortcut[]) => {
         const items = shortcuts.map(s => {
             const keysHtml = s.keys.map(k => {
                 let label = k;
-                if (k === "Cmd/Ctrl") label = isMac ? "⌘" : "Ctrl";
+                if (k === "Cmd/Ctrl") label = IS_MAC ? "⌘" : "Ctrl";
                 if (k === "Enter") label = "↵";
 
                 if (k === "or") return `<span class="text-fg-muted text-xs mx-1">or</span>`;

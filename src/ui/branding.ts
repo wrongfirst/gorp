@@ -1,6 +1,7 @@
 import {
     siteConfig,
     SITE_TITLE,
+    SITE_PAGE_TITLE,
     SITE_HOME_PAGE,
     SITE_PORTAL_NAME,
     isSameOriginUrl,
@@ -8,9 +9,9 @@ import {
 import { elements } from '../core/elements';
 
 export function initBranding() {
-    const { subtitle, headline, logo_image, logo_emoji } = siteConfig;
+    const { logo_image, logo_emoji } = siteConfig;
 
-    document.title = headline || (subtitle ? `${SITE_TITLE} | ${subtitle}` : SITE_TITLE);
+    document.title = SITE_PAGE_TITLE;
 
     const logoEl = elements.branding.logo;
     if (logoEl) {

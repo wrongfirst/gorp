@@ -6,6 +6,7 @@ import { autocompletion, acceptCompletion } from '@codemirror/autocomplete';
 import { lintGutter } from '@codemirror/lint';
 import { themeCompartment, getTheme } from '../../ui/theme';
 import { showPopup } from '../../ui/popup';
+import { createLazyLoader } from '../../ui/lazy';
 import { store } from '../store';
 import { baseEditorExtensions } from './setup';
 import { formatLintMessages } from './diagnostics';
@@ -84,24 +85,21 @@ function updateEditorLanguage(languageExtension?: Extension) {
 }
 
 let vimExtensionFactory: (() => Extension) | null = null;
-let vimLoadPromise: Promise<(() => Extension) | null> | null = null;
 let vimModeSeq = 0;
+
+const loadVimModule = createLazyLoader(() => import('@replit/codemirror-vim'));
 
 function loadVimExtension(): Promise<(() => Extension) | null> {
     if (vimExtensionFactory) return Promise.resolve(vimExtensionFactory);
-    if (!vimLoadPromise) {
-        vimLoadPromise = import('@replit/codemirror-vim')
-            .then((mod) => {
-                vimExtensionFactory = mod.vim;
-                return vimExtensionFactory;
-            })
-            .catch((err) => {
-                vimLoadPromise = null;
-                console.warn('[Editor] Failed to load Vim extension:', err);
-                return null;
-            });
-    }
-    return vimLoadPromise;
+    return loadVimModule()
+        .then((mod) => {
+            vimExtensionFactory = mod.vim;
+            return vimExtensionFactory;
+        })
+        .catch((err) => {
+            console.warn('[Editor] Failed to load Vim extension:', err);
+            return null;
+        });
 }
 
 export function updateEditorVimMode(enabled: boolean) {
@@ -329,7 +327,7 @@ export function loadExerciseCode(
                     ".cm-scroller": {
                         overflow: "auto",
                         fontFamily: "var(--font-mono)",
-                        fontSize: "0.875rem",
+                        fontSize: "var(--text-code-editor)",
                         lineHeight: "1.5",
                     },
                     ".cm-gutter-lint": {

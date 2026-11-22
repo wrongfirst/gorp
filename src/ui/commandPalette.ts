@@ -2,6 +2,7 @@ import { elements } from '../core/elements';
 import { focusEditor } from '../core/editor';
 import { ICONS } from './icons';
 import { createModal, closeAllModals, type ModalController } from './modal';
+import { IS_MAC } from './shortcuts';
 import { getActiveLanguageId } from '../language';
 import { getAllCheatsheets } from '../core/cheatsheets/loader';
 import { searchCheatsheets, formatHighlightedTitle } from '../core/cheatsheets/search';
@@ -284,8 +285,7 @@ function renderFooterHints(isPreviewFocused = false): void {
   const footer = elements.commandPalette.footer;
   if (!footer) return;
 
-  const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-  const modKey = isMac ? '⌘K' : 'Ctrl+K';
+  const modKey = IS_MAC ? '⌘K' : 'Ctrl+K';
 
   const kbd = (key: string) =>
     `<kbd class="bg-bg-editor rounded px-1.5 py-0.5 text-[10px] font-mono inline-block mr-1">${key}</kbd>`;

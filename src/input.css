@@ -41,12 +41,10 @@
   /* optical edge offsets so edge icons align with gutter grid: -(ctrl - icon) / 2 */
   --edge-offset-lg: calc((var(--ctrl-lg) - var(--icon-lg)) / -2);
   --edge-offset-md: calc((var(--ctrl-md) - var(--icon-md)) / -2);
-  --edge-offset-sm: calc((var(--ctrl-sm) - var(--icon-sm)) / -2);
 
   /* divider heights (50% of control height) */
   --divider-lg: 16px;
   --divider-md: 14px;
-  --divider-sm: 12px;
 
   /* 3-tier gutters & gaps (strict 4px multiples) */
   --gutter-edge: 1rem;
@@ -55,6 +53,13 @@
   --gap-tight: 0.25rem;
   --gap-group: 0.75rem;
   --gap-section: 1.5rem;
+
+  /* code & reading typography scale */
+  --text-code-primary: 0.8125rem;
+  --text-code-dense: 0.75rem;
+  --text-code-editor: 0.875rem;
+  --text-chat-body: 0.8125rem;
+
   /* semantic button colors (light) */
   --color-danger-fg: #dc2626;
 }
@@ -133,6 +138,31 @@ button {
   --tw-prose-td-borders: var(--border-default);
 }
 
+/* bare inline code & unified prose code scale (prevents .prose-sm double-shrinking <pre><code>) */
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-size: var(--prose-code-size, var(--text-code-primary));
+  font-weight: 500;
+}
+
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::before,
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *))::after {
+  content: none;
+}
+
+.prose :where(h1 code, h2 code, h3 code, h4 code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-size: 0.9em;
+}
+
+.prose :where(pre code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.chat-prose {
+  font-size: var(--text-chat-body);
+  --prose-code-size: var(--text-code-dense);
+}
+
 /* editor and related */
 #editor {
   height: 100%;
@@ -157,6 +187,7 @@ button {
   border-radius: 6px;
   overflow: hidden;
   background-color: var(--bg-app);
+  font-size: var(--text-code-primary);
 }
 
 /* override default selection color */
@@ -356,7 +387,7 @@ mark.search-highlight {
   border-radius: 6px;
   padding: 0.75rem 1rem;
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: var(--text-code-primary);
   line-height: 1.5;
   overflow-x: auto;
 }
@@ -409,10 +440,6 @@ mark.search-highlight {
     --divider-size: var(--divider-md);
   }
 
-  .bar-divider--sm {
-    --divider-size: var(--divider-sm);
-  }
-
   .icon-btn {
     display: inline-flex;
     align-items: center;
@@ -454,11 +481,6 @@ mark.search-highlight {
     --icon-size: var(--icon-md);
   }
 
-  .icon-btn--sm {
-    --ctrl-size: var(--ctrl-sm);
-    --icon-size: var(--icon-sm);
-  }
-
   .icon-btn--modal:not(.icon-btn--filled):hover:not(:disabled) {
     background-color: var(--bg-editor);
   }
@@ -485,14 +507,6 @@ mark.search-highlight {
 
   .edge-right-md {
     margin-right: var(--edge-offset-md);
-  }
-
-  .edge-left-sm {
-    margin-left: var(--edge-offset-sm);
-  }
-
-  .edge-right-sm {
-    margin-right: var(--edge-offset-sm);
   }
 
   .btn {
@@ -551,13 +565,6 @@ mark.search-highlight {
     color: var(--fg-muted);
   }
 
-  .btn--lg {
-    --btn-h: var(--ctrl-lg);
-    --btn-px: 0.75rem;
-    --btn-px-icon: 0.625rem;
-    --btn-icon-size: var(--icon-md);
-  }
-
   .btn--md {
     --btn-h: var(--ctrl-md);
     --btn-px: 0.75rem;
@@ -603,19 +610,13 @@ mark.search-highlight {
     border-color: var(--border-default);
   }
 
-  .btn--danger,
-  .btn--danger-soft {
+  .btn--danger {
     background-color: var(--bg-subbar);
     color: var(--color-danger-fg);
     border-color: color-mix(in srgb, #ef4444 35%, var(--border-default));
   }
 
-  .btn--danger-soft {
-    font-weight: 500;
-  }
-
-  .btn--danger:hover:not(:disabled),
-  .btn--danger-soft:hover:not(:disabled) {
+  .btn--danger:hover:not(:disabled) {
     background-color: #ef4444;
     border-color: #ef4444;
     color: #ffffff;

@@ -6,6 +6,12 @@ import { parse as parseYaml } from "yaml";
 import { resolve } from "node:path";
 import { createRequire } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
+import {
+  DEFAULT_SITE_CONFIG,
+  resolvePageTitle,
+  resolvePortalName,
+  resolveProjectUrl,
+} from "./src/core/siteMeta";
 
 const require = createRequire(import.meta.url);
 const pyodideVersion: string = require("pyodide/package.json").version;
@@ -80,13 +86,6 @@ function yamlPlugin(): Plugin {
   };
 }
 
-const DEFAULT_SITE_CONFIG = {
-  title: "codebook",
-  subtitle: "by wrongfirst",
-  home_page: "https://wrongfirst.dev",
-  logo_emoji: "📓",
-};
-
 function getSiteConfig(): Record<string, any> {
   let tomlPath = resolve(import.meta.dirname, "site.toml");
   if (!existsSync(tomlPath)) {
@@ -150,42 +149,18 @@ function escapeHtmlAttr(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
-function derivePortalName(siteConfig: Record<string, any>): string {
-  const explicit = typeof siteConfig.portal_name === "string" ? siteConfig.portal_name.trim() : "";
-  if (explicit) return explicit;
-
-  const subtitle = typeof siteConfig.subtitle === "string" ? siteConfig.subtitle.trim() : "";
-  const fromSubtitle = subtitle.replace(/^by\s+/i, "").trim();
-  if (fromSubtitle) return fromSubtitle;
-
-  const homePage = typeof siteConfig.home_page === "string" ? siteConfig.home_page.trim() : "";
-  if (homePage) {
-    try {
-      const parsed = new URL(homePage);
-      if (parsed.hostname) return parsed.hostname.replace(/^www\./, "");
-    } catch {
-      // Relative home_page (e.g. "/") resolves hostname at runtime in branding.ts
-    }
-  }
-  return "";
-}
-
 function htmlMetaPlugin(): Plugin {
   return {
     name: "vite-html-meta",
     transformIndexHtml(html) {
       try {
         const siteConfig = getSiteConfig();
-        const { title, subtitle, headline, description, keywords, languages, og_image, logo_emoji, home_page, project_url } = siteConfig;
-        const portalName = derivePortalName(siteConfig);
+        const { title, subtitle, description, keywords, languages, og_image, logo_emoji, logo_image, home_page } = siteConfig;
+        const portalName = resolvePortalName(siteConfig);
         const trimmedHomePage = typeof home_page === "string" ? home_page.trim() : "";
-        const projectUrl = (
-          typeof project_url === "string" && project_url.trim()
-            ? project_url.trim()
-            : "https://github.com"
-        ).replace(/\/+$/, "");
+        const projectUrl = resolveProjectUrl(siteConfig);
 
-        const pageTitle = headline || (subtitle ? `${title} | ${subtitle}` : title);
+        const pageTitle = resolvePageTitle(siteConfig);
         const pageDescription = description || `Interactive programming exercises in the browser`;
         const pageKeywords =
           keywords ||
@@ -207,7 +182,7 @@ function htmlMetaPlugin(): Plugin {
         res = res.replace(/(<span id="header-title"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(title || "")}$2`);
         if (logo_emoji) {
           res = res.replace(/(<span id="header-logo"[^>]*>).*?(<\/span>)/s, `$1${escapeHtmlAttr(logo_emoji)}$2`);
-        } else {
+        } else if (!logo_image) {
           res = res.replace(
             /(<span id="header-logo"[^>]*class="[^"]*)\bflex\b([^"]*")/s,
             `$1hidden$2`

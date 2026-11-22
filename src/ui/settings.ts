@@ -418,19 +418,13 @@ function attachEndpointListeners() {
     // Toggle configuration details button
     toggleDetailsBtn?.addEventListener('click', () => {
         isDetailsExpanded = !isDetailsExpanded;
-        const panel = document.getElementById('endpoint-details-panel');
-        const chevronEl = document.getElementById('toggle-details-chevron');
-        const labelEl = document.getElementById('toggle-endpoint-details-label');
-        if (panel) {
-            panel.classList.toggle('hidden', !isDetailsExpanded);
-            panel.classList.toggle('flex', isDetailsExpanded);
-        }
-        if (chevronEl) {
-            chevronEl.classList.toggle('rotate-90', isDetailsExpanded);
-        }
-        if (labelEl) {
-            labelEl.textContent = isDetailsExpanded ? 'Hide URL & API key' : 'Edit URL & API key';
-        }
+        syncDisclosureUI(
+            document.getElementById('endpoint-details-panel'),
+            document.getElementById('toggle-details-chevron'),
+            document.getElementById('toggle-endpoint-details-label'),
+            isDetailsExpanded,
+            { expanded: 'Hide URL & API key', collapsed: 'Edit URL & API key' }
+        );
     });
 
     // Delete endpoint button
@@ -632,8 +626,7 @@ function getModelSelectorContent(chatSettings: { apiKey: string; model: string; 
     return `
         <div class="flex items-center justify-between py-1">
             <span class="text-xs font-mono text-fg-primary">${escapeHtml(chatSettings.model || '(No model selected)')}</span>
-            <button type="button" id="fetch-now-btn" class="h-7 px-2.5 text-xs bg-bg-subbar hover:bg-bg-editor
-            rounded text-fg-primary cursor-pointer transition-colors">
+            <button type="button" id="fetch-now-btn" class="btn btn--md btn--secondary">
                 Validate & Fetch Models
             </button>
         </div>
@@ -730,8 +723,26 @@ function formatMaskedKey(key: string): string {
 }
 
 
-function showBackupStatus(message: string, isError: boolean = false) {
-    const el = elements.settings.backupStatusMsg;
+function syncDisclosureUI(
+    panel: HTMLElement | null,
+    chevron: HTMLElement | null,
+    label: HTMLElement | null,
+    expanded: boolean,
+    labels: { expanded: string; collapsed: string }
+) {
+    if (panel) {
+        panel.classList.toggle('hidden', !expanded);
+        panel.classList.toggle('flex', expanded);
+    }
+    if (chevron) {
+        chevron.classList.toggle('rotate-90', expanded);
+    }
+    if (label) {
+        label.textContent = expanded ? labels.expanded : labels.collapsed;
+    }
+}
+
+function showTimedBanner(el: HTMLElement | null, message: string, isError: boolean, durationMs: number) {
     if (!el) return;
     el.textContent = message;
     el.className = `text-xs rounded-md p-2 transition-all ${isError
@@ -743,7 +754,11 @@ function showBackupStatus(message: string, isError: boolean = false) {
             el.className = 'hidden text-xs rounded-md p-2';
             el.textContent = '';
         }
-    }, 5000);
+    }, durationMs);
+}
+
+function showBackupStatus(message: string, isError: boolean = false) {
+    showTimedBanner(elements.settings.backupStatusMsg, message, isError, 5000);
 }
 
 async function handleExportBackup() {
@@ -999,38 +1014,20 @@ function renderGistSection(settings: GistSyncSettings) {
 }
 
 function updateManualGistToggleUI() {
-    const view = elements.settings.gistManualView;
-    const chevron = elements.settings.gistManualChevron;
-    const label = elements.settings.gistManualToggleLabel;
-
-    if (view) {
-        view.classList.toggle('hidden', !isManualGistExpanded);
-        view.classList.toggle('flex', isManualGistExpanded);
-    }
-    if (chevron) {
-        chevron.classList.toggle('rotate-90', isManualGistExpanded);
-    }
-    if (label) {
-        label.textContent = isManualGistExpanded
-            ? 'Hide Personal Access Token (PAT) setup'
-            : 'Or connect manually with Personal Access Token (PAT)';
-    }
+    syncDisclosureUI(
+        elements.settings.gistManualView,
+        elements.settings.gistManualChevron,
+        elements.settings.gistManualToggleLabel,
+        isManualGistExpanded,
+        {
+            expanded: 'Hide Personal Access Token (PAT) setup',
+            collapsed: 'Or connect manually with Personal Access Token (PAT)',
+        }
+    );
 }
 
 function showGistStatus(message: string, isError = false) {
-    const el = elements.settings.gistStatusMsg;
-    if (!el) return;
-    el.textContent = message;
-    el.className = `text-xs rounded-md p-2 transition-all ${isError
-            ? 'bg-red-500/10 border border-red-500/20 text-red-400 block'
-            : 'bg-green-500/10 border border-green-500/20 text-green-400 block'
-        }`;
-    setTimeout(() => {
-        if (el.textContent === message) {
-            el.className = 'hidden text-xs rounded-md p-2';
-            el.textContent = '';
-        }
-    }, 6000);
+    showTimedBanner(elements.settings.gistStatusMsg, message, isError, 6000);
 }
 
 async function handleSyncNow() {

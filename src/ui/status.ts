@@ -1,73 +1,38 @@
 import { elements } from '../core/elements';
 
-export const status = {
-    get element() { return elements.status; },
-    get dot() { return elements.statusDot; },
+const TEXT_BASE = 'text-xs text-right max-w-40 truncate';
+const DOT_BASE = 'w-2 h-2 rounded-full shrink-0';
 
-    setLoading(message = "Loading...") {
-        if (this.element) {
-            this.element.textContent = message;
-            this.element.className = "text-xs font-mono text-yellow-500 text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0";
-            this.dot.title = message;
-        }
-    },
-
-    setRunning() {
-        if (this.element) {
-            this.element.textContent = "Running...";
-            this.element.className = "text-yellow-500 text-xs font-mono animate-pulse text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-yellow-500 animate-pulse shrink-0";
-            this.dot.title = "Running...";
-        }
-    },
-
-    setPassed() {
-        if (this.element) {
-            this.element.textContent = "PASSED";
-            this.element.className = "text-green-500 font-bold text-xs text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-green-500 shrink-0";
-            this.dot.title = "PASSED";
-        }
-    },
-
-    setFailed() {
-        if (this.element) {
-            this.element.textContent = "FAILED";
-            this.element.className = "text-red-500 font-bold text-xs text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-red-500 shrink-0";
-            this.dot.title = "FAILED";
-        }
-    },
-
-    setError(message = "ERROR") {
-        if (this.element) {
-            this.element.textContent = message;
-            this.element.className = "text-red-600 font-bold text-xs text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-red-600 shrink-0";
-            this.dot.title = message;
-        }
-    },
-
-    setReady() {
-        if (this.element) {
-            this.element.textContent = "Ready";
-            this.element.className = "text-green-600 text-xs font-mono text-right max-w-40 truncate";
-        }
-        if (this.dot) {
-            this.dot.className = "w-2 h-2 rounded-full bg-green-600 shrink-0";
-            this.dot.title = "Ready";
-        }
+function applyStatus(label: string, textClasses: string, dotClasses: string) {
+    const el = elements.status;
+    if (el) {
+        el.textContent = label;
+        el.className = `${TEXT_BASE} ${textClasses}`;
     }
-};
+    const dot = elements.statusDot;
+    if (dot) {
+        dot.className = `${DOT_BASE} ${dotClasses}`;
+        dot.title = label;
+    }
+}
 
+export const status = {
+    setLoading(message = 'Loading...') {
+        applyStatus(message, 'font-mono text-yellow-500', 'bg-yellow-500 animate-pulse');
+    },
+    setRunning() {
+        applyStatus('Running...', 'font-mono text-yellow-500 animate-pulse', 'bg-yellow-500 animate-pulse');
+    },
+    setPassed() {
+        applyStatus('PASSED', 'font-bold text-green-500', 'bg-green-500');
+    },
+    setFailed() {
+        applyStatus('FAILED', 'font-bold text-red-500', 'bg-red-500');
+    },
+    setError(message = 'ERROR') {
+        applyStatus(message, 'font-bold text-red-600', 'bg-red-600');
+    },
+    setReady() {
+        applyStatus('Ready', 'font-mono text-green-600', 'bg-green-600');
+    },
+};

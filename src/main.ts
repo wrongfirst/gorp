@@ -25,6 +25,7 @@ import { resetEditorText } from './ui/resetEditorText';
 import { setupCopyCodeButton } from './ui/copyCode';
 import { setupFormatCodeButton } from './ui/formatCode';
 import { initShortcuts } from './ui/shortcuts';
+import { createLazyLoader } from './ui/lazy';
 import { renderLanguageSelector } from './ui/languageSelector';
 import { getLanguageExtension, prefetchInactiveLanguageAssets } from './languages/language-registry';
 import { activeRunner } from './language';
@@ -39,29 +40,17 @@ initShortcuts();
 //lazy-loaded modals: render visible chrome icons immediately, load modules on first click
 if (elements.settingsBtn) {
     elements.settingsBtn.innerHTML = ICONS.SETTINGS;
-    let settingsPromise: Promise<typeof import('./ui/settings')> | null = null;
+    const loadSettings = createLazyLoader(() => import('./ui/settings'));
     elements.settingsBtn.addEventListener('click', () => {
-        if (!settingsPromise) {
-            settingsPromise = import('./ui/settings').catch((err) => {
-                settingsPromise = null;
-                throw err;
-            });
-        }
-        void settingsPromise.then((m) => m.openSettingsModal());
+        void loadSettings().then((m) => m.openSettingsModal());
     });
 }
 
 if (elements.resetProgressBtn) {
     elements.resetProgressBtn.innerHTML = ICONS.RESET;
-    let resetPromise: Promise<typeof import('./ui/resetProgress')> | null = null;
+    const loadResetProgress = createLazyLoader(() => import('./ui/resetProgress'));
     elements.resetProgressBtn.addEventListener('click', () => {
-        if (!resetPromise) {
-            resetPromise = import('./ui/resetProgress').catch((err) => {
-                resetPromise = null;
-                throw err;
-            });
-        }
-        void resetPromise.then((m) => m.openResetProgressDialog());
+        void loadResetProgress().then((m) => m.openResetProgressDialog());
     });
 }
 

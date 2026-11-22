@@ -433,7 +433,7 @@ function renderChatMessages() {
             <span>•</span>
             <span>${timeStr}</span>
           </div>
-          <div class="text-xs text-fg-primary leading-relaxed pl-2.5 border-l-2 border-brand/50">
+          <div class="text-[length:var(--text-chat-body)] text-fg-primary leading-relaxed pl-2.5 border-l-2 border-brand/50">
             ${escapeHtml(msg.content).replace(/\n/g, '<br>')}
           </div>
         </div>
@@ -446,7 +446,7 @@ function renderChatMessages() {
             <span>•</span>
             <span>${timeStr}</span>
           </div>
-          <div class="flex items-center justify-between gap-2 text-xs text-fg-muted leading-relaxed pl-2.5 border-l-2 border-border-default">
+          <div class="flex items-center justify-between gap-2 text-[length:var(--text-chat-body)] text-fg-muted leading-relaxed pl-2.5 border-l-2 border-border-default">
             <span>${escapeHtml(msg.content).replace(/\n/g, '<br>')}</span>
             <button type="button"
               data-retry-error-id="${msg.id}"
@@ -466,7 +466,7 @@ function renderChatMessages() {
             <span>•</span>
             <span>${timeStr}</span>
           </div>
-          <div class="text-xs text-fg-primary leading-relaxed prose prose-sm max-w-none">
+          <div class="chat-prose text-fg-primary leading-relaxed prose prose-sm max-w-none">
             ${parsedHtml}
           </div>
         </div>
@@ -494,7 +494,7 @@ function showStreamingPlaceholder(statusText: string = 'Connecting...') {
       <span>•</span>
       <span id="chat-streaming-status" class="text-brand animate-pulse">${escapeHtml(statusText)}</span>
     </div>
-    <div id="chat-streaming-bubble" class="text-xs text-fg-primary leading-relaxed prose prose-sm max-w-none">
+    <div id="chat-streaming-bubble" class="chat-prose text-fg-primary leading-relaxed prose prose-sm max-w-none">
     </div>
   `;
   container.appendChild(bubbleWrapper);

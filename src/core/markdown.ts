@@ -72,7 +72,7 @@ const descMarked = new Marked({
         code({ text, lang }: { text: string; lang?: string }) {
             const highlighted = highlightCodeSnippet(text, lang);
             const langClass = lang ? ` language-${escapeHtml(lang)}` : '';
-            return `<pre class="cm-static-code mb-4 p-3.5 overflow-x-auto text-xs font-mono leading-relaxed"><code class="hljs${langClass}">${highlighted}</code></pre>`;
+            return `<pre class="cm-static-code mb-4 p-3.5 overflow-x-auto font-mono leading-relaxed"><code class="hljs${langClass}">${highlighted}</code></pre>`;
         },
         link: safeLinkRenderer,
         html({ text }: { text: string }) {
@@ -95,7 +95,7 @@ const chatMarked = new Marked({
             <span>Copy</span>
         </button>
     </div>
-    <pre class="px-3 py-2 max-h-60 overflow-auto text-xs leading-snug font-mono m-0 bg-transparent"><code class="hljs${langClass}">${highlighted}</code></pre>
+    <pre class="px-3 py-2 max-h-60 overflow-auto text-[length:var(--text-code-dense)] leading-snug font-mono m-0 bg-transparent"><code class="hljs${langClass}">${highlighted}</code></pre>
 </div>`;
         },
         link: safeLinkRenderer,
