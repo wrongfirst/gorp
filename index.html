@@ -381,7 +381,7 @@
       class="hidden fixed inset-0 z-110 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-sm relative flex flex-col overflow-hidden">
-        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
+        <div class="modal-header">
           <h2 id="reset-progress-title" class="text-sm font-bold text-red-500 flex items-center gap-2 tracking-tight">
             Reset Progress
           </h2>
@@ -389,7 +389,7 @@
             class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
           </button>
         </div>
-        <div class="px-[var(--gutter-pane)] pt-4 pb-6 flex flex-col gap-6">
+        <div class="px-[var(--gutter-pane)] pt-2 pb-[var(--gutter-pane)] flex flex-col gap-6">
           <p id="reset-progress-desc" class="text-xs leading-relaxed text-fg-muted">
             Are you sure you want to reset all progress? This will delete your saved code and completion status for all
             exercises. This action cannot be undone.
@@ -414,7 +414,7 @@
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-4xl h-[560px] max-h-[85vh] flex flex-col overflow-hidden text-fg-primary">
         <!-- Top Search Bar -->
-        <div class="bar-secondary px-[var(--gutter-dense)] modal-header gap-2">
+        <div class="modal-header h-[var(--bar-primary-h)] px-[var(--gutter-dense)] py-0 gap-2">
           <div id="command-palette-search-icon" class="text-fg-muted flex items-center justify-center text-base shrink-0">
             <!-- search icon injected via js -->
           </div>
@@ -453,14 +453,14 @@
       class="hidden fixed inset-0 z-100 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-2xl relative flex flex-col overflow-hidden">
-        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
+        <div class="modal-header">
           <h2 class="text-sm font-bold text-fg-primary tracking-tight">Keyboard Shortcuts</h2>
           <button id="close-shortcuts-btn"
             class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
             <!-- close icon injected via js -->
           </button>
         </div>
-        <div id="shortcuts-list" class="p-[var(--gutter-pane)]">
+        <div id="shortcuts-list" class="px-[var(--gutter-pane)] pt-2 pb-[var(--gutter-pane)]">
           <!-- content injected via js -->
         </div>
       </div>
@@ -471,14 +471,14 @@
       class="hidden fixed inset-0 z-100 items-center justify-center bg-black/30 backdrop-blur-[2px] p-4">
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-md md:max-w-3xl lg:max-w-4xl relative flex flex-col max-h-[88vh] overflow-hidden">
-        <div class="bar-secondary px-[var(--gutter-pane)] modal-header justify-between">
+        <div class="modal-header">
           <h2 class="text-sm font-bold text-fg-primary tracking-tight">Settings</h2>
           <button id="close-settings-btn"
             class="icon-btn icon-btn--md icon-btn--modal edge-right-md">
             <!-- close icon injected via js -->
           </button>
         </div>
-        <div id="settings-content" class="p-[var(--gutter-pane)] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-[var(--gap-section)] items-start">
+        <div id="settings-content" class="px-[var(--gutter-pane)] pt-2 pb-[var(--gutter-pane)] overflow-y-auto grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-[var(--gap-section)] items-start">
           <!-- Left Column: Editor & AI Assistant -->
           <div class="flex flex-col space-y-6">
             <!-- Vim Mode -->
@@ -724,7 +724,7 @@
       <div
         class="bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-2xl w-full max-w-3xl h-[85vh] max-h-[85vh] flex flex-col overflow-hidden text-fg-primary">
         <!-- Header -->
-        <div class="px-[var(--gutter-pane)] py-3 modal-header flex items-center justify-between shrink-0">
+        <div class="modal-header">
           <div class="flex items-center gap-3">
             <div id="speedrun-header-icon" class="w-[var(--ctrl-md)] h-[var(--ctrl-md)] flex items-center justify-center rounded-md bg-brand/12 text-brand text-base shrink-0">
               <!-- icon injected via js -->

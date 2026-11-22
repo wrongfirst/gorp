@@ -392,19 +392,24 @@ mark.search-highlight {
   overflow-x: auto;
 }
 
-/* soft gaussian modal header/footer transitions (avoids 8-bit linear-gradient banding) */
-.modal-header {
-  background-color: var(--bg-surface);
-  box-shadow: inset 0 24px 20px -20px color-mix(in srgb, var(--bg-subbar) 80%, transparent);
-}
-
-.modal-footer {
-  background-color: var(--bg-surface);
-  box-shadow: inset 0 -22px 18px -18px color-mix(in srgb, var(--bg-subbar) 80%, transparent);
-}
-
 /* layout chrome & control primitives */
 @layer components {
+  /* soft gaussian modal header/footer transitions (avoids 8-bit linear-gradient banding) */
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+    padding: 1rem var(--gutter-pane) 0.75rem;
+    background-color: var(--bg-surface);
+    box-shadow: inset 0 24px 20px -20px color-mix(in srgb, var(--bg-subbar) 80%, transparent);
+  }
+
+  .modal-footer {
+    background-color: var(--bg-surface);
+    box-shadow: inset 0 -22px 18px -18px color-mix(in srgb, var(--bg-subbar) 80%, transparent);
+  }
+
   .bar-secondary {
     height: var(--bar-secondary-mobile-h);
     display: flex;
