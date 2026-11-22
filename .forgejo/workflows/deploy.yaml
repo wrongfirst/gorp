@@ -4,6 +4,15 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target deployment environment'
+        type: choice
+        required: true
+        default: 'production'
+        options:
+          - 'production'
+          - 'staging'
 
 jobs:
   deploy:
@@ -33,5 +42,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: npm run deploy
+          DEPLOY_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.environment == 'staging' && 'staging' || 'production' }}
+        run: |
+          if [ "$DEPLOY_ENV" = "staging" ]; then
+            export VITE_ENABLE_CLOUD=true
+          fi
+          npm run deploy
 

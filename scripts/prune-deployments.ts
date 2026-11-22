@@ -84,8 +84,17 @@ async function listDeployments(auth: CloudflareAuth, scriptPath: string): Promis
   return deployments;
 }
 
-export function getWorkerName(): string {
-  const envName = [process.env.WORKER_NAME, process.env.REPO_NAME, process.env.GITHUB_REPOSITORY?.split('/')[1]]
+export type DeployEnv = 'production' | 'staging';
+
+export function getDeployEnv(env: NodeJS.ProcessEnv = process.env): DeployEnv {
+  const raw = env.DEPLOY_ENV?.trim().toLowerCase();
+  if (!raw || raw === 'production') return 'production';
+  if (raw === 'staging') return 'staging';
+  throw new Error(`Invalid DEPLOY_ENV '${env.DEPLOY_ENV}'. Expected 'production' or 'staging'.`);
+}
+
+export function getRepoSlug(env: NodeJS.ProcessEnv = process.env): string {
+  const envName = [env.REPO_NAME, env.GITHUB_REPOSITORY?.split('/')[1]]
     .map(name => name?.trim())
     .find(Boolean);
   if (envName) return envName;
@@ -103,6 +112,20 @@ export function getWorkerName(): string {
   }
 
   return path.basename(ROOT_DIR);
+}
+
+export function getRoutePath(env: NodeJS.ProcessEnv = process.env): string {
+  const explicit = env.ROUTE_PATH?.trim().replace(/^\/+|\/+$/g, '');
+  if (explicit) return explicit;
+  return getRepoSlug(env);
+}
+
+export function getWorkerName(env: NodeJS.ProcessEnv = process.env): string {
+  const explicit = env.WORKER_NAME?.trim();
+  if (explicit) return explicit;
+
+  const routePath = getRoutePath(env);
+  return getDeployEnv(env) === 'staging' ? `${routePath}-staging` : routePath;
 }
 
 // Deletes deployment records beyond the newest RETENTION_LIMIT. The active (newest) deployment is
@@ -143,7 +166,7 @@ export async function pruneDeployments(workerName = getWorkerName()): Promise<vo
   console.log(`[prune] Deleted ${toDelete.length} deployment(s); retained the latest ${RETENTION_LIMIT}.`);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   pruneDeployments().catch(err => {
     console.error(`[prune] Error: ${err.message}`);
     process.exit(1);

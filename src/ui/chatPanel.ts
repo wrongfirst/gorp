@@ -267,7 +267,7 @@ function renderConversationTabs() {
         ? 'Generating response...'
         : 'Unread message';
 
-    const baseClasses = "group relative flex items-center gap-1.5 px-2.5 py-1 text-[11px] rounded transition-all cursor-pointer select-none shrink-0 border";
+    const baseClasses = "group relative flex items-center gap-1.5 h-[var(--ctrl-sm)] pl-2.5 pr-1 text-[11px] rounded transition-all cursor-pointer select-none shrink-0 border";
     const activeClasses = isActive
       ? "bg-bg-app border-border-default text-fg-primary font-semibold shadow-xs"
       : "bg-transparent border-border-default/50 hover:border-border-default hover:bg-bg-app/60 text-fg-muted hover:text-fg-primary";
@@ -280,7 +280,7 @@ function renderConversationTabs() {
         <span class="truncate max-w-20 sm:max-w-28">${escapeHtml(title)}</span>
         <button type="button"
           data-close-conv-id="${conv.id}"
-          class="chat-tab-close-btn opacity-60 hover:opacity-100 hover:text-red-400 p-0.5 rounded transition-all ml-0.5 cursor-pointer"
+          class="chat-tab-close-btn w-5 h-5 inline-flex items-center justify-center opacity-60 hover:opacity-100 hover:text-red-400 rounded transition-all cursor-pointer shrink-0"
           title="Delete conversation">
           ${ICONS.CLOSE_SM}
         </button>
@@ -362,7 +362,7 @@ function renderQuickChips(chips: QuickStart[] = DEFAULT_QUICK_CHIPS) {
   container.innerHTML = chips.map(chip => `
     <button type="button"
       data-chip-id="${chip.id}"
-      class="ai-quick-chip px-2 py-0.5 text-[10px] font-medium rounded bg-bg-app hover:bg-border-default hover:text-fg-primary transition-colors whitespace-nowrap cursor-pointer shrink-0">
+      class="ai-quick-chip h-[var(--ctrl-sm)] px-2.5 inline-flex items-center text-[11px] font-medium rounded bg-bg-app hover:bg-border-default hover:text-fg-primary transition-colors whitespace-nowrap cursor-pointer shrink-0">
       ${escapeHtml(chip.label)}
     </button>
   `).join('');

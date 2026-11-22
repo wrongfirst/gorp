@@ -56,7 +56,7 @@
 
     <!-- branding (Row 1 left on < md; far left on md+) -->
     <div
-      class="order-1 h-[var(--bar-primary-mobile-h)] md:h-full pl-[var(--gutter-edge)] pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 xl:mr-auto">
+      class="order-1 h-[var(--bar-primary-mobile-h)] md:h-full pl-[var(--gutter-edge)] pr-2 md:pr-0 border-b border-border-default/45 md:border-b-0 flex items-center min-w-0 md:mr-auto lg:mr-0 2xl:mr-auto">
       <nav aria-label="Breadcrumb" class="flex items-center gap-2 min-w-0">
         <!-- JN: Portal & title values are injected by vite during build from site.toml -->
         <span id="header-logo"
@@ -72,7 +72,7 @@
           class="text-fg-muted/60 font-mono text-sm leading-tight select-none shrink-0"
           aria-hidden="true">/</span>
 
-        <div id="header-book-switcher" class="static sm:relative flex items-center min-w-0">
+        <div id="header-book-switcher" class="static md:relative flex items-center min-w-0">
           <button type="button" id="header-book-trigger"
             class="inline-flex items-center gap-1 h-[var(--ctrl-lg)] rounded-md px-2 -mx-2 font-sans font-bold text-fg-primary tracking-tight text-[length:var(--brand-title-size)] leading-tight hover:bg-bg-app/70 transition-colors cursor-pointer min-w-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/60"
             title="Return to first exercise">
@@ -86,7 +86,7 @@
           <div id="course-switcher-popover"
             role="dialog"
             aria-label="Switch course"
-            class="hidden absolute left-4 right-4 top-[var(--bar-primary-mobile-h)] mt-1.5 sm:left-0 sm:right-auto sm:top-full sm:mt-2 sm:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
+            class="hidden absolute left-[var(--gutter-edge)] right-[var(--gutter-edge)] top-[var(--bar-primary-mobile-h)] mt-1.5 md:left-0 md:right-auto md:top-full md:mt-2 md:w-80 bg-bg-surface ring-1 ring-border-default/60 rounded-lg shadow-xl overflow-hidden text-fg-primary z-70">
           </div>
         </div>
       </nav>
@@ -122,24 +122,24 @@
       </button>
     </div>
 
-    <!-- center: progress bar (lg+ only; flex center on lg, dead-center on xl+) -->
+    <!-- center: progress bar (lg+ only; flex center on lg/xl, dead-center on 2xl+) -->
     <div
-      class="hidden lg:flex lg:order-2 h-full items-center justify-center px-2 lg:mx-auto xl:mx-0 xl:absolute xl:left-1/2 xl:-translate-x-1/2 shrink-0"
+      class="hidden lg:flex lg:order-2 h-full items-center justify-center px-2 lg:mx-auto 2xl:mx-0 2xl:absolute 2xl:left-1/2 2xl:-translate-x-1/2 shrink-0"
       id="progress-container">
       <!-- progress content -->
     </div>
 
     <!-- instance controls: status, prev/next, run (Row 2 right on < md; right before global divider on md+) -->
     <div class="order-5 md:order-3 h-[var(--bar-primary-mobile-h)] md:h-full pr-[var(--gutter-edge)] md:pr-0 flex items-center justify-end gap-[var(--gap-group)] shrink-0">
-      <!-- status (lg+ only) -->
-      <div class="hidden lg:flex items-center gap-1.5 whitespace-nowrap">
+      <!-- status (sm+ only) -->
+      <div class="hidden sm:flex items-center gap-1.5 whitespace-nowrap">
         <div id="status-dot" class="w-2 h-2 rounded-full bg-fg-muted animate-pulse shrink-0"></div>
-        <span id="status" class="text-xs font-mono text-fg-muted text-right max-w-40 truncate">
+        <span id="status" class="text-xs font-mono text-fg-muted text-right max-w-24 xl:max-w-36 truncate">
           Loading ...
         </span>
       </div>
 
-      <span class="hidden lg:block bar-divider bar-divider--lg" aria-hidden="true"></span>
+      <span class="hidden sm:block bar-divider bar-divider--lg" aria-hidden="true"></span>
 
       <!-- nav + run controls -->
       <div class="flex items-center gap-2">
@@ -174,7 +174,7 @@
 
       <!-- sidebar -->
       <nav id="sidebar-nav"
-        class="absolute inset-y-0 left-0 z-50 w-64 bg-bg-editor hidden flex-col shadow-xl lg:static lg:flex lg:shadow-none shrink-0">
+        class="absolute inset-y-0 left-0 z-50 w-64 2xl:w-72 bg-bg-editor hidden flex-col shadow-xl lg:static lg:flex lg:shadow-none shrink-0">
         <div
           class="hidden md:flex bar-secondary pl-[var(--gutter-edge)] pr-[var(--gutter-dense)] select-none bg-bg-subbar">
           <button type="button" id="sidebar-collapse-btn"
@@ -183,7 +183,7 @@
             <!-- icon injected via js -->
           </button>
         </div>
-        <div id="sidebar-list" class="flex-1 overflow-y-auto pt-[var(--pane-padding-top)] pb-2 space-y-1">
+        <div id="sidebar-list" class="flex-1 overflow-y-auto pt-[var(--pane-pt)] pb-2 space-y-1">
         </div>
         <div class="bar-tertiary pl-[var(--gutter-edge)] pr-[var(--gutter-dense)] justify-end select-none">
           <button id="reset-progress-btn"
@@ -199,7 +199,7 @@
 
         <!-- problem + chat unified column -->
         <div id="problem-and-chat-panel"
-          class="flex flex-col order-1 md:order-0 w-full h-full md:w-1/2 lg:w-[44%] bg-bg-surface min-h-0 min-w-0">
+          class="flex md:flex flex-col order-1 md:order-0 w-full h-full md:w-1/2 lg:w-[44%] 2xl:w-[42%] bg-bg-surface min-h-0 min-w-0">
 
           <!-- problem pane header (md+, continuous 40px secondary rail across panes) -->
           <div id="problem-pane-header"
@@ -214,21 +214,21 @@
           </div>
 
           <!-- unified scroll container (Problem + Rubber Duck stream) -->
-          <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative px-[var(--gutter-edge)] pt-4 sm:pt-[var(--pane-padding-top)] pb-12">
+          <div id="problem-and-chat-scroll" class="flex-1 overflow-y-auto min-h-0 relative px-[var(--gutter-edge)] pt-[var(--pane-pt)] pb-12">
 
             <!-- problem description -->
-            <div id="ex-desc-desktop" class="prose prose-sm max-w-none">
+            <div id="ex-desc-desktop" class="prose prose-sm max-w-[68ch]">
             </div>
 
             <!-- Rubber Duck chat section in stream -->
-            <div id="chat-section" class="hidden -mx-4 sm:-mx-8 mt-8">
+            <div id="chat-section" class="hidden -mx-[var(--gutter-edge)] mt-8">
               <!-- divider line (same thickness as output) -->
               <div class="h-0.5 bg-border-default select-none"></div>
 
               <!-- header like output -->
               <!-- Minimal Browser-Style Conversation Tabs Bar -->
               <div
-                class="bar-secondary px-[var(--gutter-dense)] bg-bg-surface justify-between select-none border-b border-border-default gap-2 relative">
+                class="bar-secondary px-[var(--gutter-edge)] bg-bg-surface justify-between select-none border-b border-border-default gap-2 relative">
                 <span
                   class="text-[10px] font-bold text-fg-muted uppercase tracking-wider shrink-0 select-none">Rubber
                   Duck</span>
@@ -266,7 +266,7 @@
               </div>
 
               <!-- Chat Messages Stream -->
-              <div id="chat-messages" class="px-[var(--gutter-edge)] pt-6 space-y-4 text-xs">
+              <div id="chat-messages" class="px-[var(--gutter-edge)] pt-6 space-y-4 text-xs max-w-[68ch]">
                 <div class="text-xs text-fg-muted leading-relaxed space-y-1 select-none">
                   <p>Ask for hints, error explanations, or architectural guidance without
                     spoiling the solution.</p>
@@ -280,12 +280,12 @@
           <div id="chat-input-container" class="hidden flex-col shrink-0 bg-bg-surface">
             <!-- Quick Start -->
             <div id="chat-quick-chips"
-              class="px-[var(--gutter-dense)] py-1.5 border-t border-border-default/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface">
+              class="px-[var(--gutter-edge)] py-1.5 border-t border-border-default/60 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 bg-bg-surface">
               <!-- suggestion injected via js -->
             </div>
 
             <!-- Chat Input Area (Flush & Unboxed) -->
-            <div class="border-t border-border-default bg-bg-app px-[var(--gutter-dense)] py-2 flex items-end gap-2 shrink-0">
+            <div class="border-t border-border-default bg-bg-app px-[var(--gutter-edge)] py-2 flex items-end gap-2 shrink-0">
               <textarea id="chat-input" rows="1" placeholder="Ask Rubber Duck... (Enter to send)"
                 class="flex-1 bg-transparent text-xs text-fg-primary placeholder:text-fg-muted outline-none resize-none max-h-24 min-h-6 py-1 leading-normal font-sans"></textarea>
               <button id="chat-send-btn"
@@ -343,7 +343,7 @@
               </button>
             </div>
             <div id="output-content"
-              class="flex-1 pl-[var(--gutter-dense)] pr-[var(--gutter-edge)] py-4 font-mono text-[length:var(--text-code-dense)] overflow-auto text-fg-primary whitespace-pre-wrap selection:bg-bg-surface">
+              class="flex-1 pl-[var(--gutter-dense)] pr-[var(--gutter-edge)] pt-[var(--pane-pt)] pb-4 font-mono text-[length:var(--text-code-dense)] overflow-auto text-fg-primary whitespace-pre-wrap selection:bg-bg-surface">
             </div>
           </div>
         </div>
@@ -365,14 +365,14 @@
     <!-- footer (desktop/tablet) -->
     <footer id="footer" class="hidden md:flex bar-tertiary justify-center px-[var(--gutter-edge)] border-t border-[color:var(--footer-border-color)] bg-bg-surface">
       <!-- JN: Footer links & build date are injected by vite during build -->
-      <div class="flex flex-wrap justify-center items-center gap-4 sm:gap-8">
+      <div class="flex flex-wrap justify-center items-center gap-8">
         <span class="text-xs text-fg-muted">
           <a id="footer-repo-link" href="https://github.com" target="_blank" rel="noopener noreferrer">Star on GitHub</a>
         </span>
         <span class="text-xs text-fg-muted">
           <a id="footer-issues-link" href="https://github.com/issues" target="_blank" rel="noopener noreferrer">Report an Error</a>
         </span>
-        <span id="build-date" class="w-full sm:w-auto text-xs text-fg-muted order-last text-center"></span>
+        <span id="build-date" class="text-xs text-fg-muted order-last text-center"></span>
       </div>
     </footer>
 
@@ -598,7 +598,7 @@
                   <input type="text" id="gist-manual-id" placeholder="Gist ID (leave blank to create new)"
                     class="w-full h-[var(--ctrl-md)] px-2.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono" />
                   <button type="button" id="gist-manual-connect-btn"
-                    class="btn btn--md btn--secondary w-full sm:w-auto self-start font-semibold">
+                    class="btn btn--md btn--secondary self-start font-semibold">
                     Connect Manually
                   </button>
                 </div>
@@ -666,7 +666,7 @@
               </label>
 
               <!-- Export / Import Action Buttons -->
-              <div class="flex items-center gap-2 pt-0.5">
+              <div class="flex flex-wrap items-center gap-2 pt-0.5">
                 <button type="button" id="export-backup-btn"
                   class="btn btn--md btn--secondary btn--icon">
                   <span id="export-backup-icon" class="flex items-center justify-center"></span>

@@ -101,7 +101,7 @@ export function renderSidebar(
     }
 
     sidebarEl.innerHTML = curriculum.map((chapter, chIdx) => {
-        const chapterHeader = `<div class="px-4 sm:px-8 pt-1 first:pt-0 pb-0 text-[10px] leading-5 font-bold text-fg-muted uppercase">${chapter.title}</div>`;
+        const chapterHeader = `<div class="px-[var(--gutter-edge)] pt-1 first:pt-0 pb-0 text-[10px] leading-5 font-bold text-fg-muted uppercase">${chapter.title}</div>`;
 
         const chapterExercises = chapter.exercises.map((e, exIdx) => {
             const isCompleted = completedSlugs.includes(e.id);
@@ -109,7 +109,7 @@ export function renderSidebar(
             const completed = isCompleted ? 'opacity-40' : '';
             const displayNum = `${chIdx + 1}.${exIdx + 1}`;
 
-            return `<div class="nav-item cursor-pointer py-2 pl-4 sm:pl-8 pr-4 text-sm flex justify-between items-center transition-colors ${active} ${completed}"
+            return `<div class="nav-item cursor-pointer py-2.5 md:py-2 pl-[var(--gutter-edge)] pr-[var(--gutter-dense)] text-sm flex justify-between items-center transition-colors ${active} ${completed}"
                         data-exercise-id="${e.id}">
                       <span>${displayNum} ${e.title}</span>
                       ${isCompleted ? ICONS.CHECK : ''}

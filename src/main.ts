@@ -123,7 +123,7 @@ function render() {
         const descHtml = parseMarkdown(currentEx.description);
         const displayNum = getExerciseDisplayNumber(currentEx.id);
         const headerTitle = displayNum ? `${displayNum} ${currentEx.title}` : currentEx.title;
-        const titleHtml = `<h1 class="text-3xl font-bold mb-6 text-fg-primary">${escapeHtml(headerTitle)}</h1>`;
+        const titleHtml = `<h1 class="text-2xl md:text-3xl font-bold mb-4 md:mb-6 text-fg-primary">${escapeHtml(headerTitle)}</h1>`;
         const fullContent = titleHtml + descHtml;
 
         if (elements.description.desktop) {

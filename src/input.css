@@ -21,40 +21,41 @@
 
 /* layout geometry scale (4px grid anchored to --header-height: 48px) */
 :root {
-  /* 3-tier chrome bar heights: 48 -> 40 -> 32 (-8px step) */
+  /* 3-tier chrome bar heights (mobile-first < 768px) */
   --bar-primary-h: var(--header-height);
   --bar-primary-mobile-h: var(--header-height-mobile);
   --bar-secondary-h: 40px;
-  --bar-secondary-mobile-h: 36px;
-  --bar-tertiary-h: var(--footer-height);
+  --bar-tertiary-h: 40px;
 
-  /* 3-tier control heights: 32 -> 28 -> 24 (-4px step) */
-  --ctrl-lg: 32px;
-  --ctrl-md: 28px;
-  --ctrl-sm: 24px;
+  /* 3-tier control heights: 36 -> 32 -> 28 on mobile (< 768px) for touch targets */
+  --ctrl-lg: 36px;
+  --ctrl-md: 32px;
+  --ctrl-sm: 28px;
 
-  /* 3-tier icon sizes: 16 -> 14 -> 12 (locked 50% of control box) */
-  --icon-lg: 16px;
-  --icon-md: 14px;
-  --icon-sm: 12px;
+  /* 3-tier icon sizes: locked 50% of control box (18 -> 16 -> 14 on mobile) */
+  --icon-lg: 18px;
+  --icon-md: 16px;
+  --icon-sm: 14px;
 
   /* optical edge offsets so edge icons align with gutter grid: -(ctrl - icon) / 2 */
   --edge-offset-lg: calc((var(--ctrl-lg) - var(--icon-lg)) / -2);
   --edge-offset-md: calc((var(--ctrl-md) - var(--icon-md)) / -2);
 
   /* divider heights (50% of control height) */
-  --divider-lg: 16px;
-  --divider-md: 14px;
+  --divider-lg: var(--icon-lg);
+  --divider-md: var(--icon-md);
 
-  /* 3-tier gutters & gaps (strict 4px multiples) */
+  /* 3-tier gutters & gaps (strict 4px multiples; unified 16px on < md) */
   --gutter-edge: 1rem;
-  --gutter-pane: var(--pane-padding-top);
+  --gutter-pane: 1rem;
   --gutter-dense: 1rem;
+  --pane-pt: 1rem;
   --gap-tight: 0.25rem;
   --gap-group: 0.75rem;
   --gap-section: 1.5rem;
 
-  /* code & reading typography scale */
+  /* control & code/reading typography scale */
+  --text-btn: 0.8125rem;
   --text-code-primary: 0.8125rem;
   --text-code-dense: 0.75rem;
   --text-code-editor: 0.875rem;
@@ -64,9 +65,39 @@
   --color-danger-fg: #dc2626;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
+  :root {
+    --bar-tertiary-h: var(--footer-height);
+
+    /* desktop 3-tier control heights: 32 -> 28 -> 24 (-4px step) */
+    --ctrl-lg: 32px;
+    --ctrl-md: 28px;
+    --ctrl-sm: 24px;
+
+    /* desktop 3-tier icon sizes: 16 -> 14 -> 12 (locked 50% of control box) */
+    --icon-lg: 16px;
+    --icon-md: 14px;
+    --icon-sm: 12px;
+
+    --gutter-edge: 1.5rem;
+    --gutter-pane: var(--pane-padding-top);
+    --pane-pt: var(--pane-padding-top);
+    --text-btn: 0.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
   :root {
     --gutter-edge: 2rem;
+  }
+}
+
+/* prevent iOS Safari focus zoom on touch devices without changing narrow desktop windows */
+@media (max-width: 767px) and (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 1rem;
   }
 }
 
@@ -175,7 +206,7 @@ button {
 }
 
 #editor .cm-content {
-  padding: var(--pane-padding-top) 0 1rem;
+  padding: var(--pane-pt) 0 1rem;
 }
 
 .cm-editor.cm-focused {
@@ -411,16 +442,10 @@ mark.search-highlight {
   }
 
   .bar-secondary {
-    height: var(--bar-secondary-mobile-h);
+    height: var(--bar-secondary-h);
     display: flex;
     align-items: center;
     flex-shrink: 0;
-  }
-
-  @media (min-width: 768px) {
-    .bar-secondary {
-      height: var(--bar-secondary-h);
-    }
   }
 
   .bar-tertiary {
@@ -523,7 +548,7 @@ mark.search-highlight {
     padding-inline: var(--btn-px, 0.75rem);
     border-radius: 0.3125rem;
     border: 1px solid transparent;
-    font-size: 0.75rem;
+    font-size: var(--text-btn);
     line-height: 1;
     font-weight: 600;
     white-space: nowrap;

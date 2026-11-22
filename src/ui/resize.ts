@@ -1,3 +1,5 @@
+const mdMediaQuery = window.matchMedia('(min-width: 768px)');
+
 export function setupResize(
     handle: HTMLElement,
     targetPane: HTMLElement,
@@ -9,6 +11,18 @@ export function setupResize(
     let isDragging = false;
     let startVal = 0;
     let startSize = 0;
+
+    // Clear inline desktop drag overrides when transitioning to single-pane mobile layout
+    mdMediaQuery.addEventListener('change', (e) => {
+        if (!e.matches) {
+            if (direction === 'horizontal') {
+                targetPane.style.width = '';
+            } else {
+                targetPane.style.height = '';
+            }
+            targetPane.style.flex = '';
+        }
+    });
 
     handle.addEventListener('mousedown', (e) => {
         isDragging = true;
@@ -29,14 +43,15 @@ export function setupResize(
         const newSize = startSize + delta;
 
         if (direction === 'horizontal') {
-            //min width 240px, max width 75% of workspace container
+            // min width 240px, max width 75% of workspace container; store as % so viewport resizes scale proportionally
             const containerWidth = targetPane.parentElement?.offsetWidth || window.innerWidth;
             if (newSize > 240 && newSize < containerWidth * 0.75) {
-                targetPane.style.width = `${newSize}px`;
+                const pct = (newSize / containerWidth) * 100;
+                targetPane.style.width = `${pct.toFixed(2)}%`;
                 targetPane.style.flex = 'none';
             }
         } else {
-            //min height 100px, max height 80% of container
+            // min height 100px, max height 80% of container
             const containerHeight = targetPane.parentElement?.offsetHeight || window.innerHeight;
             if (newSize > 100 && newSize < containerHeight * 0.8) {
                 targetPane.style.height = `${newSize}px`;

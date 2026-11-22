@@ -18,7 +18,7 @@ export function resetEditorText(btn: HTMLButtonElement, originalIcon: string, on
         } else {
             //first click
             btn.classList.add('w-auto', 'px-2');
-            btn.innerHTML = `<span class="text-xs font-semibold normal-case tracking-normal whitespace-nowrap text-fg-primary">Discard changes? Click to confirm.</span>`;
+            btn.innerHTML = `<span class="text-xs font-semibold normal-case tracking-normal whitespace-nowrap text-fg-primary">Discard?<span class="hidden sm:inline"> Click to confirm.</span></span>`;
 
             confirmTimeout = setTimeout(() => {
                 confirmTimeout = null;

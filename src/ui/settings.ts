@@ -226,7 +226,7 @@ function renderEndpointSelector(chatSettings: ChatSettings) {
                         <span id="combobox-arrow" class="inline-flex items-center justify-center transition-transform duration-150">${ICONS.CHEVRON_DOWN}</span>
                     </button>
                     <input type="text" id="chat-endpoint-combobox-input"
-                        class="w-full pl-7 pr-3 py-1.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
+                        class="w-full h-[var(--ctrl-md)] pl-7 pr-3 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
                         placeholder="Endpoint name (e.g. OpenAI API, Local Ollama)"
                         value="${escapeHtml(currentEndpoint?.name || '')}"
                         autocomplete="off"
@@ -273,7 +273,7 @@ function renderEndpointSelector(chatSettings: ChatSettings) {
                         <span class="text-[9px] text-fg-muted font-normal">OpenAI-compatible</span>
                     </div>
                     <input type="text" id="chat-base-url"
-                        class="w-full px-2.5 py-1.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
+                        class="w-full h-[var(--ctrl-md)] px-2.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
                         placeholder="https://api.openai.com/v1"
                         value="${escapeHtml(chatSettings.baseUrl || '')}" />
                     <span class="text-[9px] text-fg-muted leading-tight">
@@ -485,7 +485,7 @@ function renderKeyContainer(chatSettings: { apiKey: string }) {
 
     if (chatSettings.apiKey) {
         container.innerHTML = `
-            <div class="flex items-center justify-between px-2.5 py-1.5 bg-bg-editor rounded">
+            <div class="flex items-center justify-between min-h-[var(--ctrl-md)] px-2.5 py-1 bg-bg-editor rounded">
                 <div class="flex items-center gap-2 min-w-0">
                     <span class="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"></span>
                     <span class="text-xs font-mono text-fg-primary truncate select-none">${formatMaskedKey(chatSettings.apiKey)}</span>
@@ -519,7 +519,7 @@ function renderKeyContainer(chatSettings: { apiKey: string }) {
                     data-form-type="other"
                     spellcheck="false"
                     style="-webkit-text-security: disc; text-security: disc;"
-                    class="w-full px-2.5 py-1.5 text-xs bg-bg-editor rounded text-fg-primary 
+                    class="w-full h-[var(--ctrl-md)] px-2.5 text-xs bg-bg-editor rounded text-fg-primary 
                     placeholder:text-fg-muted focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
                     placeholder="Paste API key (sk-...) or leave blank"
                     value="" />
@@ -578,7 +578,7 @@ function getModelSelectorContent(chatSettings: { apiKey: string; model: string; 
                 <div class="flex flex-col space-y-1">
                     <span class="text-[10px] text-fg-muted">Manual model name fallback:</span>
                     <input type="text" id="chat-model-manual"
-                        class="w-full px-3 py-1.5 text-xs bg-bg-editor rounded text-fg-primary font-mono focus:outline-none focus:ring-1 focus:ring-brand/60"
+                        class="w-full h-[var(--ctrl-md)] px-3 text-xs bg-bg-editor rounded text-fg-primary font-mono focus:outline-none focus:ring-1 focus:ring-brand/60"
                         value="${escapeHtml(chatSettings.model || '')}" />
                 </div>
             </div>
@@ -596,7 +596,7 @@ function getModelSelectorContent(chatSettings: { apiKey: string; model: string; 
                         ${ICONS.CHEVRON_DOWN}
                     </div>
                     <select id="chat-model-select"
-                        class="w-full pl-7 pr-3 py-1.5 text-xs bg-bg-editor rounded text-fg-primary focus:outline-none
+                        class="w-full h-[var(--ctrl-md)] pl-7 pr-3 text-xs bg-bg-editor rounded text-fg-primary focus:outline-none
                         focus:ring-1 focus:ring-brand/60 font-mono appearance-none cursor-pointer">
                         ${cachedModels.map(m => `
                             <option value="${escapeHtml(m)}" ${m === currentModel ? 'selected' : ''}>
@@ -609,7 +609,7 @@ function getModelSelectorContent(chatSettings: { apiKey: string; model: string; 
 
                 <div id="custom-model-wrapper" class="${isCustom ? '' : 'hidden'} pt-1">
                     <input type="text" id="chat-model-custom-input"
-                        class="w-full px-3 py-1.5 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted
+                        class="w-full h-[var(--ctrl-md)] px-3 text-xs bg-bg-editor rounded text-fg-primary placeholder:text-fg-muted
                         focus:outline-none focus:ring-1 focus:ring-brand/60 font-mono"
                         placeholder="Enter custom model identifier"
                         value="${escapeHtml(isCustom ? currentModel : '')}" />
@@ -624,8 +624,8 @@ function getModelSelectorContent(chatSettings: { apiKey: string; model: string; 
 
     // Default before first fetch
     return `
-        <div class="flex items-center justify-between py-1">
-            <span class="text-xs font-mono text-fg-primary">${escapeHtml(chatSettings.model || '(No model selected)')}</span>
+        <div class="flex flex-wrap items-center justify-between gap-2 py-1">
+            <span class="text-xs font-mono text-fg-primary truncate min-w-0">${escapeHtml(chatSettings.model || '(No model selected)')}</span>
             <button type="button" id="fetch-now-btn" class="btn btn--md btn--secondary">
                 Validate & Fetch Models
             </button>

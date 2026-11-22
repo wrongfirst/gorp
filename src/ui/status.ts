@@ -1,6 +1,6 @@
 import { elements } from '../core/elements';
 
-const TEXT_BASE = 'text-xs text-right max-w-40 truncate';
+const TEXT_BASE = 'text-xs text-right max-w-24 xl:max-w-36 truncate';
 const DOT_BASE = 'w-2 h-2 rounded-full shrink-0';
 
 function applyStatus(label: string, textClasses: string, dotClasses: string) {

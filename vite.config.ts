@@ -11,7 +11,7 @@ import {
   resolvePageTitle,
   resolvePortalName,
   resolveProjectUrl,
-} from "./src/core/siteMeta";
+} from "./src/core/siteMeta.ts";
 
 const require = createRequire(import.meta.url);
 const pyodideVersion: string = require("pyodide/package.json").version;
@@ -238,6 +238,12 @@ export default defineConfig({
   root: ".",
   server: {
     host: true,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     host: true,

@@ -116,14 +116,14 @@ export function renderProgressBar(
                 const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
 
                 lineHtml = `
-                    <div class="progress-shift-gap w-7 h-7 flex items-center justify-center cursor-pointer shrink-0 group/dash" data-target-exercise-id="${targetJumpEx.id}" title="${isLeftGap ? 'Previous exercises' : 'Next exercises'}">
+                    <div class="progress-shift-gap w-4 xl:w-6 h-7 flex items-center justify-center cursor-pointer shrink-0 group/dash" data-target-exercise-id="${targetJumpEx.id}" title="${isLeftGap ? 'Previous exercises' : 'Next exercises'}">
                         <div class="w-full h-0 border-t-2 border-dashed ${colorClass} group-hover/dash:border-brand transition-colors"></div>
                     </div>
                 `;
             } else {
                 const colorClass = isLineCompleted ? 'border-brand' : 'border-border-default opacity-60';
                 lineHtml = `
-                    <div class="w-7 h-7 flex items-center justify-center shrink-0">
+                    <div class="w-4 xl:w-6 h-7 flex items-center justify-center shrink-0">
                         <div class="w-full h-0 border-t-2 border-solid ${colorClass}"></div>
                     </div>
                 `;

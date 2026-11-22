@@ -2,9 +2,12 @@ import { execFileSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
+import { fileURLToPath } from 'node:url';
 
-interface CliOptions {
+export interface CliOptions {
   repo?: string;
+  sourceBranch: string;
+  targetBranch: string;
   dryRun: boolean;
   deploy: boolean;
   instancesFile: string;
@@ -22,8 +25,10 @@ interface SyncResult {
   durationMs: number;
 }
 
-function parseArgs(args: string[]): CliOptions {
+export function parseArgs(args: string[]): CliOptions {
   const options: CliOptions = {
+    sourceBranch: 'main',
+    targetBranch: 'main',
     dryRun: false,
     deploy: false,
     instancesFile: path.resolve(process.cwd(), 'instances.json'),
@@ -43,6 +48,18 @@ function parseArgs(args: string[]): CliOptions {
       options.repo = arg.substring('--repo='.length).trim();
     } else if (arg === '--repo' && i + 1 < args.length) {
       options.repo = args[++i].trim();
+    } else if (arg.startsWith('--source-branch=')) {
+      const value = arg.substring('--source-branch='.length).trim();
+      if (value) options.sourceBranch = value;
+    } else if (arg === '--source-branch' && i + 1 < args.length) {
+      const value = args[++i].trim();
+      if (value) options.sourceBranch = value;
+    } else if (arg.startsWith('--target-branch=')) {
+      const value = arg.substring('--target-branch='.length).trim();
+      if (value) options.targetBranch = value;
+    } else if (arg === '--target-branch' && i + 1 < args.length) {
+      const value = args[++i].trim();
+      if (value) options.targetBranch = value;
     } else if (arg.startsWith('--instances-file=')) {
       options.instancesFile = path.resolve(process.cwd(), arg.substring('--instances-file='.length).trim());
     } else if (arg === '--instances-file' && i + 1 < args.length) {
@@ -62,17 +79,19 @@ function printUsage(): void {
 Usage: npm run sync:instances [options]
 
 Options:
-  --repo <slug>            Target a specific repository (e.g. wrongfirst/warmup) or "all"
-  --dry-run                Perform git clone and merge locally in temp workspace without pushing
-  --deploy                 Trigger deployment workflow on instance after successful sync
-  --instances-file <path>  Path to instances.json (default: ./instances.json)
-  --upstream <url>         Override upstream repository URL
-  --help, -h               Show this help message
+  --repo <slug>             Target a specific repository (e.g. wrongfirst/warmup) or "all"
+  --source-branch <branch>  Upstream codebook branch to sync from (default: main)
+  --target-branch <branch>  Downstream instance branch to merge into (default: main)
+  --dry-run                 Perform git clone and merge locally in temp workspace without pushing
+  --deploy                  Trigger deployment workflow on instance after successful sync
+  --instances-file <path>   Path to instances.json (default: ./instances.json)
+  --upstream <url>          Override upstream repository URL
+  --help, -h                Show this help message
 
 Environment Variables:
-  FORGEJO_TOKEN            Forgejo PAT for authenticated HTTPS operations
-  FORGEJO_HOST             Host for Forgejo instance (default: git.jitin.xyz)
-  UPSTREAM_URL             Override upstream repository URL
+  FORGEJO_TOKEN             Forgejo PAT for authenticated HTTPS operations
+  FORGEJO_HOST              Host for Forgejo instance (default: git.jitin.xyz)
+  UPSTREAM_URL              Override upstream repository URL
 `);
 }
 
@@ -242,14 +261,15 @@ function getRemainingConflictedFiles(tempDir: string): string[] {
 
 function syncInstance(repo: string, options: CliOptions): SyncResult {
   const startTime = Date.now();
+  const { sourceBranch, targetBranch } = options;
   const { downstreamUrl, upstreamUrl } = getRemoteUrls(repo, options);
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), `cb-sync-${repo.replace(/[^a-zA-Z0-9_-]/g, '-')}-`));
 
   console.log(`\n============================================================`);
   console.log(`Processing: ${repo}`);
   console.log(`Workspace:  ${tempDir}`);
-  console.log(`Upstream:   ${sanitize(upstreamUrl)}`);
-  console.log(`Downstream: ${sanitize(downstreamUrl)}`);
+  console.log(`Upstream:   ${sanitize(upstreamUrl)} (${sourceBranch})`);
+  console.log(`Downstream: ${sanitize(downstreamUrl)} (${targetBranch})`);
   console.log(`Mode:       ${options.dryRun ? 'DRY-RUN (no push)' : 'LIVE (push on clean merge)'}`);
   console.log(`============================================================`);
 
@@ -266,6 +286,39 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
         details: `Clone error: ${err.split('\n')[0]}`,
         durationMs: Date.now() - startTime,
       };
+    }
+
+    let remoteTargetExists = true;
+    if (targetBranch !== 'main') {
+      const remoteRefCheck = runGit(tempDir, [
+        'show-ref',
+        '--verify',
+        '--quiet',
+        `refs/remotes/origin/${targetBranch}`,
+      ]);
+
+      let checkoutRes: { stdout: string; stderr: string; status: number };
+      if (remoteRefCheck.status === 0) {
+        console.log(`  Checking out existing remote branch origin/${targetBranch}...`);
+        checkoutRes = runGit(tempDir, ['checkout', '-B', targetBranch, '--track', `origin/${targetBranch}`]);
+      } else {
+        remoteTargetExists = false;
+        const hasLocalMain = runGit(tempDir, ['show-ref', '--verify', '--quiet', 'refs/heads/main']).status === 0;
+        const baseRef = hasLocalMain ? 'main' : 'origin/main';
+        console.log(`  Creating branch '${targetBranch}' from ${baseRef}...`);
+        checkoutRes = runGit(tempDir, ['checkout', '-B', targetBranch, baseRef]);
+      }
+
+      if (checkoutRes.status !== 0) {
+        const err = sanitize(checkoutRes.stderr || checkoutRes.stdout || `Failed to checkout ${targetBranch}`);
+        console.error(`  ✗ Branch checkout failed: ${err}`);
+        return {
+          repo,
+          status: 'FAILED (ERROR)',
+          details: `Checkout error: ${err.split('\n')[0]}`,
+          durationMs: Date.now() - startTime,
+        };
+      }
     }
 
     // 2. Configure Git environment (merge driver + attributes + fallback author identity for CI)
@@ -288,7 +341,7 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
     }
 
     // 3. Add upstream remote and fetch
-    console.log(`[3/5] Adding upstream remote and fetching upstream/main...`);
+    console.log(`[3/5] Adding upstream remote and fetching upstream/${sourceBranch}...`);
     const remoteAddRes = runGit(tempDir, ['remote', 'add', 'upstream', upstreamUrl]);
     if (remoteAddRes.status !== 0) {
       const err = sanitize(remoteAddRes.stderr || 'Failed to add upstream remote');
@@ -301,9 +354,9 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
       };
     }
 
-    const fetchRes = runGit(tempDir, ['fetch', 'upstream', 'main']);
+    const fetchRes = runGit(tempDir, ['fetch', 'upstream', sourceBranch]);
     if (fetchRes.status !== 0) {
-      const err = sanitize(fetchRes.stderr || 'Failed to fetch upstream/main');
+      const err = sanitize(fetchRes.stderr || `Failed to fetch upstream/${sourceBranch}`);
       console.error(`  ✗ Fetch failed: ${err}`);
       return {
         repo,
@@ -313,27 +366,60 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
       };
     }
 
-    // 4. Check if upstream/main is already merged into HEAD
+    // 4. Check if upstream/<sourceBranch> is already merged into HEAD
     console.log(`[4/5] Checking merge status...`);
-    const ancestorCheck = runGit(tempDir, ['merge-base', '--is-ancestor', 'upstream/main', 'HEAD']);
+    const ancestorCheck = runGit(tempDir, ['merge-base', '--is-ancestor', `upstream/${sourceBranch}`, 'HEAD']);
     if (ancestorCheck.status === 0) {
-      console.log(`  ✓ Already up-to-date with upstream/main`);
+      if (remoteTargetExists) {
+        console.log(`  ✓ Already up-to-date with upstream/${sourceBranch}`);
+        return {
+          repo,
+          status: 'UP-TO-DATE',
+          details: `Already in sync with upstream/${sourceBranch}`,
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      if (options.dryRun) {
+        console.log(`  ✓ Created branch '${targetBranch}' from main (dry-run: skipping push)`);
+        return {
+          repo,
+          status: 'SUCCESS',
+          details: `Created branch ${targetBranch} (dry-run, push skipped)`,
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      console.log(`  Pushing new branch '${targetBranch}' to origin/${targetBranch}...`);
+      const pushNewRes = runGit(tempDir, ['push', 'origin', targetBranch]);
+      if (pushNewRes.status !== 0) {
+        const err = sanitize(pushNewRes.stderr || 'Push failed');
+        console.error(`  ✗ Push failed: ${err}`);
+        return {
+          repo,
+          status: 'FAILED (ERROR)',
+          details: `Push failed: ${err.split('\n')[0]}`,
+          durationMs: Date.now() - startTime,
+        };
+      }
+
+      console.log(`  ✓ Created and pushed branch '${targetBranch}' on ${repo}`);
       return {
         repo,
-        status: 'UP-TO-DATE',
-        details: 'Already in sync with upstream/main',
+        status: 'SUCCESS',
+        details: `Created & pushed ${targetBranch} (already in sync with upstream/${sourceBranch})`,
         durationMs: Date.now() - startTime,
       };
     }
 
-    // 5. Merge upstream/main into current branch
-    console.log(`[5/5] Merging upstream/main...`);
+    // 5. Merge upstream/<sourceBranch> into current branch
+    console.log(`[5/5] Merging upstream/${sourceBranch} into ${targetBranch}...`);
     const syncCommitMsg = options.deploy
       ? 'chore: sync template updates from codebook'
       : 'chore: sync template updates from codebook [skip ci]';
     const mergeRes = runGit(tempDir, [
       'merge',
-      'upstream/main',
+      `upstream/${sourceBranch}`,
       '--allow-unrelated-histories',
       '--no-ff',
       '-m',
@@ -376,7 +462,7 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
     }
 
     // Double check if merge was clean or a no-op
-    if (mergeRes.stdout.includes('Already up to date')) {
+    if (mergeRes.stdout.includes('Already up to date') && remoteTargetExists) {
       console.log(`  ✓ Already up to date.`);
       return {
         repo,
@@ -397,9 +483,9 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
       };
     }
 
-    // Push changes to downstream main
-    console.log(`  Pushing merge commit to origin/main...`);
-    const pushRes = runGit(tempDir, ['push', 'origin', 'main']);
+    // Push changes to downstream target branch
+    console.log(`  Pushing merge commit to origin/${targetBranch}...`);
+    const pushRes = runGit(tempDir, ['push', 'origin', targetBranch]);
     if (pushRes.status !== 0) {
       const err = sanitize(pushRes.stderr || 'Push failed');
       console.error(`  ✗ Push failed: ${err}`);
@@ -411,11 +497,15 @@ function syncInstance(repo: string, options: CliOptions): SyncResult {
       };
     }
 
-    console.log(`  ✓ Successfully synced and pushed updates to ${repo}`);
+    console.log(`  ✓ Successfully synced and pushed updates to ${repo} (${targetBranch})`);
+    const mergeSummary =
+      sourceBranch === 'main' && targetBranch === 'main'
+        ? 'Merged & pushed upstream/main'
+        : `Merged & pushed upstream/${sourceBranch} -> ${targetBranch}`;
     return {
       repo,
       status: 'SUCCESS',
-      details: 'Merged & pushed upstream/main',
+      details: mergeSummary,
       durationMs: Date.now() - startTime,
     };
   } catch (err: any) {
@@ -466,9 +556,22 @@ function formatFetchError(err: any): string {
   return sanitize(parts.join(' | '));
 }
 
+export function buildDeployDispatchBody(
+  targetBranch: string
+): { ref: string; inputs?: Record<string, string> } {
+  return targetBranch !== 'main'
+    ? { ref: targetBranch, inputs: { environment: 'staging' } }
+    : { ref: targetBranch };
+}
+
 async function triggerDeployment(repo: string, options: CliOptions): Promise<{ status: string; details?: string }> {
+  const dispatchBody = buildDeployDispatchBody(options.targetBranch);
+  const envLabel = dispatchBody.inputs?.environment ? ` (${dispatchBody.inputs.environment})` : '';
+
   if (options.dryRun) {
-    console.log(`  [deploy] (dry-run) Would dispatch deployment workflow for ${repo}`);
+    console.log(
+      `  [deploy] (dry-run) Would dispatch deployment workflow for ${repo} on ref '${dispatchBody.ref}'${envLabel}`
+    );
     return { status: 'DRY-RUN' };
   }
 
@@ -483,7 +586,9 @@ async function triggerDeployment(repo: string, options: CliOptions): Promise<{ s
 
   const url = `https://${host}/api/v1/repos/${repo}/actions/workflows/deploy.yaml/dispatches`;
   try {
-    console.log(`  [deploy] Dispatching deployment workflow on ${repo} (${host})...`);
+    console.log(
+      `  [deploy] Dispatching deployment workflow on ${repo} (${host}, ref: ${dispatchBody.ref}${envLabel})...`
+    );
     const res = await fetch(url, {
       method: 'POST',
       headers: {
@@ -491,7 +596,7 @@ async function triggerDeployment(repo: string, options: CliOptions): Promise<{ s
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      body: JSON.stringify({ ref: 'main' }),
+      body: JSON.stringify(dispatchBody),
     });
 
     if (res.status === 204 || res.ok) {
@@ -580,6 +685,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`Starting template synchronization pipeline...`);
+  console.log(`Branches: upstream/${options.sourceBranch} -> origin/${options.targetBranch}`);
   console.log(`Target repositories (${targetInstances.length}):`);
   for (const inst of targetInstances) {
     console.log(`  - ${inst}`);
@@ -604,7 +710,13 @@ async function main(): Promise<void> {
           result.details = deployRes.details;
         }
       } else if (result.status === 'SUCCESS') {
-        if (options.dryRun) {
+        if (options.targetBranch !== 'main') {
+          const deployRes = await triggerDeployment(inst, options);
+          result.deployStatus = deployRes.status;
+          if (deployRes.details && !result.details) {
+            result.details = deployRes.details;
+          }
+        } else if (options.dryRun) {
           console.log(`  [deploy] (dry-run) Push to main would trigger deployment for ${inst}`);
           result.deployStatus = 'DRY-RUN (PUSH)';
         } else {
@@ -627,7 +739,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch(err => {
-  console.error('Fatal sync failure:', err);
-  process.exit(1);
-});
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch(err => {
+    console.error('Fatal sync failure:', err);
+    process.exit(1);
+  });
+}

@@ -18,6 +18,16 @@ on:
           - 'wrongfirst/vim-better'
           - 'wrongfirst/gorp'
           - 'wrongfirst/dioscuri'
+      source_branch:
+        description: 'Upstream codebook branch to sync from'
+        type: string
+        required: false
+        default: 'main'
+      target_branch:
+        description: 'Downstream instance branch to merge into'
+        type: string
+        required: false
+        default: 'main'
       dry_run:
         description: 'Simulate sync without pushing changes'
         type: boolean
@@ -45,19 +55,26 @@ jobs:
       - name: Run Sync Pipeline
         env:
           FORGEJO_TOKEN: ${{ secrets.CODEBOOK_SYNC_INSTANCES }}
+          TARGET_REPO: ${{ inputs.target_repo }}
+          SOURCE_BRANCH: ${{ inputs.source_branch }}
+          TARGET_BRANCH: ${{ inputs.target_branch }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          DEPLOY: ${{ inputs.deploy }}
         run: |
           if [ -z "${NODE_EXTRA_CA_CERTS:-}" ] && [ -f /etc/ssl/certs/ca-certificates.crt ]; then
             export NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
           fi
           DRY_RUN_ARG=""
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "${DRY_RUN}" = "true" ]; then
             DRY_RUN_ARG="--dry-run"
           fi
           DEPLOY_ARG=""
-          if [ "${{ inputs.deploy }}" = "true" ]; then
+          if [ "${DEPLOY}" = "true" ]; then
             DEPLOY_ARG="--deploy"
           fi
           npm run sync:instances -- \
-            --repo "${{ inputs.target_repo }}" \
+            --repo "${TARGET_REPO}" \
+            --source-branch "${SOURCE_BRANCH:-main}" \
+            --target-branch "${TARGET_BRANCH:-main}" \
             $DRY_RUN_ARG \
             $DEPLOY_ARG
