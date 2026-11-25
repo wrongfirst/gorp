@@ -67,6 +67,7 @@
 
 @media (min-width: 768px) {
   :root {
+    --bar-secondary-h: 32px;
     --bar-tertiary-h: var(--footer-height);
 
     /* desktop 3-tier control heights: 32 -> 28 -> 24 (-4px step) */
@@ -599,7 +600,7 @@ mark.search-highlight {
     --btn-h: var(--ctrl-md);
     --btn-px: 0.75rem;
     --btn-px-icon: 0.625rem;
-    --btn-icon-size: var(--icon-sm);
+    --btn-icon-size: var(--icon-md);
   }
 
   .btn--sm {

@@ -95,7 +95,7 @@
     <!-- global controls (Row 1 right on < md; trailing right after Run on md+) -->
     <div
       class="order-2 md:order-4 h-[var(--bar-primary-mobile-h)] md:h-full pr-[var(--gutter-edge)] pl-2 md:pl-[var(--gap-group)] border-b border-border-default/45 md:border-b-0 flex items-center justify-end gap-[var(--gap-tight)] shrink-0">
-      <span class="hidden md:block bar-divider bar-divider--lg mr-2" aria-hidden="true"></span>
+      <span class="hidden md:block bar-divider bar-divider--lg" aria-hidden="true"></span>
 
       <button id="shortcuts-btn"
         class="hidden md:inline-flex icon-btn icon-btn--lg"
@@ -142,14 +142,14 @@
       <span class="hidden sm:block bar-divider bar-divider--lg" aria-hidden="true"></span>
 
       <!-- nav + run controls -->
-      <div class="flex items-center gap-2">
-        <div class="flex items-center gap-[var(--gap-tight)]">
+      <div class="flex items-center gap-1.5">
+        <div class="flex items-center gap-0 -ml-1">
           <button id="nav-prev"
-            class="icon-btn icon-btn--lg"
+            class="icon-btn icon-btn--lg w-[var(--ctrl-md)]"
             title="Previous">
           </button>
           <button id="nav-next"
-            class="icon-btn icon-btn--lg"
+            class="icon-btn icon-btn--lg w-[var(--ctrl-md)]"
             title="Next">
           </button>
         </div>
@@ -201,7 +201,7 @@
         <div id="problem-and-chat-panel"
           class="flex md:flex flex-col order-1 md:order-0 w-full h-full md:w-1/2 lg:w-[44%] 2xl:w-[42%] bg-bg-surface min-h-0 min-w-0">
 
-          <!-- problem pane header (md+, continuous 40px secondary rail across panes) -->
+          <!-- problem pane header (md+, continuous secondary rail across panes) -->
           <div id="problem-pane-header"
             class="hidden md:flex bar-secondary pl-[var(--gutter-edge)] pr-[var(--gutter-pane)] gap-2 bg-bg-subbar select-none">
             <button type="button" id="sidebar-expand-btn"
